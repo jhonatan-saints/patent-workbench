@@ -1,16 +1,44 @@
+# Node
 node_modules/
+**/node_modules/
+
+# Build outputs
 dist/
 build/
+client/dist/
+server/dist/
+
+# Environment files
 .env
 .env.*
-.DS_Store
-Thumbs.db
+
+# Logs
 logs/
 *.log
-/*.local
-/.idea
-.vscode
-coverage/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+/.idea/
+
+# Coverage
+coverage/
+
+# Locks generated per-package (keep root lockfile if you use it)
+client/package-lock.json
+server/package-lock.json
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+.npm/
+.cache/
+/.parcel-cache/
+

@@ -1,33 +1,22 @@
 {
-  "name": "patent-workbench",
+  "name": "patent-workbench-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "Lightweight local-first UI for interacting with local LLMs (Ollama)",
+  "description": "Monorepo root for Patent Workbench (client + server)",
+  "workspaces": ["client", "server"],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "lint": "eslint \"src/**/*.{ts,tsx}\" --report-unused-disable-directives --max-warnings=0",
-    "format": "prettier --write ."
+    "bootstrap": "npm run install-all",
+    "clean": "bash ./scripts/clean.sh",
+    "client": "npm --workspace client run dev",
+    "client:build": "npm --workspace client run build",
+    "client:install": "npm --prefix client install",
+    "server": "npm --workspace server run start",
+    "server:dev": "npm --workspace server run dev",
+    "server:install": "npm --prefix server install",
+    "setup": "bash ./scripts/setup.sh",
+    "start": "concurrently \"npm run server:dev\" \"npm run client\""
   },
-  "dependencies": {
-    "@mantine/core": "^8.3.18",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "zustand": "^5.0.12"
-  },
-  "devDependencies": {
-    "@types/node": "^25.5.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.57.1",
-    "@typescript-eslint/parser": "^8.57.1",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^10.1.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-react": "^7.37.5",
-    "prettier": "^3.8.1",
-    "typescript": "^5.9.3",
-    "vite": "^8.0.1"
+  "engines": {
+    "node": ">=16"
   }
 }
