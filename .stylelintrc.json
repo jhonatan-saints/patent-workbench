@@ -1,0 +1,41 @@
+{
+  "plugins": ["@stylistic/stylelint-plugin"],
+  "extends": "stylelint-config-standard-scss",
+  "rules": {
+    "@stylistic/block-closing-brace-empty-line-before": "never",
+    "@stylistic/block-closing-brace-newline-after": "always",
+    "@stylistic/block-opening-brace-newline-after": "always",
+    "@stylistic/color-hex-case": "lower",
+    "@stylistic/declaration-bang-space-after": "never",
+    "@stylistic/declaration-bang-space-before": "always",
+    "@stylistic/declaration-block-semicolon-newline-after": "always",
+    "@stylistic/declaration-block-trailing-semicolon": "always",
+    "@stylistic/indentation": 2,
+    "@stylistic/linebreaks": "unix",
+    "@stylistic/max-empty-lines": 2,
+    "@stylistic/no-eol-whitespace": true,
+    "@stylistic/no-extra-semicolons": true,
+    "@stylistic/no-missing-end-of-source-newline": true,
+    "@stylistic/property-case": "lower",
+    "@stylistic/selector-attribute-brackets-space-inside": "never",
+    "@stylistic/selector-combinator-space-after": "always",
+    "@stylistic/selector-combinator-space-before": "always",
+    "@stylistic/selector-descendant-combinator-no-non-space": true,
+    "@stylistic/string-quotes": "double",
+    "@stylistic/unit-case": "lower",
+    "scss/dollar-variable-pattern": [
+      "^[a-z][a-zA-Z]+$",
+      {
+        "message": "Expected variable to be camelcase"
+      }
+    ],
+    "scss/load-partial-extension": "always",
+    "no-empty-source": null,
+    "selector-pseudo-element-no-unknown": [
+      true,
+      {
+        "ignorePseudoElements": ["ng-deep"]
+      }
+    ]
+  }
+}

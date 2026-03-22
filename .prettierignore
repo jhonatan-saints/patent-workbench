@@ -1,0 +1,13 @@
+# We only use prettier with HTML and Shell Script files
+**/*.cjs
+**/*.js
+**/*.json
+**/*.md
+**/*.mjs
+**/*.scss
+**/*.ts
+**/*.yml
+**/*.yaml
+
+server/dist/**
+client/dist/**

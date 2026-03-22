@@ -1,0 +1,12 @@
+{
+  "line-length": false,
+  "single-title": false,
+  "first-line-heading": false,
+  "no-trailing-spaces": false,
+  "fenced-code-language": false,
+  "MD051": false,
+  "MD022": false,
+  "MD031": false,
+  "MD032": false,
+  "MD047": false
+}

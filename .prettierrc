@@ -1,0 +1,16 @@
+{
+  "plugins": ["prettier-plugin-sh"],
+  "singleQuote": true,
+  "overrides": [
+    {
+      "files": "*.html",
+      "options": {
+        "parser": "angular",
+        "printWidth": 120,
+        "singleAttributePerLine": false,
+        "trailingComma": "none",
+        "experimentalTernaries": true
+      }
+    }
+  ]
+}
