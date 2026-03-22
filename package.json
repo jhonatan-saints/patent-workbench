@@ -23,6 +23,7 @@
     "lint:style": "npx stylelint **/*.scss **/*.css",
     "start": "concurrently \"npm run server:dev\" \"npm run client\""
   },
+  "prepare": "git config core.hooksPath .githooks || true",
   "engines": {
     "node": ">=20"
   },
