@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -e
+
+# Pre-commit hook: run repository linters and (optionally) builds
+echo "Running pre-commit checks: lint..."
+
+# Prefer npm run lint at root
+if command -v npm >/dev/null 2>&1; then
+  npm run lint
+else
+  echo "npm not found; skipping lint"
+fi
+
+echo "Pre-commit checks passed"
+
+exit 0
