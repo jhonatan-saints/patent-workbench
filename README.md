@@ -1,4 +1,4 @@
-# **PATENT WORKBENCH** / *Local LLM Assistant for Patent Ideation*
+# PATENT WORKBENCH - Local LLM Assistant for Patent Ideation
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
