@@ -103,4 +103,4 @@ Contributing
 
 Maintainer
 
-@jhonatan-saint
+@jhonatan-saints
