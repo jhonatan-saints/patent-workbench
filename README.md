@@ -46,4 +46,5 @@ License
 - MIT
 
 Contact
+- <wazinsky@outlook.com>
 - <jhonatan.santos@mitel.com>
