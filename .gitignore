@@ -8,9 +8,14 @@ build/
 client/dist/
 server/dist/
 
+#Claude
+.settings.local.json
+settings.local.json
+
 # Environment files
 .env
 .env.*
+!.env.example
 
 # Logs
 logs/

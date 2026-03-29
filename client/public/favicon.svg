@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Document shape -->
+  <path d="M6 3h14l6 6v20H6V3z" fill="none" stroke="#60b5ff" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Folded corner -->
+  <path d="M20 3v6h6" fill="none" stroke="#60b5ff" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Text lines -->
+  <line x1="10" y1="14" x2="22" y2="14" stroke="#60b5ff" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="10" y1="18" x2="22" y2="18" stroke="#60b5ff" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
+  <line x1="10" y1="22" x2="17" y2="22" stroke="#60b5ff" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
+</svg>
