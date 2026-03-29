@@ -1,33 +1,37 @@
 {
-  "name": "patent-workbench",
-  "version": "0.1.0",
+  "name": "patent-workbench-client",
   "private": true,
-  "description": "Lightweight local-first UI for interacting with local LLMs (Ollama)",
+  "version": "0.1.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "eslint \"src/**/*.{ts,tsx}\" --report-unused-disable-directives --max-warnings=0",
-    "format": "prettier --write ."
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
+    "format": "prettier --write src"
   },
   "dependencies": {
-    "@mantine/core": "^8.3.18",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "zustand": "^5.0.12"
+    "@mantine/core": "^7.11.0",
+    "@mantine/hooks": "^7.11.0",
+    "@mantine/notifications": "^7.11.0",
+    "@tabler/icons-react": "^3.11.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.4"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@typescript-eslint/eslint-plugin": "^8.57.1",
-    "@typescript-eslint/parser": "^8.57.1",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^9.7.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-react": "^7.37.5",
-    "prettier": "^3.8.1",
-    "typescript": "^5.9.3",
-    "vite": "^8.0.1"
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.27",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "postcss": "^8.5.8",
+    "prettier": "^3.3.0",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.4"
   }
 }
