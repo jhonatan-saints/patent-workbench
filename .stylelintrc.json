@@ -31,6 +31,7 @@
     ],
     "scss/load-partial-extension": "always",
     "no-empty-source": null,
+    "scss/at-rule-no-unknown": [true, { "ignoreAtRules": ["theme"] }],
     "selector-pseudo-element-no-unknown": [
       true,
       {

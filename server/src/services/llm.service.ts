@@ -3,16 +3,22 @@ type GenerateParams = {
   prompt: string;
 };
 
+type GenerateResult = {
+  response: string;
+  promptTokens: number;
+  completionTokens: number;
+};
+
 import logger from '../logger';
 
-const OLLAMA_URL = 'http://localhost:11434';
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 
 export async function generate({
   model,
   prompt,
-}: GenerateParams): Promise<string | null> {
+}: GenerateParams): Promise<GenerateResult | null> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30_000);
+  const timeout = setTimeout(() => controller.abort(), 120_000); // 2 minutes
 
   try {
     const res = await fetch(`${OLLAMA_URL}/api/generate`, {
@@ -34,9 +40,15 @@ export async function generate({
     }
 
     const data = await res.json();
-    return data?.response ?? null;
+    if (!data?.response) return null;
+
+    return {
+      response: data.response,
+      promptTokens: data.prompt_eval_count ?? 0,
+      completionTokens: data.eval_count ?? 0,
+    };
   } catch (err) {
-    if ((err as any).name === 'AbortError') {
+    if ((err as Error).name === 'AbortError') {
       logger.error('LLM request timeout');
     } else {
       logger.error({ err }, 'LLM request failed');
@@ -51,5 +63,16 @@ export async function checkLLM(): Promise<boolean> {
     return res.ok;
   } catch {
     return false;
+  }
+}
+
+export async function listModels(): Promise<string[]> {
+  try {
+    const res = await fetch(`${OLLAMA_URL}/api/tags`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data?.models ?? []).map((m: { name: string }) => m.name);
+  } catch {
+    return [];
   }
 }

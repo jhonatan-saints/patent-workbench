@@ -16,7 +16,8 @@
     "server": "npm --workspace server run start",
     "server:dev": "npm --workspace server run dev",
     "server:install": "npm --prefix server install",
-    "setup": "bash ./scripts/setup.sh",
+    "generate:favicons": "node scripts/generate-favicons.mjs",
+    "setup": "npm install",
     "lint": "npm run lint:eslint && npm run lint:markdown && npm run lint:style",
     "lint:eslint": "npx eslint --max-warnings=0 --no-error-on-unmatched-pattern .",
     "lint:markdown": "npx markdownlint-cli -i \"**/node_modules/**\" --config .markdownlint.json ./*.md ./**/*.md ./**/**/*.md ./**/**/**/*.md ./**/**/**/**/*.md",
@@ -29,6 +30,12 @@
   },
   "devDependencies": {
     "@stylistic/stylelint-plugin": "^5.0.1",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "concurrently": "^9.0.0",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-refresh": "^0.4.9",
+    "sharp": "^0.34.5",
     "stylelint": "^17.5.0",
     "stylelint-config-standard-scss": "^17.0.0",
     "stylelint-scss": "^7.0.0"
