@@ -65,7 +65,7 @@ Or run them separately:
 
 ```bash
 npm run server:dev   # Express on localhost:3001 (watch mode)
-npm run client       # Vite on localhost:5173
+npm run client       # Vite on localhost:3003/patent-workbench
 ```
 
 Open [http://localhost:5173](http://localhost:5173). The status indicator in the header will turn green once Ollama is reachable.
