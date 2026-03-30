@@ -156,6 +156,54 @@ export function IdeaInputStep() {
           </Text>
         )}
       </Stack>
+      {/* Animated border with center dot (from center outwards) */}
+      <div className="relative flex items-center justify-center h-7 mb-6 pt-30 select-none">
+        {/* Left animated line */}
+        <div
+          className="origin-left animate-grow-line-side"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            height: '2px',
+            width: '50%',
+            background: 'linear-gradient(to left, transparent 0%, var(--accent) 80%)',
+            borderRadius: '2px',
+            boxShadow: '0 0 2px var(--accent-glow)',
+            transform: 'translateY(-50%) scaleX(0)',
+          }}
+        />
+        {/* Right animated line */}
+        <div
+          className="origin-right animate-grow-line-side"
+          style={{
+            position: 'absolute',
+            right: '50%',
+            top: '50%',
+            height: '2px',
+            width: '50%',
+            background: 'linear-gradient(to right, transparent 0%, var(--accent) 80%)',
+            borderRadius: '2px',
+            boxShadow: '0 0 2px var(--accent-glow)',
+            transform: 'translateY(-50%) scaleX(0)',
+          }}
+        />
+        {/* Center dot (always visible) */}
+        <div
+          className="z-10"
+          style={{
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            background: 'var(--accent)',
+            boxShadow: '0 0 8px var(--accent-glow)',
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
+      </div>
     </Box>
   );
 }
