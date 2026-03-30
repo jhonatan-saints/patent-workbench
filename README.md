@@ -8,7 +8,7 @@ A local-first visual IDE for patent ideation, drafting, and iteration — powere
 
 ## What it does
 
-Patent Workbench guides you through a structured, eight-step workflow to produce a complete patent application draft. Each step uses a dedicated prompt template built on the REG (Role + Examples + Goal) pattern, instructing the model to reason like a USPTO patent attorney and produce output that conforms to standard patent language conventions.
+Patent Workbench guides you through a structured, seven-step workflow to produce a complete patent application draft. Each step uses a dedicated prompt template built on the REG (Role + Examples + Goal) pattern, instructing the model to reason like a USPTO patent analyst/attorney and produce output that conforms to standard patent language conventions.
 
 For every step the LLM generates three distinct options to choose from. You pick the one that best fits your intent — or regenerate — before moving to the next section.
 
@@ -16,23 +16,22 @@ For every step the LLM generates three distinct options to choose from. You pick
 
 | # | Step | Purpose | Est. tokens |
 | --- | --- | --- | --- |
-| 1 | Idea Analysis | Extract technical novelty, core innovation, and related prior art | ~250 |
-| 2 | Title | Concise, descriptive patent title | ~180 |
-| 3 | Field of Invention | Technical domain classification | ~150 |
-| 4 | Background | Prior art and problem statement | ~350 |
-| 5 | Summary | High-level solution overview | ~300 |
-| 6 | Claims | Independent and dependent claim set | ~450 |
-| 7 | Detailed Description | Full embodiment description | ~600 |
-| 8 | Abstract | 150-word summary per USPTO rules | ~200 |
+| 1 | Problem Description | Describe the problem the invention addresses and its impact | ~250 |
+| 2 | Previous Solutions | Summarize existing approaches and limitations | ~250 |
+| 3 | Key Differences | Explain how the invention differs from prior art (novel elements) | ~200 |
+| 4 | Invention Summary | High-level overview of the invention and key technologies | ~300 |
+| 5 | Possible Variations | Alternative embodiments and broadened scope suggestions | ~200 |
+| 6 | Other Applications | Additional use cases and domain transfer opportunities | ~180 |
+| 7 | Full Description | Complete technical description enabling a person skilled in the art | ~600 |
 
 ### Workflow phases
 
 ```
-input → working (steps 1–8) → inventors → preview / export
+input → working (steps 1–7) → inventors → preview / export
 ```
 
 - **input** — Enter invention idea, technical domain, and optional constraints.
-- **working** — Step through all eight modules; for each step pick auto, guided, or manual input mode.
+- **working** — Step through the seven modules; for each step pick auto, guided, or manual input mode.
 - **inventors** — Add inventor details (name, address, citizenship, employee ID, etc.) and optional patent metadata (IDF number, business group).
 - **preview** — Review the complete assembled artifact, edit any section inline, and export.
 
@@ -80,14 +79,13 @@ In the **Ollama desktop app settings**, make sure the following options are **di
 
 ### Context length recommendations
 
-Each full workflow run accumulates up to ~2 500 tokens of context. Set `num_ctx` according to available VRAM / RAM so the model does not silently truncate prior sections:
+Each full workflow run accumulates up to ~2 500 tokens of context. Set `num_ctx` according to available RAM so the model does not silently truncate prior sections. Current recommended mappings:
 
 | Available memory | Recommended `num_ctx` | Notes |
 | --- | --- | --- |
-| 4 GB VRAM / RAM | 2 048 | Minimum viable; may truncate on the last steps |
-| 8 GB VRAM / RAM | 4 096 | Recommended default — covers the full workflow comfortably |
-| 16 GB VRAM / RAM | 8 192 | Headroom for larger models (Llama 3 8B, Mistral 7B) |
-| 32 GB+ VRAM / RAM | 16 384 | For 13B+ models or multiple concurrent sessions |
+| 16 GB RAM | 4 096 | Minimum viable; may still truncate on the last steps for very large prompts |
+| 32 GB RAM | 8 192 – 16 384 | Ideal for most workflows — covers full workflow comfortably for larger models |
+| 64 GB RAM or more | &gt;16 384 | For extremely large context lengths (above 16 384 tokens) or very large models |
 
 Apply the setting in your `~/.ollama/config.json` (or `%USERPROFILE%\.ollama\config.json` on Windows):
 
@@ -97,13 +95,13 @@ Apply the setting in your `~/.ollama/config.json` (or `%USERPROFILE%\.ollama\con
 }
 ```
 
-Or pass it per-request via the Ollama CLI when pulling/running a model:
+Or pass it per-request via the Ollama CLI when running a model (example uses the minimum recommended `num_ctx`):
 
 ```bash
 ollama run mistral --num_ctx 4096
 ```
 
-> Running with a `num_ctx` smaller than the accumulated prompt length causes silent truncation. If generated output starts losing context from earlier steps, increase this value or use a quantised model that fits a larger context into the same memory budget.
+Running with a `num_ctx` smaller than the accumulated prompt length causes silent truncation. If generated output starts losing context from earlier steps, increase this value or use a quantised model that fits a larger context into the same memory budget.
 
 ## Getting started
 
