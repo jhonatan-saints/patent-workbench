@@ -34,8 +34,7 @@ export function StepProgress() {
   const { steps, currentStepIndex, workflowPhase, goToStep, goToPreview, goToInventors, artifact } =
     useWorkbenchStore();
 
-  const step01Done = steps[0]?.status === 'done';
-  const specialUnlocked = step01Done;
+  const specialUnlocked = steps[0]?.selectedOption !== null && steps[0]?.selectedOption !== undefined;
   const isInventorsActive = workflowPhase === 'inventors';
   const isPreviewActive = workflowPhase === 'preview';
 
@@ -54,7 +53,7 @@ export function StepProgress() {
 
       {steps.map((step, i) => {
         const isActive = i === currentStepIndex && workflowPhase === 'working';
-        const isDone = step.status === 'done';
+        const isDone = step.selectedOption !== null;
         const isFuture = i > currentStepIndex && step.status === 'pending';
         const canNavigate = step.status !== 'pending';
 
@@ -73,7 +72,7 @@ export function StepProgress() {
             }}
           >
             <Group gap={8} wrap="nowrap">
-              <StepIcon status={step.status} />
+              <StepIcon status={isDone && !isActive ? 'done' : step.status} />
               <Box style={{ flex: 1, minWidth: 0 }}>
                 <Text
                   size="xs"

@@ -17,10 +17,7 @@ import {
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { WORKFLOW_MODULES } from '@/utils/workflowTemplates';
-import type { WorkflowModuleId, PatentArtifact } from '@/types';
-
-
-type InputMode = 'auto' | 'guided' | 'manual';
+import type { WorkflowModuleId, PatentArtifact, InputMode } from '@/types';
 
 const LABEL_STYLES = {
   fontFamily: 'var(--font-mono)',
@@ -98,22 +95,29 @@ interface Props {
 export function StepInputPanel({ moduleId }: Props) {
   const {
     artifact,
+    steps,
+    currentStepIndex,
     generationStatus,
     generateStepOptions,
     cancelGeneration,
     submitManualContent,
     updateArtifactBase,
+    setStepInputState,
   } = useWorkbenchStore();
 
   const module = WORKFLOW_MODULES[moduleId];
   const isGenerating = generationStatus === 'loading';
 
-  const [mode, setMode] = useState<InputMode>('auto');
-  const [guidedFields, setGuidedFields] = useState<Record<string, string>>({});
-  const [manualText, setManualText] = useState('');
+  const step = steps[currentStepIndex];
+  const mode: InputMode = step?.inputMode ?? 'auto';
+  const guidedFields: Record<string, string> = step?.guidedFields ?? {};
+  const manualText: string = step?.manualDraft ?? '';
 
+  const setMode = (m: InputMode) => setStepInputState(currentStepIndex, { inputMode: m });
   const setField = (key: string, value: string) =>
-    setGuidedFields((prev) => ({ ...prev, [key]: value }));
+    setStepInputState(currentStepIndex, { guidedFields: { ...guidedFields, [key]: value } });
+  const setManualText = (value: string) =>
+    setStepInputState(currentStepIndex, { manualDraft: value });
 
   const handleGenerate = () => {
     if (mode === 'auto') {

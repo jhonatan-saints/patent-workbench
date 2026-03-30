@@ -75,10 +75,10 @@ function buildText(artifact: PatentArtifact): string {
   out += `Date: ${date}\n`;
   out += `Model: ${artifact.model}\n`;
   out += `Domain: ${artifact.baseDomain}\n`;
-  out += `${sep}\n\n`;
+  out += `${sep}\n`;
 
   if (artifact.idfNumber || artifact.businessGroup || artifact.inventors.length > 0) {
-    out += `FILING DETAILS\n${sep}\n${inventorBlock(artifact)}\n\n`;
+    out += `\n\nFILING DETAILS\n${sep}\n\n${inventorBlock(artifact)}\n`;
   }
 
   for (const moduleId of WORKFLOW_ORDER) {
@@ -86,7 +86,7 @@ function buildText(artifact: PatentArtifact): string {
     if (section) {
       const heading =
         moduleId === 'idea_analysis' ? 'INVENTION FRAMING' : SECTION_LABELS[moduleId].toUpperCase();
-      out += `${heading}\n${sep}\n${section.content}\n\n`;
+      out += `\n\n${heading}\n${sep}\n\n${section.content}\n`;
     }
   }
   return out;
@@ -142,21 +142,26 @@ function buildPDFHTML(artifact: PatentArtifact): string {
 <meta charset="UTF-8"/>
 <title>${titleContent.slice(0, 80)}</title>
 <style>
-  body { font-family: 'Times New Roman', serif; font-size: 12pt; margin: 1in; color: #000; }
-  h1 { font-size: 16pt; text-align: center; margin-bottom: 4px; }
-  h2 { font-size: 13pt; margin-top: 24pt; border-bottom: 1px solid #333; padding-bottom: 4px; }
-  p { line-height: 1.8; text-align: justify; }
-  .meta { font-size: 10pt; color: #555; text-align: center; margin-bottom: 20pt; }
-  table { width: 100%; border-collapse: collapse; margin: 12pt 0; font-size: 11pt; }
-  th { background: #f0f0f0; border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
-  td { border: 1px solid #ccc; padding: 6px 10px; vertical-align: top; }
-  section { margin-bottom: 20pt; }
-  @media print { body { margin: 0.75in; } }
+  @page { margin: 1in; size: letter; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Times New Roman', serif; font-size: 12pt; margin: 0; color: #000; line-height: 1.6; }
+  h1 { font-size: 20pt; font-weight: bold; text-align: center; margin: 0 0 6pt 0; }
+  h2 { font-size: 13pt; font-weight: bold; margin: 28pt 0 6pt 0; border-bottom: 1.5px solid #333; padding-bottom: 4pt; }
+  p { line-height: 1.8; text-align: justify; margin: 0 0 10pt 0; }
+  .meta { font-size: 10pt; color: #555; text-align: center; margin-bottom: 28pt; }
+  table { width: 100%; border-collapse: collapse; margin: 10pt 0 18pt 0; font-size: 11pt; }
+  th { background: #f0f0f0; border: 1px solid #bbb; padding: 6px 10px; text-align: left; font-weight: bold; }
+  td { border: 1px solid #bbb; padding: 6px 10px; vertical-align: top; }
+  section { margin-bottom: 0; }
+  @media print {
+    h2 { page-break-after: avoid; }
+    section { page-break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
   <h1>${titleContent}</h1>
-  <p class="meta">Patent Application Draft · ${date} · ${artifact.model.split(':')[0]}</p>
+  <p class="meta">Patent Application Draft &nbsp;·&nbsp; ${date} &nbsp;·&nbsp; ${artifact.model.split(':')[0]}</p>
 
   ${filingBlock}
 
@@ -173,17 +178,14 @@ async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
 
   const children: Paragraph[] = [];
 
-  // Title
+  // Title + meta
   children.push(
     new Paragraph({
       text: titleContent,
       heading: HeadingLevel.TITLE,
       alignment: AlignmentType.CENTER,
       spacing: { after: 200 },
-    })
-  );
-
-  children.push(
+    }),
     new Paragraph({
       children: [
         new TextRun({ text: `Patent Application Draft  ·  ${date}  ·  ${artifact.model.split(':')[0]}`, size: 20, color: '666666' }),
@@ -283,7 +285,7 @@ function formatIcon(format: ExportFormat) {
 }
 
 export function ExportPanel() {
-  const { artifact } = useWorkbenchStore();
+  const { artifact, saveCurrentSession } = useWorkbenchStore();
   const [format, setFormat] = useState<ExportFormat>('docx');
   const [exporting, setExporting] = useState(false);
 
@@ -294,6 +296,7 @@ export function ExportPanel() {
   const handleExport = async () => {
     if (!artifact) return;
     setExporting(true);
+    saveCurrentSession();
     const date = new Date().toISOString().split('T')[0];
     const stem = `patent-draft-${date}`;
 
@@ -304,11 +307,16 @@ export function ExportPanel() {
         downloadFile(buildText(artifact), `${stem}.txt`, 'text/plain');
       } else if (format === 'pdf') {
         const html = buildPDFHTML(artifact);
-        const win = window.open('', '_blank', 'width=900,height=700');
+        const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+        const win = window.open(blobUrl, '_blank');
         if (win) {
-          win.document.write(html);
-          win.document.close();
-          setTimeout(() => win.print(), 400);
+          win.addEventListener('load', () => {
+            setTimeout(() => {
+              win.print();
+              URL.revokeObjectURL(blobUrl);
+            }, 300);
+          });
         }
       } else if (format === 'docx') {
         const blob = await buildDocx(artifact);

@@ -66,6 +66,9 @@ export interface WorkflowStep {
   selectedOption: GeneratedOption | null;
   promptTokens: number;
   completionTokens: number;
+  inputMode: InputMode;
+  guidedFields: Record<string, string>;
+  manualDraft: string;
 }
 
 export interface ArtifactSection {
@@ -105,6 +108,12 @@ export interface WorkflowSession {
   artifact: PatentArtifact;
   model: string;
   totalTokens: number;
+  stepInputStates?: Array<{
+    moduleId: WorkflowModuleId;
+    inputMode: InputMode;
+    guidedFields: Record<string, string>;
+    manualDraft: string;
+  }>;
 }
 
 // UI state
@@ -136,6 +145,7 @@ export interface WorkbenchState {
   generateStepOptions: (overridePrompt?: string) => Promise<void>;
   cancelGeneration: () => void;
   submitManualContent: (content: string) => void;
+  setStepInputState: (index: number, patch: { inputMode?: InputMode; guidedFields?: Record<string, string>; manualDraft?: string }) => void;
   selectOption: (option: GeneratedOption) => void;
   regenerateOptions: () => void;
   goToStep: (index: number) => void;
@@ -143,6 +153,7 @@ export interface WorkbenchState {
   resetWorkflow: () => void;
   updateSectionContent: (moduleId: WorkflowModuleId, content: string) => void;
   updateArtifactBase: (idea: string, domain: string, constraints: string | undefined) => void;
+  saveCurrentSession: () => void;
   loadSession: (session: WorkflowSession) => void;
   clearSessions: () => void;
   deleteSession: (id: string) => void;
