@@ -1,27 +1,45 @@
 import { Group, Button, Text, Box, Select } from '@mantine/core';
 import { IconFileText, IconMarkdown } from '@tabler/icons-react';
 import { useState } from 'react';
-import { useWorkbenchStore } from '../store/workbench';
+import { useWorkbenchStore } from '@/store/workbench';
+import { WORKFLOW_ORDER } from '@/utils/workflowTemplates';
+import type { PatentArtifact, WorkflowModuleId } from '@/types';
 
 type ExportFormat = 'txt' | 'md';
 
-function buildMarkdown(
-  response: string,
-  section: string,
-  model: string,
-  timestamp: number
-): string {
-  const date = new Date(timestamp).toISOString();
-  return `---
-section: ${section}
-model: ${model}
-generated: ${date}
----
+const SECTION_LABELS: Record<WorkflowModuleId, string> = {
+  idea_analysis: 'Invention Framing',
+  title: 'Title',
+  field: 'Field of Invention',
+  background: 'Background of the Invention',
+  summary: 'Summary of the Invention',
+  claims: 'Claims',
+  description: 'Detailed Description',
+  abstract: 'Abstract',
+};
 
-# Patent Draft — ${section.toUpperCase()}
+function buildMarkdown(artifact: PatentArtifact): string {
+  const date = new Date().toISOString();
+  let content = `---\nidea: ${artifact.baseIdea.replaceAll('\n', ' ').slice(0, 120)}\ndomain: ${artifact.baseDomain}\nmodel: ${artifact.model}\ngenerated: ${date}\n---\n\n# Patent Draft\n\n`;
+  for (const moduleId of WORKFLOW_ORDER) {
+    const section = artifact.sections[moduleId];
+    if (section) {
+      content += `## ${SECTION_LABELS[moduleId]}\n\n${section.content}\n\n`;
+    }
+  }
+  return content;
+}
 
-${response}
-`;
+function buildText(artifact: PatentArtifact): string {
+  const sep = '─'.repeat(48);
+  let content = `PATENT DRAFT\nGenerated: ${new Date().toISOString()}\nModel: ${artifact.model}\n\n${sep}\n\n`;
+  for (const moduleId of WORKFLOW_ORDER) {
+    const section = artifact.sections[moduleId];
+    if (section) {
+      content += `${SECTION_LABELS[moduleId].toUpperCase()}\n${sep}\n${section.content}\n\n`;
+    }
+  }
+  return content;
 }
 
 function downloadFile(content: string, filename: string, mimeType: string) {
@@ -35,21 +53,17 @@ function downloadFile(content: string, filename: string, mimeType: string) {
 }
 
 export function ExportPanel() {
-  const { lastResponse, currentSection, selectedModel } = useWorkbenchStore();
+  const { artifact, workflowPhase } = useWorkbenchStore();
   const [format, setFormat] = useState<ExportFormat>('md');
 
-  if (!lastResponse) return null;
+  if (workflowPhase !== 'preview' || !artifact) return null;
 
   const handleExport = () => {
-    const ts = Date.now();
-    const date = new Date(ts).toISOString().split('T')[0];
-    const sectionLabel = currentSection === 'custom' ? 'custom' : currentSection;
-
+    const date = new Date().toISOString().split('T')[0];
     if (format === 'md') {
-      const content = buildMarkdown(lastResponse, sectionLabel, selectedModel, ts);
-      downloadFile(content, `patent-${sectionLabel}-${date}.md`, 'text/markdown');
+      downloadFile(buildMarkdown(artifact), `patent-draft-${date}.md`, 'text/markdown');
     } else {
-      downloadFile(lastResponse, `patent-${sectionLabel}-${date}.txt`, 'text/plain');
+      downloadFile(buildText(artifact), `patent-draft-${date}.txt`, 'text/plain');
     }
   };
 
@@ -59,10 +73,11 @@ export function ExportPanel() {
         padding: '10px 16px',
         borderTop: '1px solid var(--border)',
         background: 'var(--surface-raised)',
+        flexShrink: 0,
       }}
     >
       <Group gap={8} justify="flex-end">
-        <Text size="xs" c="dimmed" ff="monospace">
+        <Text size="xs" c="var(--text-muted)" ff="monospace">
           Export:
         </Text>
         <Select

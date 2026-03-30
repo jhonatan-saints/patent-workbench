@@ -12,19 +12,18 @@
 
 import { createTheme, localStorageColorSchemeManager } from '@mantine/core';
 
-const mitelBlue: [string, string, string, string, string, string, string, string, string, string] =
-  [
-    '#edf5ff', // 0 — 50
-    '#d9ebff', // 1 — 100
-    '#aad5ff', // 2 — 200
-    '#60b5ff', // 3 — 300
-    '#0a91ff', // 4 — 400 
-    '#0073d0', // 5 — 500
-    '#005fb8', // 6 — 600
-    '#004890', // 7 — 700
-    '#003d77', // 8 — 800
-    '#043262', // 9 — 900
-  ];
+const customBlue = [
+  '#edf5ff', // 50
+  '#d9ebff', // 100
+  '#aad5ff', // 200
+  '#60b5ff', // 300
+  '#0a91ff', // 400 
+  '#0073d0', // 500
+  '#005fb8', // 600
+  '#004890', // 700
+  '#003d77', // 800
+  '#043262', // 900
+] as const;
 
 export const mantineTheme = createTheme({
   fontFamily: "'IBM Plex Sans', 'Helvetica Neue', sans-serif",
@@ -32,8 +31,8 @@ export const mantineTheme = createTheme({
   headings: {
     fontFamily: "'IBM Plex Sans Condensed', sans-serif",
   },
-  colors: { 'mitel-blue': mitelBlue },
-  primaryColor: 'mitel-blue',
+  colors: { 'custom-blue': customBlue },
+  primaryColor: 'custom-blue',
   primaryShade: { light: 6, dark: 4 },
   defaultRadius: 'sm',
 });

@@ -3,46 +3,40 @@ import {
   Text,
   Group,
   ActionIcon,
-  ScrollArea,
   Box,
-  UnstyledButton,
   Badge,
-  Tooltip,
   Button,
+  ScrollArea,
+  Tooltip,
 } from '@mantine/core';
 import { IconTrash, IconClock, IconX } from '@tabler/icons-react';
-import { useWorkbenchStore } from '../store/workbench';
-import type { GenerationRecord } from '../types';
+import { useWorkbenchStore } from '@/store/workbench';
+import { WORKFLOW_ORDER } from '@/utils/workflowTemplates';
+import type { WorkflowSession } from '@/types';
 
 function formatTime(ts: number): string {
-  const d = new Date(ts);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function HistoryItem({
-  record,
+function SessionItem({
+  session,
   onDelete,
-  onRestore,
 }: Readonly<{
-  record: GenerationRecord;
+  session: WorkflowSession;
   onDelete: () => void;
-  onRestore: () => void;
 }>) {
+  const completedCount = WORKFLOW_ORDER.filter((m) => session.artifact.sections[m]).length;
+
   return (
-    <UnstyledButton
-      onClick={onRestore}
+    <Box
       style={{
-        width: '100%',
         padding: '10px 12px',
         borderRadius: 4,
         border: '1px solid var(--border)',
         background: 'var(--surface)',
-        transition: 'border-color 0.15s ease',
-        cursor: 'pointer',
-        '&:hover': { borderColor: 'var(--accent)' },
       }}
     >
-      <Group justify="space-between" wrap="nowrap">
+      <Group justify="space-between" wrap="nowrap" gap={8}>
         <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
           <Group gap={6} wrap="nowrap">
             <Badge
@@ -56,56 +50,47 @@ function HistoryItem({
                 flexShrink: 0,
               }}
             >
-              {record.section}
+              {completedCount}/{WORKFLOW_ORDER.length}
             </Badge>
-            <Text size="xs" c="dimmed" ff="monospace" style={{ flexShrink: 0 }}>
-              {formatTime(record.timestamp)}
+            <Text size="xs" c="var(--text-muted)" ff="monospace" style={{ flexShrink: 0 }}>
+              {formatTime(session.startedAt)}
             </Text>
           </Group>
           <Text
             size="xs"
-            c="var(--text-primary)"
             style={{
+              color: 'var(--text-primary)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              maxWidth: '100%',
             }}
           >
-            {record.response.slice(0, 80)}...
+            {session.baseIdea.slice(0, 70)}
+            {session.baseIdea.length > 70 ? '...' : ''}
           </Text>
-          <Text size="xs" c="dimmed" ff="monospace">
-            {record.model.split(':')[0]} · {record.promptTokens + record.completionTokens}t
+          <Text size="xs" c="var(--text-muted)" ff="monospace">
+            {session.model.split(':')[0]} · {session.totalTokens}t
           </Text>
         </Stack>
-
-        <Tooltip label="Remove from history">
+        <Tooltip label="Remove session">
           <ActionIcon
             variant="subtle"
             size="xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
+            onClick={onDelete}
             style={{ color: 'var(--text-muted)', flexShrink: 0 }}
           >
             <IconX size={12} />
           </ActionIcon>
         </Tooltip>
       </Group>
-    </UnstyledButton>
+    </Box>
   );
 }
 
-export function HistoryPanel() {
-  const { history, deleteRecord, clearHistory, setPrompt, setSection } = useWorkbenchStore();
+export function SessionsPanel() {
+  const { sessions, deleteSession, clearSessions } = useWorkbenchStore();
 
-  const handleRestore = (record: GenerationRecord) => {
-    setSection(record.section);
-    setPrompt(record.prompt);
-  };
-
-  if (history.length === 0) {
+  if (sessions.length === 0) {
     return (
       <Box
         style={{
@@ -115,11 +100,11 @@ export function HistoryPanel() {
           textAlign: 'center',
         }}
       >
-        <IconClock size={20} style={{ color: 'var(--text-muted)', marginBottom: 8 }} />
-        <Text size="xs" c="dimmed" ff="monospace">
-          No history yet.
+        <IconClock size={25} style={{ color: 'var(--text-muted)', marginBottom: 4 }} />
+        <Text size="xs" c="var(--text-muted)" ff="monospace" style={{ lineHeight: 1.7 }}>
+          No sessions yet.
           <br />
-          Generated content appears here.
+          Completed workflows appear here.
         </Text>
       </Box>
     );
@@ -132,32 +117,31 @@ export function HistoryPanel() {
           size="xs"
           fw={700}
           tt="uppercase"
-          c="dimmed"
-          className="tracking-[2px]"
-          style={{ fontFamily: 'var(--font-mono)' }}
+          c="var(--text-muted)"
+          ff="monospace"
+          style={{ letterSpacing: '0.1em' }}
         >
-          History ({history.length})
+          Sessions ({sessions.length})
         </Text>
         <Button
           variant="subtle"
           size="xs"
           color="red"
           leftSection={<IconTrash size={12} />}
-          onClick={clearHistory}
+          onClick={clearSessions}
           style={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}
         >
           Clear
         </Button>
       </Group>
 
-      <ScrollArea.Autosize mah={400}>
+      <ScrollArea.Autosize mah={420}>
         <Stack gap={6}>
-          {history.map((record) => (
-            <HistoryItem
-              key={record.id}
-              record={record}
-              onDelete={() => deleteRecord(record.id)}
-              onRestore={() => handleRestore(record)}
+          {sessions.map((session) => (
+            <SessionItem
+              key={session.id}
+              session={session}
+              onDelete={() => deleteSession(session.id)}
             />
           ))}
         </Stack>

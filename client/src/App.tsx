@@ -1,63 +1,52 @@
-import { useState } from 'react';
 import {
   AppShell,
   Group,
   Text,
   Divider,
-  Stack,
   Box,
-  Tabs,
-  ScrollArea,
   ActionIcon,
   Tooltip,
+  ScrollArea,
   useMantineColorScheme,
   useComputedColorScheme,
 } from '@mantine/core';
-import {
-  IconGavel,
-  IconPencil,
-  IconHistory,
-  IconWand,
-  IconSun,
-  IconMoon,
-} from '@tabler/icons-react';
-import { StatusIndicator } from './components/StatusIndicator';
-import { SectionSelector } from './components/SectionSelector';
-import { TemplateBuilder } from './components/TemplateBuilder';
-import { PromptInput } from './components/PromptInput';
-import { ResultDisplay } from './components/ResultDisplay';
-import { ExportPanel } from './components/ExportPanel';
-import { HistoryPanel } from './components/HistoryPanel';
-import { TokenMeter } from './components/TokenMeter';
-import { useWorkbenchStore } from './store/workbench';
+import { IconGavel, IconHistory, IconSun, IconMoon } from '@tabler/icons-react';
+import { StatusIndicator } from '@/components/StatusIndicator';
+import { StepProgress } from '@/components/workflow/StepProgress';
+import { IdeaInputStep } from '@/components/workflow/IdeaInputStep';
+import { OptionsPanel } from '@/components/workflow/OptionsPanel';
+import { ArtifactPreview } from '@/components/workflow/ArtifactPreview';
+import { PreviewPhase } from '@/components/workflow/PreviewPhase';
+import { SessionsPanel } from '@/components/workflow/SessionsPanel';
+import { useWorkbenchStore } from '@/store/workbench';
 
 function ThemeToggle() {
   const { setColorScheme } = useMantineColorScheme();
   const scheme = useComputedColorScheme('dark');
-
   return (
     <Tooltip label={scheme === 'dark' ? 'Switch to light' : 'Switch to dark'} position="bottom">
       <ActionIcon
+        aria-label='theme toggle'
         variant="subtle"
         size="sm"
         onClick={() => setColorScheme(scheme === 'dark' ? 'light' : 'dark')}
         className="text-fg-muted hover:text-accent"
       >
-        {scheme === 'dark' ? <IconSun size={15} /> : <IconMoon size={15} />}
+        {scheme === 'dark' ? <IconSun size={14} line="true" /> : <IconMoon size={14} />}
       </ActionIcon>
     </Tooltip>
   );
 }
 
 export function App() {
-  const { currentSection } = useWorkbenchStore();
-  const [leftTab, setLeftTab] = useState<'template' | 'prompt'>('template');
-  const isPatentSection = currentSection !== 'custom';
+  const { workflowPhase } = useWorkbenchStore();
+  const isWorking = workflowPhase === 'working';
+  const isPreview = workflowPhase === 'preview';
 
   return (
     <AppShell
       header={{ height: 52 }}
-      navbar={{ width: 220, breakpoint: 'sm' }}
+      navbar={{ width: 255, breakpoint: 'sm' }}
       aside={{ width: 300, breakpoint: 'lg' }}
       padding={0}
       styles={{
@@ -84,7 +73,7 @@ export function App() {
       <AppShell.Header>
         <Group h="100%" px={20} justify="space-between">
           <Group gap={12}>
-            <IconGavel size={18} className="text-accent" />
+            <IconGavel size={20} className="text-accent" />
             <Text
               fw={700}
               size="sm"
@@ -92,130 +81,91 @@ export function App() {
             >
               Patent Workbench
             </Text>
-            <Text
-              size="xs"
-              c="dimmed"
-              ff="monospace"
-              className="pl-3 border-l border-stroke"
-            >
+            <Text size="xs" c="var(--text-muted)" ff="monospace" className="pl-3 border-l border-stroke">
               local-first · zero telemetry
             </Text>
           </Group>
-          <Group gap={8}>
+          <Group gap={8} className='items-center'>
             <ThemeToggle />
             <StatusIndicator />
           </Group>
         </Group>
       </AppShell.Header>
 
-      {/* LEFT NAV */}
+      {/* LEFT NAV — step progress */}
       <AppShell.Navbar>
-        <Box className="h-full overflow-y-auto p-4">
-          <SectionSelector />
+        <Box style={{ height: '100%', overflowY: 'auto' }}>
+          <StepProgress />
         </Box>
       </AppShell.Navbar>
 
       {/* MAIN */}
       <AppShell.Main>
-        <Box
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            height: 'calc(100vh - 52px)',
-            overflow: 'hidden',
-          }}
-        >
-          {/* LEFT PANE — Input */}
-          <Box className="border-r border-stroke flex flex-col overflow-hidden">
-            <Box className="px-5 pt-3 border-b border-stroke bg-surface-raised">
-              <Tabs
-                value={isPatentSection ? leftTab : 'prompt'}
-                onChange={(v) => v && setLeftTab(v as 'template' | 'prompt')}
-                styles={{
-                  tab: {
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                    color: 'var(--text-muted)',
-                    padding: '8px 14px',
-                  },
-                  list: { borderBottom: 'none' },
-                }}
-              >
-                <Tabs.List>
-                  {isPatentSection && (
-                    <Tabs.Tab value="template" leftSection={<IconWand size={12} />}>
-                      Builder
-                    </Tabs.Tab>
-                  )}
-                  <Tabs.Tab value="prompt" leftSection={<IconPencil size={12} />}>
-                    Prompt
-                  </Tabs.Tab>
-                </Tabs.List>
-              </Tabs>
+        {/* Input phase: centered idea form */}
+        {workflowPhase === 'input' && (
+          <ScrollArea style={{ height: 'calc(100vh - 52px)' }}>
+            <IdeaInputStep />
+          </ScrollArea>
+        )}
+
+        {/* Working phase: options (left) + artifact preview (right) */}
+        {isWorking && (
+          <Box
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              height: 'calc(100vh - 52px)',
+              overflow: 'hidden',
+            }}
+          >
+            <Box
+              className="border-r border-stroke flex flex-col overflow-hidden"
+              style={{ height: '100%' }}
+            >
+              <OptionsPanel />
             </Box>
-
-            <ScrollArea className="flex-1">
-              <Box p={20}>
-                {isPatentSection && leftTab === 'template' ? (
-                  <Stack gap={20}>
-                    <TemplateBuilder
-                      section={currentSection}
-                      onApply={() => setLeftTab('prompt')}
-                    />
-                    <TokenMeter />
-                  </Stack>
-                ) : (
-                  <Stack gap={16}>
-                    <TokenMeter />
-                    <PromptInput />
-                  </Stack>
-                )}
-              </Box>
-            </ScrollArea>
-          </Box>
-
-          {/* RIGHT PANE — Output */}
-          <Box className="flex flex-col overflow-hidden">
-            <Box className="px-5 py-4 border-b border-stroke bg-surface-raised">
-              <Stack gap={2}>
-                <Text size="xs" fw={700} tt="uppercase" c="dimmed" ff="monospace" className="tracking-[2px]">
-                  Output
-                </Text>
-                <Text size="xs" c="dimmed">
-                  Generated patent content — review before use
-                </Text>
-              </Stack>
+            <Box className="flex flex-col overflow-hidden" style={{ height: '100%' }}>
+              <ArtifactPreview />
             </Box>
-
-            <ScrollArea className="flex-1">
-              <Box p={20}>
-                <ResultDisplay />
-              </Box>
-            </ScrollArea>
-
-            <ExportPanel />
           </Box>
-        </Box>
+        )}
+
+        {/* Preview phase: full document view */}
+        {isPreview && (
+          <Box
+            style={{
+              height: 'calc(100vh - 52px)',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <PreviewPhase />
+          </Box>
+        )}
       </AppShell.Main>
 
-      {/* RIGHT ASIDE — History */}
+      {/* RIGHT ASIDE — sessions */}
       <AppShell.Aside>
-        <Box className="h-full flex flex-col p-4">
+        <Box style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: 16 }}>
           <Group gap={8} mb={6}>
             <IconHistory size={14} className="text-accent" />
-            <Text size="xs" fw={700} tt="uppercase" ff="monospace" className="text-accent tracking-[2px]">
-              Session History
+            <Text
+              size="xs"
+              fw={700}
+              tt="uppercase"
+              ff="monospace"
+              className="text-accent tracking-[2px]"
+            >
+              Sessions
             </Text>
           </Group>
-          <Text size="xs" c="dimmed" mb={12}>
+          <Text size="xs" c="var(--text-muted)" mb={12}>
             In-memory only · cleared on exit
           </Text>
           <Divider mb={14} style={{ borderColor: 'var(--border)' }} />
-          <Box className="flex-1 overflow-hidden">
-            <HistoryPanel />
+          <Box style={{ flex: 1, overflow: 'hidden' }}>
+            <SessionsPanel />
           </Box>
         </Box>
       </AppShell.Aside>

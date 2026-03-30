@@ -5,7 +5,7 @@ import type {
   ApiResult,
   StatusResponse,
   ModelsResponse,
-} from '../types';
+} from '@/types';
 
 const BASE_URL = '/api';
 
