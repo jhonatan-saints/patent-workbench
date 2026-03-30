@@ -15,6 +15,8 @@ npm install
 npm run dev
 ```
 
+Copy `.env.example` to `.env` and adjust as needed before starting.
+
 ## Scripts
 
 | Script | Description |
@@ -34,9 +36,17 @@ Health check. Returns server status, LLM reachability, and round-trip latency to
 { "success": true, "data": { "server": "ok", "llm": "ok", "latency": 12 } }
 ```
 
+### `GET /models`
+
+Returns the list of models currently available in the local Ollama instance.
+
+```json
+{ "success": true, "data": { "models": ["mistral", "llama3:8b"] } }
+```
+
 ### `POST /generate`
 
-Forward a prompt to the local LLM and return the response.
+Forward a prompt to the local LLM and return the response with token counts.
 
 Request body:
 
@@ -47,7 +57,14 @@ Request body:
 Success response:
 
 ```json
-{ "success": true, "data": { "response": "string" } }
+{
+  "success": true,
+  "data": {
+    "response": "string",
+    "promptTokens": 120,
+    "completionTokens": 340
+  }
+}
 ```
 
 Example:
@@ -61,27 +78,31 @@ curl -X POST http://localhost:3001/generate \
 ## Request pipeline
 
 1. **Helmet** — sets security headers (CSP, HSTS, X-Frame-Options, etc.)
-2. **CORS** — configurable allowed origin
+2. **CORS** — configurable allowed origin (`CORS_ORIGIN`)
 3. **Compression** — gzip response bodies
-4. **Rate limiting** — global limit + stricter per-IP limit on `/generate` (see env vars)
-5. **Zod validation** — rejects malformed request bodies with HTTP 400
-6. **Sanitize middleware** — trims whitespace, enforces max prompt length, detects and rejects prompt injection patterns (e.g. "ignore instructions", "act as", "jailbreak")
-7. **LLM service** — calls Ollama `/api/generate` with a 2-minute timeout via `AbortController`
-8. **Error handler** — centralized; never exposes stack traces to the client
+4. **Request ID** — UUID injected into request headers for tracing
+5. **Rate limiting** — global limit + stricter per-IP limit on `/generate` (see env vars)
+6. **Zod validation** — rejects malformed request bodies with HTTP 400
+7. **Sanitize middleware** — trims whitespace, enforces max prompt length, detects and rejects prompt injection patterns (e.g. "ignore instructions", "act as", "jailbreak")
+8. **LLM service** — calls Ollama `/api/generate` with a 2-minute timeout via `AbortController`
+9. **Error handler** — centralised; never exposes stack traces to the client
 
 ## Configuration
+
+Copy `.env.example` to `.env`:
 
 | Variable | Default | Description |
 | --- | --- | --- |
 | `PORT` | `3001` | Server port |
+| `NODE_ENV` | `development` | Node environment |
 | `OLLAMA_URL` | `http://localhost:11434` | Ollama base URL |
-| `CORS_ORIGIN` | `http://localhost:3003` | Allowed CORS origin |
+| `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
 | `BODY_LIMIT` | `128kb` | Max JSON body size |
 | `RATE_WINDOW_MS` | `900000` | Rate-limit window in ms (15 min) |
 | `RATE_MAX` | `100` | Max requests per window (global) |
-| `PROMPT_MAX_LENGTH` | `2000` | Max prompt length in characters |
+| `PROMPT_MAX_LENGTH` | `4000` | Max prompt length in characters |
 | `LOG_LEVEL` | `info` | Pino log level |
-| `SHUTDOWN_TIMEOUT_MS` | `30000` | Graceful shutdown timeout |
+| `SHUTDOWN_TIMEOUT_MS` | `30000` | Graceful shutdown timeout in ms |
 
 ## TODOs
 
