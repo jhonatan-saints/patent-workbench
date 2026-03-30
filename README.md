@@ -1,6 +1,6 @@
 # Patent Workbench - Local LLM Assistant for Patent Ideation
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
 ![Status](https://img.shields.io/badge/status-active-success)
 
@@ -90,9 +90,23 @@ For client architecture details see [client/README.md](client/README.md).
 - Open focused, small PRs.
 - Run `npm run lint` and `npm run format` before submitting.
 
-## License
+## Licensing notes for contributors
 
-MIT
+- Public repo: client utilities, UI components, generic `workflowTemplates` and tooling are released under **Apache‑2.0**. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+- Proprietary artifacts: the REG algorithm and company/enterprise templates are proprietary and not published here. Those are licensed separately under a commercial EULA (sample: [EULA_PROPRIETARY.md](EULA_PROPRIETARY.md)).
+
+If you plan to contribute code that depends on proprietary artifacts, please open an issue first to discuss a clean separation so public contributions remain license‑compatible.
+
+## Licensing
+
+This project is split between open-source components and proprietary enterprise components:
+
+- **Open-source (client utilities, UI, generic templates, and tooling):**
+ Released under the Apache-2.0 license. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+- **Proprietary (REG algorithm and enterprise templates):**
+ The core REG algorithm and company-specific template packages are proprietary and are not included in the public repository. Enterprise deployments and those proprietary artifacts are licensed separately under a commercial EULA. See [EULA_PROPRIETARY.md](EULA_PROPRIETARY.md) for a sample of the proprietary license used for private packages.
+
+If you are interested in an on-premise enterprise license, a POC, or a private build that includes the REG algorithm and enterprise templates, please contact the maintainers.
 
 ## Contact
 
