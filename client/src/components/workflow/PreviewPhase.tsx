@@ -142,6 +142,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
 
 export function PreviewPhase() {
   const { artifact, resetWorkflow, steps, goToStep, workflowPhase } = useWorkbenchStore();
+  const [zoom, setZoom] = useState(1);
   if (!artifact) return null;
 
   const completedSections = WORKFLOW_ORDER.filter((m) => artifact.sections[m]);
@@ -230,7 +231,9 @@ export function PreviewPhase() {
             style={{
               maxWidth: 800,
               margin: '0 auto',
-              background: '#ffffff',
+              background: '#f4f0e8',
+              zoom: zoom,
+              transformOrigin: 'top center',
               color: '#111',
               padding: '72px 80px',
               boxShadow: '0 4px 32px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.10)',
@@ -263,7 +266,7 @@ export function PreviewPhase() {
         </Box>
       </ScrollArea>
 
-      <ExportPanel />
+      <ExportPanel zoom={zoom} setZoom={setZoom} />
     </Stack>
   );
 }
