@@ -1,19 +1,7 @@
 import { Box, Stack, Text, Group, ScrollArea, Badge, Divider } from '@mantine/core';
 import { IconFileText } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
-import { WORKFLOW_ORDER } from '@/utils/workflowTemplates';
-import type { WorkflowModuleId } from '@/types';
-
-const SECTION_LABELS: Record<WorkflowModuleId, string> = {
-  idea_analysis: 'Invention Framing',
-  title: 'Title',
-  field: 'Field of Invention',
-  background: 'Background',
-  summary: 'Summary of the Invention',
-  claims: 'Claims',
-  description: 'Detailed Description',
-  abstract: 'Abstract',
-};
+import { WORKFLOW_ORDER, SECTION_LABELS } from '@/utils/workflowTemplates';
 
 export function ArtifactPreview() {
   const { artifact, steps } = useWorkbenchStore();
@@ -92,9 +80,8 @@ export function ArtifactPreview() {
                     <Text
                       style={{
                         color: 'var(--text-primary)',
-                        fontFamily:
-                          moduleId === 'title' ? 'var(--font-display)' : 'var(--font-serif)',
-                        fontSize: moduleId === 'title' ? 20 : 14,
+                        fontFamily: 'var(--font-serif)',
+                        fontSize: 14,
                         lineHeight: 1.7,
                         whiteSpace: 'pre-wrap',
                       }}

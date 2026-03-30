@@ -1,6 +1,5 @@
 import type { WorkflowModuleId, PatentArtifact } from '@/types';
 
-// Format instruction
 const THREE_OPTIONS_FORMAT = `
 
 Return EXACTLY 3 distinct options. Use this format with no other text:
@@ -14,7 +13,6 @@ OPTION 2:
 OPTION 3:
 [content]`;
 
-// Guided field definition
 export interface GuidedField {
   key: string;
   label: string;
@@ -22,19 +20,16 @@ export interface GuidedField {
   type: 'text' | 'textarea';
 }
 
-// Artifact context builder (token-optimized)
 export const WORKFLOW_ORDER: WorkflowModuleId[] = [
-  'idea_analysis',
-  'title',
-  'field',
-  'background',
-  'summary',
-  'claims',
-  'description',
-  'abstract',
+  'problem',
+  'previous_solutions',
+  'differences',
+  'invention_summary',
+  'variations',
+  'other_applications',
+  'full_description',
 ];
 
-// Keep prior sections short — 200 chars each, rolling last 3 only
 const MAX_SECTION_CHARS = 200;
 const MAX_PRIOR_SECTIONS = 3;
 
@@ -58,16 +53,13 @@ export function buildArtifactContext(
 
   const priorModules = WORKFLOW_ORDER.slice(0, stopIdx)
     .filter((m) => artifact.sections[m])
-    .slice(-MAX_PRIOR_SECTIONS); // rolling window
+    .slice(-MAX_PRIOR_SECTIONS);
 
   if (priorModules.length > 0) {
     lines.push('', 'Prior sections:');
     for (const m of priorModules) {
       const section = artifact.sections[m]!;
-      const label =
-        m === 'idea_analysis'
-          ? 'Framing'
-          : m.charAt(0).toUpperCase() + m.slice(1);
+      const label = SECTION_LABELS[m];
       lines.push(`[${label}] ${truncate(section.content)}`);
     }
   }
@@ -75,19 +67,16 @@ export function buildArtifactContext(
   return lines.join('\n');
 }
 
-// Section labels
 export const SECTION_LABELS: Record<WorkflowModuleId, string> = {
-  idea_analysis: 'Invention Framing',
-  title: 'Title',
-  field: 'Field of Invention',
-  background: 'Background of the Invention',
-  summary: 'Summary of the Invention',
-  claims: 'Claims',
-  description: 'Detailed Description',
-  abstract: 'Abstract',
+  problem: 'Problem Description',
+  previous_solutions: 'Previous Solutions',
+  differences: 'Key Differences',
+  invention_summary: 'Invention Summary',
+  variations: 'Possible Variations',
+  other_applications: 'Other Applications',
+  full_description: 'Full Description',
 };
 
-// Module definitions
 export interface WorkflowModule {
   label: string;
   description: string;
@@ -98,287 +87,247 @@ export interface WorkflowModule {
 }
 
 export const WORKFLOW_MODULES: Record<WorkflowModuleId, WorkflowModule> = {
-  idea_analysis: {
-    label: 'Idea Analysis',
-    description: 'Frame the invention technically',
-    systemContext: `You are a USPTO patent attorney analyzing an invention concept.
-Generate 3 distinct technical framings. Each must:
-- Identify the core technical problem (1 sentence)
-- Describe the novel technical approach (1–2 sentences)
-- State the primary patent claim angle (1 sentence)
-Keep each to 3–5 sentences total.${THREE_OPTIONS_FORMAT}`,
-    buildPrompt: (artifact) =>
-      `Invention: ${artifact.baseIdea}
-Domain: ${artifact.baseDomain || 'General'}
-${artifact.constraints ? `Notes: ${artifact.constraints}` : ''}
-
-Generate 3 distinct technical framings for patent prosecution.`,
-    guidedFields: [
-      {
-        key: 'problem',
-        label: 'Core Technical Problem',
-        placeholder: 'e.g., Existing NLP systems expose private data to cloud models...',
-        type: 'textarea',
-      },
-      {
-        key: 'approach',
-        label: 'Novel Technical Approach',
-        placeholder: 'e.g., Schema-level abstraction with local entity recognition...',
-        type: 'textarea',
-      },
-    ],
-    buildGuidedPrompt: (artifact, fields) =>
-      `Invention: ${artifact.baseIdea}
-Domain: ${artifact.baseDomain || 'General'}
-Core problem: ${fields['problem'] || ''}
-Novel approach: ${fields['approach'] || ''}
-
-Generate 3 technical framings for patent prosecution based on these specifics.`,
-  },
-
-  title: {
-    label: 'Title',
-    description: 'Generate patent title candidates',
-    systemContext: `You are a USPTO patent attorney.
-Generate 3 candidate patent titles. Each must:
-- Not start with "A", "An", or "The"
-- Describe structure or function, not advantages
-- Be technically precise and legally appropriate
-- Be under 500 characters${THREE_OPTIONS_FORMAT}`,
-    buildPrompt: (artifact) =>
-      `${buildArtifactContext(artifact, 'title')}
-
-Generate 3 patent title candidates.`,
-    guidedFields: [
-      {
-        key: 'key_terms',
-        label: 'Key Technical Terms',
-        placeholder: 'e.g., schema-level abstraction, local entity recognition, NLP querying',
-        type: 'text',
-      },
-      {
-        key: 'emphasis',
-        label: 'Technical Aspect to Emphasize',
-        placeholder: 'e.g., privacy-preserving, model-agnostic, real-time',
-        type: 'text',
-      },
-    ],
-    buildGuidedPrompt: (artifact, fields) =>
-      `${buildArtifactContext(artifact, 'title')}
-Key terms to include: ${fields['key_terms'] || ''}
-Emphasis: ${fields['emphasis'] || ''}
-
-Generate 3 patent title candidates incorporating these terms.`,
-  },
-
-  field: {
-    label: 'Field of Invention',
-    description: 'Define the technical field',
-    systemContext: `You are a patent drafter. Write the "Field of the Invention" section.
+  problem: {
+    label: 'Problem Description',
+    description: 'Describe the problem this invention solves',
+    systemContext: `You are a patent analyst writing the Problem Description section of an IDF (Invention Disclosure Form).
 Generate 3 options. Each must:
-- State the technical field in 2–4 sentences
-- Use formal patent language
-- Not claim novelty${THREE_OPTIONS_FORMAT}`,
-    buildPrompt: (artifact) =>
-      `${buildArtifactContext(artifact, 'field')}
-
-Generate 3 options for the Field of the Invention section.`,
-    guidedFields: [
-      {
-        key: 'industry',
-        label: 'Industry / Sector',
-        placeholder: 'e.g., Software, Medical Devices, Telecommunications',
-        type: 'text',
-      },
-      {
-        key: 'sub_domain',
-        label: 'Specific Sub-domain',
-        placeholder: 'e.g., Natural Language Processing, Computer Vision, Robotics',
-        type: 'text',
-      },
-    ],
-    buildGuidedPrompt: (artifact, fields) =>
-      `${buildArtifactContext(artifact, 'field')}
-Industry: ${fields['industry'] || ''}
-Sub-domain: ${fields['sub_domain'] || ''}
-
-Generate 3 Field of the Invention options for this industry and sub-domain.`,
-  },
-
-  background: {
-    label: 'Background',
-    description: 'Describe prior art and the problem',
-    systemContext: `You are a patent attorney writing the Background of the Invention.
-Generate 3 options. Each must:
-- Describe prior art objectively (no disparagement)
-- Identify the technical problem or need
-- Use formal, precise technical language
+- Clearly articulate the business or technical problem that motivated the invention
+- Explain why existing approaches fail or are inadequate
+- Be written in plain, clear language (not legal jargon)
 - Be 2–4 paragraphs${THREE_OPTIONS_FORMAT}`,
     buildPrompt: (artifact) =>
-      `${buildArtifactContext(artifact, 'background')}
+      `${buildArtifactContext(artifact, 'problem')}
 
-Generate 3 Background of the Invention options.`,
+Generate 3 Problem Description options for this invention.`,
     guidedFields: [
       {
-        key: 'prior_art',
-        label: 'Prior Art Systems / Methods to Mention',
-        placeholder: 'e.g., transformer-based NL-to-SQL systems, cloud data analytics platforms',
+        key: 'pain_point',
+        label: 'Core Pain Point',
+        placeholder: 'e.g., Agents cannot determine customer emotional state before a call...',
         type: 'textarea',
       },
       {
-        key: 'problems',
-        label: 'Key Technical Problems to Address',
-        placeholder: 'e.g., data exposure risk, context window limitations, high API costs',
+        key: 'impact',
+        label: 'Business / User Impact',
+        placeholder: 'e.g., Leads to suboptimal call routing and poor customer satisfaction...',
         type: 'textarea',
       },
     ],
     buildGuidedPrompt: (artifact, fields) =>
-      `${buildArtifactContext(artifact, 'background')}
-Prior art: ${fields['prior_art'] || ''}
-Problems: ${fields['problems'] || ''}
+      `${buildArtifactContext(artifact, 'problem')}
+Core pain point: ${fields['pain_point'] || ''}
+Business impact: ${fields['impact'] || ''}
 
-Generate 3 Background of the Invention options addressing these prior art and problems.`,
+Generate 3 Problem Description options based on these specifics.`,
   },
 
-  summary: {
-    label: 'Summary',
-    description: 'Summarize the invention and advantages',
-    systemContext: `You are a patent attorney drafting the Summary of the Invention.
+  previous_solutions: {
+    label: 'Previous Solutions',
+    description: 'Describe existing approaches and their limitations',
+    systemContext: `You are a patent analyst writing the Previous Solutions section of an IDF.
 Generate 3 options. Each must:
-- Describe the invention at a high level
-- State key features and optional embodiments
-- Use "the invention provides…" or "in one embodiment…" language
+- Describe current methods or technologies used to address the problem
+- Explain their limitations, gaps, or drawbacks
+- Be objective and factual (no disparagement)
 - Be 2–3 paragraphs${THREE_OPTIONS_FORMAT}`,
     buildPrompt: (artifact) =>
-      `${buildArtifactContext(artifact, 'summary')}
+      `${buildArtifactContext(artifact, 'previous_solutions')}
 
-Generate 3 Summary of the Invention options.`,
+Generate 3 Previous Solutions options describing existing approaches and their limitations.`,
     guidedFields: [
       {
-        key: 'key_features',
-        label: 'Key Features to Highlight',
-        placeholder: 'e.g., schema-only model access, local anonymization, function-call architecture',
+        key: 'existing_methods',
+        label: 'Existing Methods / Technologies',
+        placeholder: 'e.g., IVR systems, caller-ID, customer forms, sentiment analysis...',
         type: 'textarea',
       },
       {
-        key: 'embodiments',
-        label: 'Number / Type of Embodiments',
-        placeholder: 'e.g., 2 embodiments: standalone app and cloud-hybrid mode',
+        key: 'limitations',
+        label: 'Key Limitations',
+        placeholder: 'e.g., Relies on self-reporting, reactive not proactive, indirect detection...',
+        type: 'textarea',
+      },
+    ],
+    buildGuidedPrompt: (artifact, fields) =>
+      `${buildArtifactContext(artifact, 'previous_solutions')}
+Existing methods: ${fields['existing_methods'] || ''}
+Limitations: ${fields['limitations'] || ''}
+
+Generate 3 Previous Solutions options.`,
+  },
+
+  differences: {
+    label: 'Key Differences',
+    description: 'Explain what makes this invention novel',
+    systemContext: `You are a patent analyst writing the Differences with Previous Solutions section of an IDF.
+Generate 3 options. Each must:
+- Clearly articulate how this invention differs from prior approaches
+- Highlight novel technical elements or methods
+- Explain why these differences matter (the advantage they confer)
+- Be 2–3 paragraphs${THREE_OPTIONS_FORMAT}`,
+    buildPrompt: (artifact) =>
+      `${buildArtifactContext(artifact, 'differences')}
+
+Generate 3 options explaining how this invention differs from previous solutions.`,
+    guidedFields: [
+      {
+        key: 'novel_elements',
+        label: 'Novel Technical Elements',
+        placeholder: 'e.g., Real-time facial expression recognition using ONNX models...',
+        type: 'textarea',
+      },
+      {
+        key: 'advantage',
+        label: 'Key Advantage Over Prior Art',
+        placeholder: 'e.g., Proactive emotional state detection before call connection...',
+        type: 'textarea',
+      },
+    ],
+    buildGuidedPrompt: (artifact, fields) =>
+      `${buildArtifactContext(artifact, 'differences')}
+Novel elements: ${fields['novel_elements'] || ''}
+Key advantage: ${fields['advantage'] || ''}
+
+Generate 3 Differences with Previous Solutions options.`,
+  },
+
+  invention_summary: {
+    label: 'Invention Summary',
+    description: 'High-level overview of the invention',
+    systemContext: `You are a patent analyst writing the Invention Summary section of an IDF.
+Generate 3 options. Each must:
+- Describe the invention at a high level using accessible language
+- Reference key technologies or standards used (e.g., ONNX, FER, etc.)
+- Include market context or scale if relevant
+- Be 2–4 paragraphs${THREE_OPTIONS_FORMAT}`,
+    buildPrompt: (artifact) =>
+      `${buildArtifactContext(artifact, 'invention_summary')}
+
+Generate 3 Invention Summary options.`,
+    guidedFields: [
+      {
+        key: 'core_method',
+        label: 'Core Method / Technology',
+        placeholder: 'e.g., Facial Expression Recognition via ONNX deep learning models...',
+        type: 'textarea',
+      },
+      {
+        key: 'market_context',
+        label: 'Market Context (optional)',
+        placeholder: 'e.g., Emotion recognition market projected at $91B by 2024...',
         type: 'text',
       },
     ],
     buildGuidedPrompt: (artifact, fields) =>
-      `${buildArtifactContext(artifact, 'summary')}
-Key features: ${fields['key_features'] || ''}
-Embodiments: ${fields['embodiments'] || ''}
+      `${buildArtifactContext(artifact, 'invention_summary')}
+Core method: ${fields['core_method'] || ''}
+Market context: ${fields['market_context'] || ''}
 
-Generate 3 Summary of the Invention options emphasizing these features.`,
+Generate 3 Invention Summary options.`,
   },
 
-  claims: {
-    label: 'Claims',
-    description: 'Draft independent and dependent claims',
-    systemContext: `You are a USPTO patent attorney drafting patent claims.
-Generate 3 distinct claim sets. Rules:
-- Claim 1 must be an independent claim (broadest scope)
-- Each claim is one sentence ending with a period
-- Dependent claims: "The [X] of claim N, wherein…"
-- Draft 1 independent + 2–3 dependent claims per option
-- Use "comprising" (open-ended), not "consisting of"${THREE_OPTIONS_FORMAT}`,
+  variations: {
+    label: 'Possible Variations',
+    description: 'Alternative implementations and embodiments',
+    systemContext: `You are a patent analyst writing the Possible Variations section of an IDF.
+Generate 3 options. Each must:
+- Describe alternative implementations or embodiments of the invention
+- Include variations that broaden patent scope
+- Suggest adjacent use cases or deployment scenarios
+- Be 2–3 paragraphs${THREE_OPTIONS_FORMAT}`,
     buildPrompt: (artifact) =>
-      `${buildArtifactContext(artifact, 'claims')}
+      `${buildArtifactContext(artifact, 'variations')}
 
-Generate 3 sets of patent claims.`,
+Generate 3 Possible Variations options for this invention.`,
     guidedFields: [
       {
-        key: 'independent_focus',
-        label: 'Focus of the Independent Claim',
-        placeholder: 'e.g., A computer-implemented method for privacy-preserving data visualization…',
+        key: 'alt_implementations',
+        label: 'Alternative Implementations',
+        placeholder: 'e.g., Wearable devices, smart watch integration, server-side processing...',
         type: 'textarea',
       },
       {
-        key: 'dependent_aspects',
-        label: 'Aspects for Dependent Claims',
-        placeholder: 'e.g., local entity recognition, function-call mechanism, dynamic visualization selection',
+        key: 'embodiments',
+        label: 'Embodiment Variations',
+        placeholder: 'e.g., Real-time vs batch processing, single-user vs multi-user...',
+        type: 'text',
+      },
+    ],
+    buildGuidedPrompt: (artifact, fields) =>
+      `${buildArtifactContext(artifact, 'variations')}
+Alternative implementations: ${fields['alt_implementations'] || ''}
+Embodiment variations: ${fields['embodiments'] || ''}
+
+Generate 3 Possible Variations options.`,
+  },
+
+  other_applications: {
+    label: 'Other Applications',
+    description: 'Additional use cases beyond the primary application',
+    systemContext: `You are a patent analyst writing the Other Applications section of an IDF.
+Generate 3 options. Each must:
+- Identify other industries or domains where the invention could be applied
+- Be specific about how the technology transfers to each context
+- Be 2–3 paragraphs${THREE_OPTIONS_FORMAT}`,
+    buildPrompt: (artifact) =>
+      `${buildArtifactContext(artifact, 'other_applications')}
+
+Generate 3 Other Applications options for this invention.`,
+    guidedFields: [
+      {
+        key: 'industries',
+        label: 'Target Industries / Domains',
+        placeholder: 'e.g., Healthcare diagnostics, autonomous vehicles, retail analytics...',
+        type: 'textarea',
+      },
+      {
+        key: 'use_cases',
+        label: 'Specific Use Cases',
+        placeholder: 'e.g., Detecting driver fatigue, measuring crowd mood in retail...',
         type: 'textarea',
       },
     ],
     buildGuidedPrompt: (artifact, fields) =>
-      `${buildArtifactContext(artifact, 'claims')}
-Independent claim focus: ${fields['independent_focus'] || ''}
-Dependent claim aspects: ${fields['dependent_aspects'] || ''}
+      `${buildArtifactContext(artifact, 'other_applications')}
+Industries: ${fields['industries'] || ''}
+Use cases: ${fields['use_cases'] || ''}
 
-Generate 3 claim sets with 1 independent + 2–3 dependent claims each.`,
+Generate 3 Other Applications options.`,
   },
 
-  description: {
-    label: 'Detailed Description',
-    description: 'Write preferred embodiments description',
-    systemContext: `You are a patent attorney writing the Detailed Description of Preferred Embodiments.
+  full_description: {
+    label: 'Full Description',
+    description: 'Complete technical description of the invention',
+    systemContext: `You are a patent attorney writing the Full Description section of an IDF.
 Generate 3 options. Each must:
-- Enable a person skilled in the art to practice the invention
-- Describe at least one embodiment in full detail
-- Reference drawings with "FIG. 1 shows…" (hypothetical figures are fine)
-- Be 3–5 paragraphs${THREE_OPTIONS_FORMAT}`,
+- Provide a complete technical description enabling a person skilled in the art to practice the invention
+- Include background context, the core method, and implementation details
+- Reference figures where appropriate (e.g., "Figure 1 illustrates...")
+- Be 4–6 paragraphs${THREE_OPTIONS_FORMAT}`,
     buildPrompt: (artifact) =>
-      `${buildArtifactContext(artifact, 'description')}
+      `${buildArtifactContext(artifact, 'full_description')}
 
-Generate 3 Detailed Description options.`,
+Generate 3 Full Description options with complete technical detail.`,
     guidedFields: [
-      {
-        key: 'embodiments',
-        label: 'Embodiments to Detail',
-        placeholder: 'e.g., primary embodiment with local DB, second embodiment with cloud schema proxy',
-        type: 'textarea',
-      },
       {
         key: 'components',
-        label: 'Key Components / Elements',
-        placeholder: 'e.g., schema extractor, local NER model, query generator, visualization dispatcher',
+        label: 'Key Technical Components',
+        placeholder: 'e.g., Camera module, ONNX inference engine, FER classification layer, call router...',
+        type: 'textarea',
+      },
+      {
+        key: 'process_flow',
+        label: 'Process / Data Flow',
+        placeholder: 'e.g., Capture → Pre-process → Keypoint detection → FER → Classification → Route...',
         type: 'textarea',
       },
     ],
     buildGuidedPrompt: (artifact, fields) =>
-      `${buildArtifactContext(artifact, 'description')}
-Embodiments: ${fields['embodiments'] || ''}
+      `${buildArtifactContext(artifact, 'full_description')}
 Key components: ${fields['components'] || ''}
+Process flow: ${fields['process_flow'] || ''}
 
-Generate 3 Detailed Description options covering these embodiments and components.`,
-  },
-
-  abstract: {
-    label: 'Abstract',
-    description: 'Write the patent abstract (max 150 words)',
-    systemContext: `You are a patent attorney. Write the Abstract of the Disclosure.
-Generate 3 options. USPTO rules per option:
-- Maximum 150 words
-- One paragraph only
-- Discloses: what it is, how it works, primary use
-- Written in third person
-- No legal conclusions or advantage claims${THREE_OPTIONS_FORMAT}`,
-    buildPrompt: (artifact) =>
-      `${buildArtifactContext(artifact)}
-
-Generate 3 abstract options. Each must be under 150 words.`,
-    guidedFields: [
-      {
-        key: 'key_aspect',
-        label: 'Primary Aspect to Emphasize',
-        placeholder: 'e.g., privacy-preserving architecture, model-agnostic design',
-        type: 'text',
-      },
-      {
-        key: 'use_case',
-        label: 'Primary Use Case',
-        placeholder: 'e.g., enterprise data analytics, contact center reporting',
-        type: 'text',
-      },
-    ],
-    buildGuidedPrompt: (artifact, fields) =>
-      `${buildArtifactContext(artifact)}
-Primary aspect: ${fields['key_aspect'] || ''}
-Use case: ${fields['use_case'] || ''}
-
-Generate 3 abstract options (under 150 words each) emphasizing this aspect and use case.`,
+Generate 3 Full Description options.`,
   },
 };

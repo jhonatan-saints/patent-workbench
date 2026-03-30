@@ -50,9 +50,10 @@ function emptyInventor(): InventorInfo {
 }
 
 export function InventorsStep() {
-  const { artifact, updateInventors, updatePatentMeta, goToPreview, goToStep, steps } =
+  const { artifact, updateInventors, updatePatentMeta, updateInventionTitle, goToPreview, goToFigures } =
     useWorkbenchStore();
 
+  const [inventionTitle, setInventionTitle] = useState(artifact?.inventionTitle ?? '');
   const [idfNumber, setIdfNumber] = useState(artifact?.idfNumber ?? '');
   const [businessGroup, setBusinessGroup] = useState(artifact?.businessGroup ?? '');
 
@@ -87,11 +88,12 @@ export function InventorsStep() {
       }));
     updateInventors(cleaned);
     updatePatentMeta(idfNumber || undefined, businessGroup || undefined);
+    updateInventionTitle(inventionTitle.trim());
     goToPreview();
   };
 
   const handleBack = () => {
-    goToStep(steps.length - 1);
+    goToFigures();
   };
 
   return (
@@ -129,7 +131,7 @@ export function InventorsStep() {
             onClick={handleBack}
             style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}
           >
-            BACK TO STEPS
+            BACK TO FIGURES
           </Button>
         </Group>
       </Box>
@@ -162,6 +164,14 @@ export function InventorsStep() {
                   </Text>
                 </Text>
               </Group>
+              <TextInput
+                label="Invention Title"
+                placeholder="e.g., Facial Expression Driven Call Routing"
+                value={inventionTitle}
+                onChange={(e) => setInventionTitle(e.currentTarget.value)}
+                styles={INPUT_STYLES}
+                mb={10}
+              />
               <Group grow gap={10}>
                 <TextInput
                   label="IDF Number"
