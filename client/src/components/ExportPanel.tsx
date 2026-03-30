@@ -1,45 +1,268 @@
 import { Group, Button, Text, Box, Select } from '@mantine/core';
-import { IconFileText, IconMarkdown } from '@tabler/icons-react';
+import { IconFileText, IconFileTypePdf, IconFileWord, IconMarkdown } from '@tabler/icons-react';
 import { useState } from 'react';
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  HeadingLevel,
+  AlignmentType,
+  BorderStyle,
+} from 'docx';
 import { useWorkbenchStore } from '@/store/workbench';
-import { WORKFLOW_ORDER } from '@/utils/workflowTemplates';
-import type { PatentArtifact, WorkflowModuleId } from '@/types';
+import { WORKFLOW_ORDER, SECTION_LABELS } from '@/utils/workflowTemplates';
+import type { PatentArtifact } from '@/types';
 
-type ExportFormat = 'txt' | 'md';
+type ExportFormat = 'md' | 'txt' | 'pdf' | 'docx';
 
-const SECTION_LABELS: Record<WorkflowModuleId, string> = {
-  idea_analysis: 'Invention Framing',
-  title: 'Title',
-  field: 'Field of Invention',
-  background: 'Background of the Invention',
-  summary: 'Summary of the Invention',
-  claims: 'Claims',
-  description: 'Detailed Description',
-  abstract: 'Abstract',
-};
+// IDF-style formatters
+
+function inventorBlock(artifact: PatentArtifact): string {
+  const lines: string[] = [];
+  if (artifact.idfNumber) lines.push(`IDF Number: ${artifact.idfNumber}`);
+  if (artifact.businessGroup) lines.push(`Business Group: ${artifact.businessGroup}`);
+  if (lines.length > 0) lines.push('');
+  artifact.inventors.forEach((inv, i) => {
+    lines.push(`Inventor ${i + 1}: ${inv.name}`);
+    if (inv.address) lines.push(`  Address: ${inv.address}`);
+    if (inv.telephone) lines.push(`  Telephone: ${inv.telephone}`);
+    if (inv.email) lines.push(`  Email: ${inv.email}`);
+    if (inv.citizenship) lines.push(`  Citizenship: ${inv.citizenship}`);
+    if (inv.employeeId) lines.push(`  Employee ID: ${inv.employeeId}`);
+  });
+  return lines.join('\n');
+}
 
 function buildMarkdown(artifact: PatentArtifact): string {
-  const date = new Date().toISOString();
-  let content = `---\nidea: ${artifact.baseIdea.replaceAll('\n', ' ').slice(0, 120)}\ndomain: ${artifact.baseDomain}\nmodel: ${artifact.model}\ngenerated: ${date}\n---\n\n# Patent Draft\n\n`;
+  const date = new Date().toISOString().split('T')[0];
+  const inventorNames = artifact.inventors.map((i) => i.name).join('; ');
+
+  let out = `---\ntitle: ${(artifact.sections.title?.content ?? artifact.baseIdea).slice(0, 120)}\ninventors: ${inventorNames}\ndomain: ${artifact.baseDomain}\nmodel: ${artifact.model}\ndate: ${date}\n---\n\n`;
+
+  // Filing info + inventor block
+  if (artifact.idfNumber || artifact.businessGroup || artifact.inventors.length > 0) {
+    out += `## Filing Details\n\n`;
+    if (artifact.idfNumber) out += `**IDF Number:** ${artifact.idfNumber}  \n`;
+    if (artifact.businessGroup) out += `**Business Group:** ${artifact.businessGroup}  \n`;
+    if (artifact.idfNumber || artifact.businessGroup) out += '\n';
+    artifact.inventors.forEach((inv) => {
+      out += `**${inv.name}**`;
+      if (inv.address) out += `  \nAddress: ${inv.address}`;
+      if (inv.telephone) out += `  \nTelephone: ${inv.telephone}`;
+      if (inv.email) out += `  \nEmail: ${inv.email}`;
+      if (inv.citizenship) out += `  \nCitizenship: ${inv.citizenship}`;
+      if (inv.employeeId) out += `  \nEmployee ID: ${inv.employeeId}`;
+      out += '\n\n';
+    });
+  }
+
   for (const moduleId of WORKFLOW_ORDER) {
     const section = artifact.sections[moduleId];
     if (section) {
-      content += `## ${SECTION_LABELS[moduleId]}\n\n${section.content}\n\n`;
+      const heading = moduleId === 'idea_analysis' ? 'Invention Framing' : SECTION_LABELS[moduleId];
+      out += `## ${heading}\n\n${section.content}\n\n`;
     }
   }
-  return content;
+  return out;
 }
 
 function buildText(artifact: PatentArtifact): string {
-  const sep = '─'.repeat(48);
-  let content = `PATENT DRAFT\nGenerated: ${new Date().toISOString()}\nModel: ${artifact.model}\n\n${sep}\n\n`;
+  const sep = '─'.repeat(60);
+  const date = new Date().toISOString().split('T')[0];
+
+  let out = `PATENT APPLICATION DRAFT\n`;
+  out += `Date: ${date}\n`;
+  out += `Model: ${artifact.model}\n`;
+  out += `Domain: ${artifact.baseDomain}\n`;
+  out += `${sep}\n\n`;
+
+  if (artifact.idfNumber || artifact.businessGroup || artifact.inventors.length > 0) {
+    out += `FILING DETAILS\n${sep}\n${inventorBlock(artifact)}\n\n`;
+  }
+
   for (const moduleId of WORKFLOW_ORDER) {
     const section = artifact.sections[moduleId];
     if (section) {
-      content += `${SECTION_LABELS[moduleId].toUpperCase()}\n${sep}\n${section.content}\n\n`;
+      const heading =
+        moduleId === 'idea_analysis' ? 'INVENTION FRAMING' : SECTION_LABELS[moduleId].toUpperCase();
+      out += `${heading}\n${sep}\n${section.content}\n\n`;
     }
   }
-  return content;
+  return out;
+}
+
+function buildPDFHTML(artifact: PatentArtifact): string {
+  const date = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  const titleContent = artifact.sections.title?.content ?? artifact.baseIdea;
+
+  const inventorRows = artifact.inventors
+    .map(
+      (inv) =>
+        `<tr>
+          <td><strong>${inv.name}</strong>${inv.citizenship ? ` · ${inv.citizenship}` : ''}</td>
+          <td>${inv.telephone ?? ''}${inv.email ? `<br/>${inv.email}` : ''}</td>
+          <td>${inv.address ?? ''}</td>
+          <td>${inv.employeeId ?? ''}</td>
+        </tr>`
+    )
+    .join('');
+
+  const sections = WORKFLOW_ORDER.filter((m) => artifact.sections[m] && m !== 'idea_analysis')
+    .map((moduleId) => {
+      const content = artifact.sections[moduleId]!.content;
+      const label = SECTION_LABELS[moduleId];
+      return `<section>
+        <h2>${label}</h2>
+        <p>${content.replaceAll('\n', '<br/>')}</p>
+      </section>`;
+    })
+    .join('\n');
+
+  const idfRow = artifact.idfNumber
+    ? `<tr><th>IDF Number</th><td>${artifact.idfNumber}</td></tr>`
+    : '';
+  const bgRow = artifact.businessGroup
+    ? `<tr><th>Business Group</th><td>${artifact.businessGroup}</td></tr>`
+    : '';
+  const filingBlock = artifact.idfNumber || artifact.businessGroup
+    ? `<h2>Filing Info</h2><table>${idfRow}${bgRow}</table>`
+    : '';
+  const inventorsBlock = artifact.inventors.length > 0
+    ? `<h2>Inventors</h2><table><tr><th>Name / Citizenship</th><th>Telephone / Email</th><th>Address</th><th>Employee ID</th></tr>${inventorRows}</table>`
+    : '';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>${titleContent.slice(0, 80)}</title>
+<style>
+  body { font-family: 'Times New Roman', serif; font-size: 12pt; margin: 1in; color: #000; }
+  h1 { font-size: 16pt; text-align: center; margin-bottom: 4px; }
+  h2 { font-size: 13pt; margin-top: 24pt; border-bottom: 1px solid #333; padding-bottom: 4px; }
+  p { line-height: 1.8; text-align: justify; }
+  .meta { font-size: 10pt; color: #555; text-align: center; margin-bottom: 20pt; }
+  table { width: 100%; border-collapse: collapse; margin: 12pt 0; font-size: 11pt; }
+  th { background: #f0f0f0; border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+  td { border: 1px solid #ccc; padding: 6px 10px; vertical-align: top; }
+  section { margin-bottom: 20pt; }
+  @media print { body { margin: 0.75in; } }
+</style>
+</head>
+<body>
+  <h1>${titleContent}</h1>
+  <p class="meta">Patent Application Draft · ${date} · ${artifact.model.split(':')[0]}</p>
+
+  ${filingBlock}
+
+  ${inventorsBlock}
+
+  ${sections}
+</body>
+</html>`;
+}
+
+async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
+  const date = new Date().toLocaleDateString('en-US');
+  const titleContent = artifact.sections.title?.content ?? artifact.baseIdea;
+
+  const children: Paragraph[] = [];
+
+  // Title
+  children.push(
+    new Paragraph({
+      text: titleContent,
+      heading: HeadingLevel.TITLE,
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+    })
+  );
+
+  children.push(
+    new Paragraph({
+      children: [
+        new TextRun({ text: `Patent Application Draft  ·  ${date}  ·  ${artifact.model.split(':')[0]}`, size: 20, color: '666666' }),
+      ],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 400 },
+    })
+  );
+
+  // Inventors
+  if (artifact.inventors.length > 0) {
+    children.push(
+      new Paragraph({
+        text: 'Inventors',
+        heading: HeadingLevel.HEADING_1,
+        spacing: { before: 300, after: 120 },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '333333' } },
+      })
+    );
+    artifact.inventors.forEach((inv) => {
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: inv.name, bold: true, size: 24 })],
+          spacing: { after: 60 },
+        })
+      );
+      if (inv.address)
+        children.push(new Paragraph({ children: [new TextRun({ text: `Address: ${inv.address}`, size: 20 })], spacing: { after: 40 } }));
+      if (inv.email)
+        children.push(new Paragraph({ children: [new TextRun({ text: `Email: ${inv.email}`, size: 20 })], spacing: { after: 40 } }));
+      if (inv.citizenship)
+        children.push(new Paragraph({ children: [new TextRun({ text: `Citizenship: ${inv.citizenship}`, size: 20 })], spacing: { after: 40 } }));
+      if (inv.employeeId)
+        children.push(new Paragraph({ children: [new TextRun({ text: `Employee ID: ${inv.employeeId}`, size: 20 })], spacing: { after: 120 } }));
+    });
+  }
+
+  // Sections
+  for (const moduleId of WORKFLOW_ORDER) {
+    const section = artifact.sections[moduleId];
+    if (!section || moduleId === 'idea_analysis') continue;
+
+    const label = SECTION_LABELS[moduleId];
+    children.push(
+      new Paragraph({
+        text: label,
+        heading: HeadingLevel.HEADING_1,
+        spacing: { before: 360, after: 120 },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '333333' } },
+      })
+    );
+
+    // Split on double newlines to get paragraphs
+    const paragraphs = section.content.split(/\n{2,}/);
+    for (const para of paragraphs) {
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: para.trim(), size: 24 })],
+          spacing: { after: 160 },
+          alignment: AlignmentType.JUSTIFIED,
+        })
+      );
+    }
+  }
+
+  const doc = new Document({
+    sections: [{ children }],
+    styles: {
+      paragraphStyles: [
+        {
+          id: 'Normal',
+          name: 'Normal',
+          run: { font: 'Times New Roman', size: 24 },
+        },
+      ],
+    },
+  });
+
+  return Packer.toBlob(doc);
 }
 
 function downloadFile(content: string, filename: string, mimeType: string) {
@@ -52,18 +275,52 @@ function downloadFile(content: string, filename: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
+function formatIcon(format: ExportFormat) {
+  if (format === 'pdf') return <IconFileTypePdf size={13} />;
+  if (format === 'docx') return <IconFileWord size={13} />;
+  if (format === 'md') return <IconMarkdown size={13} />;
+  return <IconFileText size={13} />;
+}
+
 export function ExportPanel() {
-  const { artifact, workflowPhase } = useWorkbenchStore();
-  const [format, setFormat] = useState<ExportFormat>('md');
+  const { artifact } = useWorkbenchStore();
+  const [format, setFormat] = useState<ExportFormat>('docx');
+  const [exporting, setExporting] = useState(false);
 
-  if (workflowPhase !== 'preview' || !artifact) return null;
+  // Available from any phase as long as artifact exists and has at least one section
+  const hasSections = artifact && Object.keys(artifact.sections).length > 0;
+  if (!hasSections) return null;
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    if (!artifact) return;
+    setExporting(true);
     const date = new Date().toISOString().split('T')[0];
-    if (format === 'md') {
-      downloadFile(buildMarkdown(artifact), `patent-draft-${date}.md`, 'text/markdown');
-    } else {
-      downloadFile(buildText(artifact), `patent-draft-${date}.txt`, 'text/plain');
+    const stem = `patent-draft-${date}`;
+
+    try {
+      if (format === 'md') {
+        downloadFile(buildMarkdown(artifact), `${stem}.md`, 'text/markdown');
+      } else if (format === 'txt') {
+        downloadFile(buildText(artifact), `${stem}.txt`, 'text/plain');
+      } else if (format === 'pdf') {
+        const html = buildPDFHTML(artifact);
+        const win = window.open('', '_blank', 'width=900,height=700');
+        if (win) {
+          win.document.write(html);
+          win.document.close();
+          setTimeout(() => win.print(), 400);
+        }
+      } else if (format === 'docx') {
+        const blob = await buildDocx(artifact);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${stem}.docx`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -85,10 +342,12 @@ export function ExportPanel() {
           value={format}
           onChange={(v) => v && setFormat(v as ExportFormat)}
           data={[
-            { value: 'md', label: '.md' },
+            { value: 'docx', label: '.docx' },
+            { value: 'pdf', label: '.pdf' },
             { value: 'txt', label: '.txt' },
+            { value: 'md', label: '.md' },
           ]}
-          style={{ width: 80 }}
+          style={{ width: 90 }}
           styles={{
             input: {
               fontFamily: 'var(--font-mono)',
@@ -108,8 +367,9 @@ export function ExportPanel() {
         <Button
           size="xs"
           variant="outline"
-          leftSection={format === 'md' ? <IconMarkdown size={13} /> : <IconFileText size={13} />}
-          onClick={handleExport}
+          leftSection={formatIcon(format)}
+          onClick={() => void handleExport()}
+          loading={exporting}
           style={{
             borderColor: 'var(--accent)',
             color: 'var(--accent)',

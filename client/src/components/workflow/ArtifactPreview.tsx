@@ -44,7 +44,7 @@ export function ArtifactPreview() {
             Live Preview
           </Text>
         </Group>
-        <Text size="xs" c="var(--text-muted)" ff="monospace">
+          <Text style={{ fontSize: '11px' }} c="var(--text-muted)" ff="monospace">
           {completedModules.length}/{WORKFLOW_ORDER.length} sections
           {totalTokens > 0 ? ` · ${totalTokens}t used` : ''}
         </Text>
@@ -63,7 +63,7 @@ export function ArtifactPreview() {
               }}
             >
               <Text size="xs" c="var(--text-muted)" ff="monospace" style={{ lineHeight: 1.7 }}>
-                Selected content will appear here as you progress through each step.
+                The draft will appear here as you progress through each step.
               </Text>
             </Box>
           ) : (
@@ -83,18 +83,18 @@ export function ArtifactPreview() {
                         borderColor: 'var(--accent)',
                         color: 'var(--accent)',
                         fontFamily: 'var(--font-mono)',
-                        fontSize: 9,
+                        fontSize: 11,
                         letterSpacing: '0.06em',
                       }}
                     >
                       {SECTION_LABELS[moduleId]}
                     </Badge>
                     <Text
-                      size="xs"
                       style={{
                         color: 'var(--text-primary)',
                         fontFamily:
                           moduleId === 'title' ? 'var(--font-display)' : 'var(--font-serif)',
+                        fontSize: moduleId === 'title' ? 20 : 14,
                         lineHeight: 1.7,
                         whiteSpace: 'pre-wrap',
                       }}

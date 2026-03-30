@@ -11,14 +11,22 @@ const BASE_URL = '/api';
 
 const DEFAULT_TIMEOUT_MS = 120_000; // 2 min — LLMs are slow
 
-// Core Fetch Wrapper
 async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
-  timeoutMs = DEFAULT_TIMEOUT_MS
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  externalSignal?: AbortSignal
 ): Promise<ApiResult<T>> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      clearTimeout(timer);
+      return { success: false, error: 'Generation cancelled.' };
+    }
+    externalSignal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
 
   try {
     const res = await fetch(`${BASE_URL}${path}`, {
@@ -47,22 +55,26 @@ async function apiFetch<T>(
     clearTimeout(timer);
 
     if (err instanceof DOMException && err.name === 'AbortError') {
+      if (externalSignal?.aborted) {
+        return { success: false, error: 'Generation cancelled.' };
+      }
       return { success: false, error: 'Request timed out. The model may still be processing.' };
     }
 
-    // Never expose raw errors to UI — sanitize
     return { success: false, error: 'Unable to reach the local server. Is it running?' };
   }
 }
 
-// API Methods
 export async function generatePatentContent(
-  req: GenerateRequest
+  req: GenerateRequest,
+  signal?: AbortSignal
 ): Promise<ApiResult<GenerateResponse>> {
-  return apiFetch<GenerateResponse>('/generate', {
-    method: 'POST',
-    body: JSON.stringify(req),
-  });
+  return apiFetch<GenerateResponse>(
+    '/generate',
+    { method: 'POST', body: JSON.stringify(req) },
+    DEFAULT_TIMEOUT_MS,
+    signal
+  );
 }
 
 export async function getModels(): Promise<string[]> {
@@ -87,7 +99,6 @@ export async function getStatus(): Promise<StatusResponse> {
   }
 }
 
-// Type Guard
 export function isApiError(result: ApiResult<unknown>): result is ApiError {
   return (result as ApiError).success === false;
 }

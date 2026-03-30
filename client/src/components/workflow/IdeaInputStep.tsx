@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { Stack, Textarea, TextInput, Button, Text, Group, Box, Select } from '@mantine/core';
+import {
+  Stack,
+  Textarea,
+  TextInput,
+  Button,
+  Text,
+  Group,
+  Box,
+  Select,
+} from '@mantine/core';
 import { IconBrain, IconWand } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 
@@ -34,11 +43,15 @@ export function IdeaInputStep() {
 
   const canStart = idea.trim().length > 0 && llmStatus === 'ok';
 
+  const handleStart = () => {
+    startWorkflow(idea, domain, constraints || undefined);
+  };
+
   return (
     <Box style={{ maxWidth: 660, margin: '0 auto', padding: '48px 24px' }}>
       {/* Header */}
       <Stack gap={6} mb={32}>
-        <Group gap={10} >
+        <Group gap={10}>
           <IconBrain size={35} style={{ color: 'var(--accent)' }} />
           <Text
             component="h2"
@@ -62,10 +75,7 @@ export function IdeaInputStep() {
           description="What does your invention do? What problem does it solve?"
           placeholder="Describe the core idea, mechanism, or technical approach of your invention..."
           value={idea}
-          onChange={(e) => {
-            const val = e.currentTarget.value;
-            setIdea(val);
-          }}
+          onChange={(e) => setIdea(e.currentTarget.value)}
           minRows={5}
           maxRows={10}
           required
@@ -77,10 +87,7 @@ export function IdeaInputStep() {
           description="e.g., Telecommunications, Medical Devices, Software, Mechanical Systems"
           placeholder="e.g., Artificial Intelligence / Natural Language Processing"
           value={domain}
-          onChange={(e) => {
-            const val = e.currentTarget.value;
-            setDomain(val);
-          }}
+          onChange={(e) => setDomain(e.currentTarget.value)}
           styles={INPUT_STYLES}
         />
 
@@ -89,15 +96,13 @@ export function IdeaInputStep() {
           description="Optional. Key prior art, technical scope constraints, or inventor notes."
           placeholder="e.g., Must work offline, targets embedded devices, prior art includes..."
           value={constraints}
-          onChange={(e) => {
-            const val = e.currentTarget.value;
-            setConstraints(val);
-          }}
+          onChange={(e) => setConstraints(e.currentTarget.value)}
           minRows={3}
           maxRows={6}
           styles={INPUT_STYLES}
         />
 
+        {/* Model + Start */}
         <Group justify="space-between" align="flex-end" mt={4}>
           <Select
             label="Model"
@@ -122,7 +127,7 @@ export function IdeaInputStep() {
 
           <Button
             leftSection={<IconWand size={14} />}
-            onClick={() => startWorkflow(idea, domain, constraints || undefined)}
+            onClick={handleStart}
             disabled={!canStart}
             size="md"
             style={{
@@ -135,12 +140,16 @@ export function IdeaInputStep() {
               border: 'none',
             }}
           >
-            ANALYZE INVENTION
+            START WORKFLOW
           </Button>
         </Group>
 
         {llmStatus !== 'ok' && (
-          <Text size="xs" c={llmStatus === 'checking' ? 'var(--text-muted)' : 'red'} ff="monospace">
+          <Text
+            size="xs"
+            c={llmStatus === 'checking' ? 'var(--text-muted)' : 'red'}
+            ff="monospace"
+          >
             {llmStatus === 'checking'
               ? 'Checking LLM status...'
               : 'LLM is offline. Start Ollama before beginning.'}

@@ -17,6 +17,7 @@ import { IdeaInputStep } from '@/components/workflow/IdeaInputStep';
 import { OptionsPanel } from '@/components/workflow/OptionsPanel';
 import { ArtifactPreview } from '@/components/workflow/ArtifactPreview';
 import { PreviewPhase } from '@/components/workflow/PreviewPhase';
+import { InventorsStep } from '@/components/workflow/InventorsStep';
 import { SessionsPanel } from '@/components/workflow/SessionsPanel';
 import { useWorkbenchStore } from '@/store/workbench';
 
@@ -26,13 +27,13 @@ function ThemeToggle() {
   return (
     <Tooltip label={scheme === 'dark' ? 'Switch to light' : 'Switch to dark'} position="bottom">
       <ActionIcon
-        aria-label='theme toggle'
+        aria-label="theme toggle"
         variant="subtle"
         size="sm"
         onClick={() => setColorScheme(scheme === 'dark' ? 'light' : 'dark')}
         className="text-fg-muted hover:text-accent"
       >
-        {scheme === 'dark' ? <IconSun size={14} line="true" /> : <IconMoon size={14} />}
+        {scheme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />}
       </ActionIcon>
     </Tooltip>
   );
@@ -41,6 +42,7 @@ function ThemeToggle() {
 export function App() {
   const { workflowPhase } = useWorkbenchStore();
   const isWorking = workflowPhase === 'working';
+  const isInventors = workflowPhase === 'inventors';
   const isPreview = workflowPhase === 'preview';
 
   return (
@@ -81,11 +83,16 @@ export function App() {
             >
               Patent Workbench
             </Text>
-            <Text size="xs" c="var(--text-muted)" ff="monospace" className="pl-3 border-l border-stroke">
+            <Text
+              size="xs"
+              c="var(--text-muted)"
+              ff="monospace"
+              className="pl-3 border-l border-stroke"
+            >
               local-first · zero telemetry
             </Text>
           </Group>
-          <Group gap={8} className='items-center'>
+          <Group gap={8} className="items-center">
             <ThemeToggle />
             <StatusIndicator />
           </Group>
@@ -101,14 +108,14 @@ export function App() {
 
       {/* MAIN */}
       <AppShell.Main>
-        {/* Input phase: centered idea form */}
+        {/* Input phase */}
         {workflowPhase === 'input' && (
           <ScrollArea style={{ height: 'calc(100vh - 52px)' }}>
             <IdeaInputStep />
           </ScrollArea>
         )}
 
-        {/* Working phase: options (left) + artifact preview (right) */}
+        {/* Working phase: options (left) + live preview (right) */}
         {isWorking && (
           <Box
             style={{
@@ -130,7 +137,21 @@ export function App() {
           </Box>
         )}
 
-        {/* Preview phase: full document view */}
+        {/* Inventors phase (step 09) */}
+        {isInventors && (
+          <Box
+            style={{
+              height: 'calc(100vh - 52px)',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <InventorsStep />
+          </Box>
+        )}
+
+        {/* Preview phase (step 10) */}
         {isPreview && (
           <Box
             style={{
