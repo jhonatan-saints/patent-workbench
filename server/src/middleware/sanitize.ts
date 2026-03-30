@@ -1,13 +1,11 @@
 import { NextFunction, Request, Response } from 'express'
 
-const DEFAULT_PROMPT_MAX = Number(process.env.PROMPT_MAX_LENGTH) || 4000
+const DEFAULT_PROMPT_MAX = Number(process.env.PROMPT_MAX_LENGTH) || 16000
 
 const INJECTION_PATTERNS = [
   /ignore (all |previous |above )?instructions/i,
   /you are now/i,
   /act as (a |an )?/i,
-  /system:/i,
-  /\[system\]/i,
   /jailbreak/i,
   /disregard (all |previous |your )?/i,
   /forget (all |previous |your )?instructions/i,
@@ -21,7 +19,8 @@ export const sanitizePrompt = (maxLen = DEFAULT_PROMPT_MAX) => (
   next: NextFunction
 ) => {
   if (req.body && typeof req.body.prompt === 'string') {
-    let prompt = req.body.prompt.trim().replaceAll(/\s+/g, ' ')
+    // Collapse only runs of spaces/tabs — preserve newlines so structured prompts stay intact
+    let prompt = req.body.prompt.trim().replaceAll(/ {2,}/g, ' ')
 
     if (prompt.length > maxLen) {
       prompt = prompt.slice(0, maxLen)
