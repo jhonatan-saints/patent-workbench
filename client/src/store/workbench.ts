@@ -24,6 +24,9 @@ const INITIAL_STEPS = WORKFLOW_ORDER.map((moduleId) => ({
   selectedOption: null,
   promptTokens: 0,
   completionTokens: 0,
+  inputMode: 'auto' as const,
+  guidedFields: {} as Record<string, string>,
+  manualDraft: '',
 }));
 
 export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
@@ -213,26 +216,32 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     }));
 
     if (isComplete) {
-      const { steps: finalSteps } = get();
-      const totalTokens = finalSteps.reduce(
-        (acc, s) => acc + s.promptTokens + s.completionTokens,
-        0
-      );
-      const session: WorkflowSession = {
-        id: generateId(),
-        startedAt: newArtifact.startedAt,
-        completedAt: Date.now(),
-        baseIdea: newArtifact.baseIdea,
-        artifact: newArtifact,
-        model: newArtifact.model,
-        totalTokens,
-      };
-      set((state) => ({
-        sessions: [session, ...state.sessions].slice(0, 20),
-      }));
       // Auto-navigate to inventors step when all 8 steps are done
       set({ workflowPhase: 'inventors' });
     }
+  },
+
+  saveCurrentSession: () => {
+    const { steps, artifact, selectedModel } = get();
+    if (!artifact || Object.keys(artifact.sections).length === 0) return;
+    const totalTokens = steps.reduce((acc, s) => acc + s.promptTokens + s.completionTokens, 0);
+    const stepInputStates = steps.map((s) => ({
+      moduleId: s.moduleId,
+      inputMode: s.inputMode,
+      guidedFields: s.guidedFields,
+      manualDraft: s.manualDraft,
+    }));
+    const session: WorkflowSession = {
+      id: generateId(),
+      startedAt: artifact.startedAt,
+      completedAt: Date.now(),
+      baseIdea: artifact.baseIdea,
+      artifact,
+      model: selectedModel,
+      totalTokens,
+      stepInputStates,
+    };
+    set((state) => ({ sessions: [session, ...state.sessions].slice(0, 20) }));
   },
 
   regenerateOptions: () => {
@@ -259,11 +268,13 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       lastError: null,
     });
 
-    // Restore an actionable status so the panel always has something to show
+    // Restore an actionable status so the panel always has something to show.
+    // Manual/guided steps always go back to 'input' so the form is shown.
     const needsRestore = step.status === 'done' || step.status === 'pending' || step.options.length === 0;
     let restoredStatus = step.status;
     if (needsRestore) {
-      restoredStatus = step.options.length > 0 ? 'selecting' : 'input';
+      const showOptions = step.options.length > 0 && step.inputMode !== 'manual' && step.inputMode !== 'guided';
+      restoredStatus = showOptions ? 'selecting' : 'input';
     }
 
     if (restoredStatus !== step.status) {
@@ -302,6 +313,9 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   },
 
   resetWorkflow: () => {
+    // Save session before clearing if there's content worth keeping
+    get().saveCurrentSession();
+
     if (_abortController) {
       _abortController.abort();
       _abortController = null;
@@ -348,6 +362,12 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     });
   },
 
+  setStepInputState: (index, patch) => {
+    set((state) => ({
+      steps: state.steps.map((s, i) => (i === index ? { ...s, ...patch } : s)),
+    }));
+  },
+
   loadSession: (session: WorkflowSession) => {
     if (_abortController) {
       _abortController.abort();
@@ -359,6 +379,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       const selectedOption = section
         ? { id: generateId(), index: section.optionIndex, content: section.content }
         : null;
+      const saved = session.stepInputStates?.find((s) => s.moduleId === moduleId);
       return {
         moduleId,
         label: mod.label,
@@ -368,6 +389,9 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
         selectedOption,
         promptTokens: 0,
         completionTokens: 0,
+        inputMode: saved?.inputMode ?? ('auto' as const),
+        guidedFields: saved?.guidedFields ?? ({} as Record<string, string>),
+        manualDraft: saved?.manualDraft ?? '',
       };
     });
     set({
