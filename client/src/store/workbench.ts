@@ -12,6 +12,9 @@ import { parseOptions } from '@/utils/optionParser';
 
 const DEFAULT_MODEL = 'mistral';
 
+// Module-level abort controller — not in Zustand state to avoid re-renders
+let _abortController: AbortController | null = null;
+
 const INITIAL_STEPS = WORKFLOW_ORDER.map((moduleId) => ({
   moduleId,
   label: WORKFLOW_MODULES[moduleId].label,
@@ -24,13 +27,13 @@ const INITIAL_STEPS = WORKFLOW_ORDER.map((moduleId) => ({
 }));
 
 export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
-  // ─── LLM ────────────────────────────────────────────────────────────────────
+  // LLM
   selectedModel: DEFAULT_MODEL,
   availableModels: [],
   llmStatus: 'checking',
   llmLatency: null,
 
-  // ─── Workflow ────────────────────────────────────────────────────────────────
+  // Workflow
   workflowPhase: 'input',
   steps: INITIAL_STEPS,
   currentStepIndex: -1,
@@ -38,26 +41,32 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   generationStatus: 'idle',
   lastError: null,
 
-  // ─── Sessions ────────────────────────────────────────────────────────────────
+  // Sessions
   sessions: [],
 
-  // ─── Actions ─────────────────────────────────────────────────────────────────
+  // Actions
 
   setModel: (model) => set({ selectedModel: model }),
 
   checkStatus: async () => {
-    set({ llmStatus: 'checking' });
     const [status, models] = await Promise.all([getStatus(), getModels()]);
-    set((state) => ({
-      llmStatus: status.llm,
-      llmLatency: status.latency,
-      ...(models.length > 0 && {
-        availableModels: models,
-        selectedModel:
-          models.find((m) => m.split(':')[0] === state.selectedModel.split(':')[0]) ??
-          models[0],
-      }),
-    }));
+    set((state) => {
+      const next: Partial<typeof state> = {};
+
+      if (status.llm !== state.llmStatus) next.llmStatus = status.llm;
+      if (status.latency !== state.llmLatency) next.llmLatency = status.latency;
+
+      if (models.length > 0) {
+        const modelsChanged = models.join(',') !== state.availableModels.join(',');
+        if (modelsChanged) next.availableModels = models;
+
+        const best =
+          models.find((m) => m.split(':')[0] === state.selectedModel.split(':')[0]) ?? models[0];
+        if (best !== state.selectedModel) next.selectedModel = best;
+      }
+
+      return next;
+    });
   },
 
   startWorkflow: (idea, domain, constraints) => {
@@ -66,6 +75,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       baseIdea: idea.trim(),
       baseDomain: domain.trim(),
       constraints: constraints?.trim() || undefined,
+      inventors: [],
       sections: {},
       model: selectedModel,
       startedAt: Date.now(),
@@ -74,24 +84,27 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       artifact,
       workflowPhase: 'working',
       currentStepIndex: 0,
-      steps: INITIAL_STEPS.map((s) => ({
+      steps: INITIAL_STEPS.map((s, i) => ({
         ...s,
-        status: 'pending',
+        status: i === 0 ? ('input' as const) : ('pending' as const),
         options: [],
         selectedOption: null,
       })),
       generationStatus: 'idle',
       lastError: null,
     });
-    get().generateStepOptions();
+    // No auto-generate — user chooses mode in StepInputPanel
   },
 
-  generateStepOptions: async () => {
+  generateStepOptions: async (overridePrompt?: string) => {
     const { steps, currentStepIndex, artifact, selectedModel } = get();
     if (!artifact || currentStepIndex < 0 || currentStepIndex >= steps.length) return;
 
     const step = steps[currentStepIndex];
     const module = WORKFLOW_MODULES[step.moduleId];
+
+    // Create a fresh abort controller for this generation
+    _abortController = new AbortController();
 
     set({ generationStatus: 'loading', lastError: null });
     set((state) => ({
@@ -100,14 +113,24 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       ),
     }));
 
-    const prompt = `${module.systemContext}\n\n---\n\n${module.buildPrompt(artifact)}`;
-    const result = await generatePatentContent({ prompt, model: selectedModel });
+    const prompt =
+      overridePrompt ?? `${module.systemContext}\n\n---\n\n${module.buildPrompt(artifact)}`;
 
+    const result = await generatePatentContent(
+      { prompt, model: selectedModel },
+      _abortController.signal
+    );
+
+    // If cancelled, error message will be 'Generation cancelled.'
     if (isApiError(result)) {
-      set({ generationStatus: 'error', lastError: result.error });
+      const cancelled = result.error === 'Generation cancelled.';
+      set({
+        generationStatus: cancelled ? 'idle' : 'error',
+        lastError: cancelled ? null : result.error,
+      });
       set((state) => ({
         steps: state.steps.map((s, i) =>
-          i === currentStepIndex ? { ...s, status: 'pending' } : s
+          i === currentStepIndex ? { ...s, status: 'input' } : s
         ),
       }));
       return;
@@ -137,6 +160,23 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     }));
   },
 
+  cancelGeneration: () => {
+    if (_abortController) {
+      _abortController.abort();
+      _abortController = null;
+    }
+    // Step status reset is handled in generateStepOptions error path
+  },
+
+  submitManualContent: (content: string) => {
+    const option: GeneratedOption = {
+      id: generateId(),
+      index: 0,
+      content: content.trim(),
+    };
+    get().selectOption(option);
+  },
+
   selectOption: (option: GeneratedOption) => {
     const { currentStepIndex, steps, artifact } = get();
     if (!artifact || currentStepIndex < 0) return;
@@ -160,11 +200,15 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
 
     set((state) => ({
       artifact: newArtifact,
-      steps: state.steps.map((s, i) =>
-        i === currentStepIndex ? { ...s, status: 'done', selectedOption: option } : s
-      ),
+      steps: state.steps.map((s, i) => {
+        if (i === currentStepIndex) return { ...s, status: 'done', selectedOption: option };
+        // Mark next step as 'input' so it shows the input panel
+        if (i === nextIndex && !isComplete) return { ...s, status: 'input' };
+        return s;
+      }),
       currentStepIndex: isComplete ? currentStepIndex : nextIndex,
-      workflowPhase: isComplete ? 'preview' : 'working',
+      // Stay in working phase; user navigates to preview via step 09
+      workflowPhase: 'working',
       generationStatus: 'idle',
     }));
 
@@ -186,31 +230,82 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       set((state) => ({
         sessions: [session, ...state.sessions].slice(0, 20),
       }));
-    } else {
-      get().generateStepOptions();
+      // Auto-navigate to inventors step when all 8 steps are done
+      set({ workflowPhase: 'inventors' });
     }
   },
 
-  regenerateOptions: () => get().generateStepOptions(),
+  regenerateOptions: () => {
+    const { currentStepIndex } = get();
+    // Reset to input so user can choose mode again
+    set((state) => ({
+      steps: state.steps.map((s, i) =>
+        i === currentStepIndex ? { ...s, status: 'input', options: [] } : s
+      ),
+      generationStatus: 'idle',
+      lastError: null,
+    }));
+  },
 
   goToStep: (index: number) => {
     const { steps } = get();
     if (index < 0 || index >= steps.length) return;
 
+    const step = steps[index];
     set({
       currentStepIndex: index,
       workflowPhase: 'working',
       generationStatus: 'idle',
+      lastError: null,
     });
 
-    const step = steps[index];
-    // Re-generate only if step has no cached options
-    if (step.options.length === 0) {
-      get().generateStepOptions();
+    // Restore an actionable status so the panel always has something to show
+    const needsRestore = step.status === 'done' || step.status === 'pending' || step.options.length === 0;
+    let restoredStatus = step.status;
+    if (needsRestore) {
+      restoredStatus = step.options.length > 0 ? 'selecting' : 'input';
+    }
+
+    if (restoredStatus !== step.status) {
+      set((state) => ({
+        steps: state.steps.map((s, i) =>
+          i === index ? { ...s, status: restoredStatus } : s
+        ),
+      }));
     }
   },
 
+  goToInventors: () => set({ workflowPhase: 'inventors' }),
+
+  updateInventors: (inventors) => {
+    set((state) => {
+      if (!state.artifact) return {};
+      return { artifact: { ...state.artifact, inventors } };
+    });
+  },
+
+  updatePatentMeta: (idfNumber, businessGroup) => {
+    set((state) => {
+      if (!state.artifact) return {};
+      return {
+        artifact: {
+          ...state.artifact,
+          idfNumber: idfNumber || undefined,
+          businessGroup: businessGroup || undefined,
+        },
+      };
+    });
+  },
+
+  goToPreview: () => {
+    set({ workflowPhase: 'preview' });
+  },
+
   resetWorkflow: () => {
+    if (_abortController) {
+      _abortController.abort();
+      _abortController = null;
+    }
     set({
       workflowPhase: 'input',
       steps: INITIAL_STEPS,
@@ -218,6 +313,71 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       artifact: null,
       generationStatus: 'idle',
       lastError: null,
+    });
+  },
+
+  updateSectionContent: (moduleId, content) => {
+    set((state) => {
+      if (!state.artifact) return {};
+      return {
+        artifact: {
+          ...state.artifact,
+          sections: {
+            ...state.artifact.sections,
+            [moduleId]: {
+              ...state.artifact.sections[moduleId]!,
+              content,
+            },
+          },
+        },
+      };
+    });
+  },
+
+  updateArtifactBase: (idea, domain, constraints) => {
+    set((state) => {
+      if (!state.artifact) return {};
+      return {
+        artifact: {
+          ...state.artifact,
+          baseIdea: idea.trim(),
+          baseDomain: domain.trim(),
+          constraints: constraints?.trim() || undefined,
+        },
+      };
+    });
+  },
+
+  loadSession: (session: WorkflowSession) => {
+    if (_abortController) {
+      _abortController.abort();
+      _abortController = null;
+    }
+    const steps = WORKFLOW_ORDER.map((moduleId) => {
+      const section = session.artifact.sections[moduleId];
+      const mod = WORKFLOW_MODULES[moduleId];
+      const selectedOption = section
+        ? { id: generateId(), index: section.optionIndex, content: section.content }
+        : null;
+      return {
+        moduleId,
+        label: mod.label,
+        description: mod.description,
+        status: section ? ('done' as const) : ('pending' as const),
+        options: selectedOption ? [selectedOption] : [],
+        selectedOption,
+        promptTokens: 0,
+        completionTokens: 0,
+      };
+    });
+    set({
+      artifact: session.artifact,
+      steps,
+      currentStepIndex: steps.length - 1,
+      workflowPhase: 'preview',
+      generationStatus: 'idle',
+      lastError: null,
+      selectedModel: session.model,
     });
   },
 

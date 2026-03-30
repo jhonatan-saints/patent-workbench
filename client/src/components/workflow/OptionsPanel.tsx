@@ -1,8 +1,14 @@
 import { Box, Stack, Text, Group, Button, Skeleton, Alert } from '@mantine/core';
-import { IconRefresh, IconArrowLeft, IconAlertCircle, IconHome } from '@tabler/icons-react';
+import {
+  IconArrowLeft,
+  IconAlertCircle,
+  IconHome,
+  IconRefresh,
+} from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { WORKFLOW_MODULES } from '@/utils/workflowTemplates';
 import { OptionCard } from '@/components/workflow/OptionCard';
+import { StepInputPanel } from '@/components/workflow/StepInputPanel';
 
 function CardSkeleton() {
   return (
@@ -51,6 +57,7 @@ export function OptionsPanel() {
 
   const module = WORKFLOW_MODULES[step.moduleId];
   const isGenerating = generationStatus === 'loading' || step.status === 'generating';
+  const showInputPanel = step.status === 'input' || step.status === 'pending';
   const hasOptions = step.options.length > 0;
   const isFirstStep = currentStepIndex === 0;
 
@@ -64,7 +71,7 @@ export function OptionsPanel() {
 
   return (
     <Stack gap={0} style={{ height: '100%' }}>
-      {/* Step header */}
+      {/* Header */}
       <Box
         style={{
           padding: '14px 20px',
@@ -86,9 +93,11 @@ export function OptionsPanel() {
               {module.label}
             </Text>
             <Text size="xs" c="var(--text-muted)">
-              {module.description} · select one option to continue
+              {module.description}
+              {!showInputPanel && !isGenerating && ' · select one option to continue'}
             </Text>
           </Stack>
+
           <Group gap={8} wrap="nowrap" style={{ flexShrink: 0 }}>
             <Button
               variant="subtle"
@@ -104,42 +113,52 @@ export function OptionsPanel() {
             >
               {isFirstStep ? 'START OVER' : 'BACK'}
             </Button>
-            <Button
-              variant="outline"
-              size="xs"
-              leftSection={<IconRefresh size={12} />}
-              onClick={regenerateOptions}
-              disabled={isGenerating}
-              style={{
-                borderColor: 'var(--border)',
-                color: 'var(--text-secondary)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 11,
-                letterSpacing: '0.06em',
-              }}
-            >
-              REGENERATE
-            </Button>
+
+            {!showInputPanel && !isGenerating && hasOptions && (
+              <Button
+                variant="outline"
+                size="xs"
+                leftSection={<IconRefresh size={12} />}
+                onClick={regenerateOptions}
+                style={{
+                  borderColor: 'var(--border)',
+                  color: 'var(--text-secondary)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                REGENERATE
+              </Button>
+            )}
           </Group>
         </Group>
       </Box>
 
-      {/* Options area */}
-      <Box style={{ flex: 1, padding: 20, overflowY: 'auto' }}>
+      {/* Body */}
+      <Box style={{ flex: 1, overflowY: 'auto' }}>
         {lastError && generationStatus === 'error' && (
           <Alert
             icon={<IconAlertCircle size={14} />}
             color="red"
-            mb={16}
+            m={20}
+            mb={0}
             styles={{ message: { fontFamily: 'var(--font-mono)', fontSize: 12 } }}
           >
             {lastError}
           </Alert>
         )}
 
+        {showInputPanel && !isGenerating && (
+          <Box style={{ padding: '0 20px' }}>
+            <StepInputPanel moduleId={step.moduleId} />
+          </Box>
+        )}
+
         {isGenerating && (
           <Box
             style={{
+              padding: 20,
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
               gap: 16,
@@ -151,9 +170,11 @@ export function OptionsPanel() {
             <CardSkeleton />
           </Box>
         )}
-        {!isGenerating && hasOptions && (
+
+        {!showInputPanel && !isGenerating && hasOptions && (
           <Box
             style={{
+              padding: 20,
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
               gap: 16,

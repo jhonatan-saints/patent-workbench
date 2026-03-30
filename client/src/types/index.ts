@@ -1,4 +1,4 @@
-//  API client and domain types
+// API types
 export interface GenerateRequest {
   prompt: string;
   model?: string;
@@ -43,8 +43,12 @@ export type WorkflowModuleId =
   | 'description'
   | 'abstract';
 
-export type WorkflowPhase = 'input' | 'working' | 'preview';
-export type StepStatus = 'pending' | 'generating' | 'selecting' | 'done';
+export type WorkflowPhase = 'input' | 'working' | 'inventors' | 'preview';
+export type InputMode = 'auto' | 'guided' | 'manual';
+
+// 'input' = showing the 3-mode input panel (auto/guided/manual)
+export type StepStatus = 'pending' | 'input' | 'generating' | 'selecting' | 'done';
+
 export type GenerationStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export interface GeneratedOption {
@@ -71,10 +75,23 @@ export interface ArtifactSection {
   optionIndex: number;
 }
 
+export interface InventorInfo {
+  id: string;
+  name: string;
+  address?: string;
+  telephone?: string;
+  email?: string;
+  citizenship?: string;
+  employeeId?: string;
+}
+
 export interface PatentArtifact {
   baseIdea: string;
   baseDomain: string;
   constraints?: string;
+  idfNumber?: string;
+  businessGroup?: string;
+  inventors: InventorInfo[];
   sections: Partial<Record<WorkflowModuleId, ArtifactSection>>;
   model: string;
   startedAt: number;
@@ -112,12 +129,21 @@ export interface WorkbenchState {
   // Actions
   setModel: (model: string) => void;
   checkStatus: () => Promise<void>;
-  startWorkflow: (idea: string, domain: string, constraints?: string) => void;
-  generateStepOptions: () => Promise<void>;
+  startWorkflow: (idea: string, domain: string, constraints: string | undefined) => void;
+  goToInventors: () => void;
+  updateInventors: (inventors: InventorInfo[]) => void;
+  updatePatentMeta: (idfNumber: string | undefined, businessGroup: string | undefined) => void;
+  generateStepOptions: (overridePrompt?: string) => Promise<void>;
+  cancelGeneration: () => void;
+  submitManualContent: (content: string) => void;
   selectOption: (option: GeneratedOption) => void;
-  regenerateOptions: () => Promise<void>;
+  regenerateOptions: () => void;
   goToStep: (index: number) => void;
+  goToPreview: () => void;
   resetWorkflow: () => void;
+  updateSectionContent: (moduleId: WorkflowModuleId, content: string) => void;
+  updateArtifactBase: (idea: string, domain: string, constraints: string | undefined) => void;
+  loadSession: (session: WorkflowSession) => void;
   clearSessions: () => void;
   deleteSession: (id: string) => void;
 }

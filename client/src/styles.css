@@ -7,7 +7,7 @@
 
 @font-face {
   font-family: "IBM Plex Sans";
-  src: url("/assets/fonts/ibm-plex/IBMPlexSans-Variable.woff2") format("woff2");
+  src: url("./assets/fonts/ibm-plex/IBMPlexSans-Variable.woff2") format("woff2");
   font-weight: 300 700;
   font-style: normal;
   font-display: swap;
@@ -15,7 +15,7 @@
 
 @font-face {
   font-family: "IBM Plex Sans";
-  src: url("/assets/fonts/ibm-plex/IBMPlexSans-Variable-Italic.woff2") format("woff2");
+  src: url("./assets/fonts/ibm-plex/IBMPlexSans-Variable-Italic.woff2") format("woff2");
   font-weight: 300 700;
   font-style: italic;
   font-display: swap;
@@ -23,7 +23,7 @@
 
 @font-face {
   font-family: "IBM Plex Mono";
-  src: url("/assets/fonts/ibm-plex/IBMPlexMono-Regular.woff2") format("woff2");
+  src: url("./assets/fonts/ibm-plex/IBMPlexMono-Regular.woff2") format("woff2");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -31,7 +31,7 @@
 
 @font-face {
   font-family: "IBM Plex Serif";
-  src: url("/assets/fonts/ibm-plex/IBMPlexSerif-Variable.woff2") format("woff2");
+  src: url("./assets/fonts/ibm-plex/IBMPlexSerif-Variable.woff2") format("woff2");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -39,7 +39,7 @@
 
 @font-face {
   font-family: "IBM Plex Serif";
-  src: url("/assets/fonts/ibm-plex/IBMPlexSerif-Variable-Italic.woff2") format("woff2");
+  src: url("./assets/fonts/ibm-plex/IBMPlexSerif-Variable-Italic.woff2") format("woff2");
   font-weight: 400 700;
   font-style: italic;
   font-display: swap;
@@ -47,7 +47,7 @@
 
 @font-face {
   font-family: "IBM Plex Sans Condensed";
-  src: url("/assets/fonts/ibm-plex/IBMPlexSansCondensed-Bold.woff2") format("woff2");
+  src: url("./assets/fonts/ibm-plex/IBMPlexSansCondensed-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;

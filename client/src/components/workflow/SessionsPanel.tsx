@@ -21,20 +21,27 @@ function formatTime(ts: number): string {
 function SessionItem({
   session,
   onDelete,
+  onLoad,
 }: Readonly<{
   session: WorkflowSession;
   onDelete: () => void;
+  onLoad: () => void;
 }>) {
   const completedCount = WORKFLOW_ORDER.filter((m) => session.artifact.sections[m]).length;
 
   return (
     <Box
+      onClick={onLoad}
       style={{
         padding: '10px 12px',
         borderRadius: 4,
         border: '1px solid var(--border)',
         background: 'var(--surface)',
+        cursor: 'pointer',
+        transition: 'border-color 0.15s ease',
       }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; }}
     >
       <Group justify="space-between" wrap="nowrap" gap={8}>
         <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
@@ -74,9 +81,10 @@ function SessionItem({
         </Stack>
         <Tooltip label="Remove session">
           <ActionIcon
+            aria-label="Remove session"
             variant="subtle"
             size="xs"
-            onClick={onDelete}
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
             style={{ color: 'var(--text-muted)', flexShrink: 0 }}
           >
             <IconX size={12} />
@@ -88,7 +96,7 @@ function SessionItem({
 }
 
 export function SessionsPanel() {
-  const { sessions, deleteSession, clearSessions } = useWorkbenchStore();
+  const { sessions, loadSession, deleteSession, clearSessions } = useWorkbenchStore();
 
   if (sessions.length === 0) {
     return (
@@ -141,6 +149,7 @@ export function SessionsPanel() {
             <SessionItem
               key={session.id}
               session={session}
+              onLoad={() => loadSession(session)}
               onDelete={() => deleteSession(session.id)}
             />
           ))}
