@@ -1,5 +1,5 @@
 /**
- * Generates PNG favicons from client/public/favicon.svg.
+ * Generates PNG favicons from client/assets/icons/favicon.svg.
  * Run once: node scripts/generate-favicons.mjs
  *
  * Chromium icon sizes:
