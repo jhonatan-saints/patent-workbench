@@ -1,6 +1,6 @@
 import { Box, Text, Group, Progress, Tooltip } from '@mantine/core';
-import { useWorkbenchStore } from '../store/workbench';
-import { estimateTokens } from '../utils/templates';
+import { useWorkbenchStore } from '@/store/workbench';
+import { estimateTokens } from '@/utils/templates';
 
 // Approximate context window sizes per model (TBD: fetch this from API)
 const MODEL_CONTEXT: Record<string, number> = {
@@ -36,7 +36,7 @@ export function TokenMeter() {
       }}
     >
       <Group justify="space-between" mb={6}>
-        <Text size="xs" fw={600} tt="uppercase" ff="monospace" c="dimmed" className="tracking-[1px]">
+        <Text size="xs" fw={600} tt="uppercase" ff="monospace" c="var(--text-muted)" className="tracking-[1px]">
           Token Budget
         </Text>
         <Text size="xs" ff="monospace" style={{ color }}>
@@ -60,10 +60,10 @@ export function TokenMeter() {
       </Tooltip>
 
       <Group justify="space-between" mt={6}>
-        <Text size="xs" c="dimmed" ff="monospace">
+        <Text size="xs" c="var(--text-muted)" ff="monospace">
           session: {sessionTokens.toLocaleString()}t total
         </Text>
-        <Text size="xs" c="dimmed" ff="monospace">
+        <Text size="xs" c="var(--text-muted)" ff="monospace">
           {selectedModel.split(':')[0]}
         </Text>
       </Group>

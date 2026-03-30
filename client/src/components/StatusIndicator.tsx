@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Group, Badge, Text, Tooltip, ActionIcon } from '@mantine/core';
 import { IconRefresh, IconCircleFilled } from '@tabler/icons-react';
-import { useWorkbenchStore } from '../store/workbench';
+import { useWorkbenchStore } from '@/store/workbench';
 
 export function StatusIndicator() {
   const { llmStatus, llmLatency, checkStatus } = useWorkbenchStore();
@@ -12,22 +12,17 @@ export function StatusIndicator() {
     return () => clearInterval(interval);
   }, [checkStatus]);
 
-
-  let color;
-  if (llmStatus === 'ok') {
-    color = '#4ade80';
-  } else if (llmStatus === 'unavailable') {
-    color = '#f87171';
-  } else {
-    color = '#fbbf24';
-  }
-
   let label;
+  let color;
+
   if (llmStatus === 'ok') {
+    color = 'var(--status-online)';
     label = 'LLM ONLINE';
   } else if (llmStatus === 'unavailable') {
+    color = 'var(--status-offline)';
     label = 'LLM OFFLINE';
   } else {
+    color = 'var(--status-checking)';
     label = 'CHECKING...';
   }
 
@@ -44,16 +39,16 @@ export function StatusIndicator() {
             <IconCircleFilled
               size={8}
               style={{
-                color,
+                color: color,
                 animation: llmStatus === 'checking' ? 'pulse 1s infinite' : undefined,
               }}
             />
           }
           style={{
             borderColor: color,
-            color,
+            color: color,
             fontFamily: 'var(--font-mono)',
-            fontSize: '10px',
+            fontSize: '11px',
             letterSpacing: '0.08em',
           }}
         >
@@ -62,7 +57,7 @@ export function StatusIndicator() {
       </Tooltip>
 
       {llmLatency != null && llmStatus === 'ok' && (
-        <Text size="xs" c="dimmed" ff="monospace">
+        <Text style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
           {llmLatency}ms
         </Text>
       )}
@@ -72,9 +67,9 @@ export function StatusIndicator() {
         size="xs"
         onClick={checkStatus}
         title="Refresh status"
-        style={{ color: 'var(--mantine-color-dimmed)' }}
+        style={{ color: 'var(--text-muted)' }}
       >
-        <IconRefresh size={12} />
+        <IconRefresh size={14} />
       </ActionIcon>
     </Group>
   );

@@ -1,5 +1,4 @@
-// API
-
+//  API client and domain types
 export interface GenerateRequest {
   prompt: string;
   model?: string;
@@ -33,9 +32,9 @@ export interface ModelsResponse {
   data: { models: string[] };
 }
 
-// Domain
-
-export type PatentSection =
+// Workflow domain types
+export type WorkflowModuleId =
+  | 'idea_analysis'
   | 'title'
   | 'field'
   | 'background'
@@ -44,30 +43,54 @@ export type PatentSection =
   | 'description'
   | 'abstract';
 
-export interface PatentPromptTemplate {
-  id: PatentSection;
-  label: string;
-  description: string;
-  systemContext: string;
-  userTemplate: string;
-  tokenEstimate: number;
+export type WorkflowPhase = 'input' | 'working' | 'preview';
+export type StepStatus = 'pending' | 'generating' | 'selecting' | 'done';
+export type GenerationStatus = 'idle' | 'loading' | 'success' | 'error';
+
+export interface GeneratedOption {
+  id: string;
+  index: number;
+  content: string;
 }
 
-export interface GenerationRecord {
-  id: string;
-  timestamp: number;
-  section: PatentSection | 'custom';
-  prompt: string;
-  response: string;
-  model: string;
+export interface WorkflowStep {
+  moduleId: WorkflowModuleId;
+  label: string;
+  description: string;
+  status: StepStatus;
+  options: GeneratedOption[];
+  selectedOption: GeneratedOption | null;
   promptTokens: number;
   completionTokens: number;
 }
 
-// UI State
+export interface ArtifactSection {
+  moduleId: WorkflowModuleId;
+  content: string;
+  selectedAt: number;
+  optionIndex: number;
+}
 
-export type GenerationStatus = 'idle' | 'loading' | 'success' | 'error';
+export interface PatentArtifact {
+  baseIdea: string;
+  baseDomain: string;
+  constraints?: string;
+  sections: Partial<Record<WorkflowModuleId, ArtifactSection>>;
+  model: string;
+  startedAt: number;
+}
 
+export interface WorkflowSession {
+  id: string;
+  startedAt: number;
+  completedAt: number;
+  baseIdea: string;
+  artifact: PatentArtifact;
+  model: string;
+  totalTokens: number;
+}
+
+// UI state
 export interface WorkbenchState {
   // LLM
   selectedModel: string;
@@ -75,22 +98,26 @@ export interface WorkbenchState {
   llmStatus: 'ok' | 'unavailable' | 'checking';
   llmLatency: number | null;
 
-  // Generation
-  currentPrompt: string;
-  currentSection: PatentSection | 'custom';
+  // Workflow
+  workflowPhase: WorkflowPhase;
+  steps: WorkflowStep[];
+  currentStepIndex: number; // -1 = idea input phase
+  artifact: PatentArtifact | null;
   generationStatus: GenerationStatus;
-  lastResponse: string | null;
   lastError: string | null;
 
-  // History (in-memory only)
-  history: GenerationRecord[];
+  // Sessions (in-memory only)
+  sessions: WorkflowSession[];
 
   // Actions
   setModel: (model: string) => void;
-  setPrompt: (prompt: string) => void;
-  setSection: (section: PatentSection | 'custom') => void;
-  generate: () => Promise<void>;
   checkStatus: () => Promise<void>;
-  clearHistory: () => void;
-  deleteRecord: (id: string) => void;
+  startWorkflow: (idea: string, domain: string, constraints?: string) => void;
+  generateStepOptions: () => Promise<void>;
+  selectOption: (option: GeneratedOption) => void;
+  regenerateOptions: () => Promise<void>;
+  goToStep: (index: number) => void;
+  resetWorkflow: () => void;
+  clearSessions: () => void;
+  deleteSession: (id: string) => void;
 }
