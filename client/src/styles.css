@@ -1,10 +1,57 @@
 /*
- * Import only theme (design tokens) and utilities — skip preflight/base reset
+ * We import only theme (design tokens) and utilities — skipping preflight/base reset
  * so Mantine's own reset is not overridden.
- */
+*/
 @import "tailwindcss/theme.css";
 @import "tailwindcss/utilities.css";
-@import "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&display=swap";
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/assets/fonts/ibm-plex/IBMPlexSans-Variable.woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/assets/fonts/ibm-plex/IBMPlexSans-Variable-Italic.woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/assets/fonts/ibm-plex/IBMPlexMono-Regular.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Serif";
+  src: url("/assets/fonts/ibm-plex/IBMPlexSerif-Variable.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Serif";
+  src: url("/assets/fonts/ibm-plex/IBMPlexSerif-Variable-Italic.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans Condensed";
+  src: url("/assets/fonts/ibm-plex/IBMPlexSansCondensed-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 /*
  * @theme maps Tailwind utility classes to our CSS custom properties.
@@ -53,35 +100,47 @@
 :root,
 [data-mantine-color-scheme="dark"] {
   --bg:             #0e0e0e;
+  --danger:         #ff9f9f;
+  --primary:        #005fb8;
+  --success:        #55ff54;
   --surface:        #141414;
   --surface-raised: #1a1a1a;
   --surface-active: #0d1929;
   --accent:         #60b5ff;
   --accent-dim:     #0a91ff;
   --accent-glow:    rgb(96 181 255 / 12%);
+  --accent-text:    #000;
   --border:         #2e2e2e;
   --border-subtle:  #1e1e1e;
   --text-primary:   #e4e3e3;
   --text-secondary: #a8a8a8;
-  --text-muted:     #787877;
-  --mantine-color-dimmed: #a8a8a8;
+  --text-muted:     #f5f5f4;
+  --status-online:  #55ff54;
+  --status-checking:#f1742c;
+  --status-offline: #ff9f9f;
 }
 
 /* Light scheme */
 [data-mantine-color-scheme="light"] {
   --bg:             #f5f5f4;
+  --danger:         #dd0100;
+  --primary:        #60b5ff;
+  --success:        #009800;
   --surface:        #fff;
   --surface-raised: #e4e3e3;
   --surface-active: #edf5ff;
   --accent:         #005fb8;
   --accent-dim:     #004890;
   --accent-glow:    rgb(0 95 184 / 12%);
+  --accent-text:    #fff;
   --border:         #cccccb;
   --border-subtle:  #e4e3e3;
   --text-primary:   #222;
   --text-secondary: #474747;
-  --text-muted:     #5e5e5d;
-  --mantine-color-dimmed: #5e5e5d;
+  --text-muted:     #626261;
+  --status-online:  #017300;
+  --status-offline: #af0000;
+  --status-checking: #964902;
 }
 
 /* Reset & Base */
@@ -161,6 +220,10 @@ body {
 .mantine-TextInput-input:focus {
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 2px var(--accent-glow) !important;
+}
+
+.mantine-Textarea-required {
+  color: var(--danger) !important;
 }
 
 .mantine-Select-option[data-selected] {
