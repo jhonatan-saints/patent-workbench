@@ -72,29 +72,11 @@ The client talks exclusively to the Express backend via a typed API layer. The s
 
 Ollama must run exclusively on localhost. Never expose it to the network or enable cloud features while using Patent Workbench, as prompts contain confidential invention disclosures.
 
-Set the following environment variables before starting Ollama (or add them to your system profile):
+In the **Ollama desktop app settings**, make sure the following options are **disabled**:
 
-```bash
-# Bind only to localhost — never 0.0.0.0
-OLLAMA_HOST=127.0.0.1
-
-# Disable the Ollama cloud / telemetry features
-OLLAMA_NOPRUNE=false
-OLLAMA_ORIGINS=http://localhost:3001   # only the workbench server may connect
-
-# Disable automatic model downloads triggered by API calls
-# Models must be pulled explicitly with `ollama pull <model>`
-OLLAMA_MODELS_AUTO_DOWNLOAD=false
-```
-
-On Windows you can set these permanently via **System Properties → Environment Variables** or via PowerShell:
-
-```powershell
-[System.Environment]::SetEnvironmentVariable("OLLAMA_HOST", "127.0.0.1", "User")
-[System.Environment]::SetEnvironmentVariable("OLLAMA_ORIGINS", "http://localhost:3001", "User")
-```
-
-Restart Ollama after changing environment variables.
+- **Expose Ollama to the network** — keeps the API bound to `127.0.0.1` only; disabling this prevents other machines on the network from reaching your local models.
+- **Cloud** — disables any cloud-assisted features or telemetry that could transmit prompt data externally.
+- **Auto-download models** — prevents Ollama from silently pulling models in response to API requests; models must be pulled explicitly with `ollama pull <model>`.
 
 ### Context length recommendations
 
