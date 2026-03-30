@@ -1,5 +1,10 @@
 {
-  "line-length": false,
+  "line-length": {
+    "line_length": 200
+  },
+  "MD013": {
+    "line_length": 200
+  },
   "single-title": false,
   "first-line-heading": false,
   "no-trailing-spaces": false,

@@ -26,7 +26,7 @@ For every step the LLM generates three distinct options to choose from. You pick
 
 ### Workflow phases
 
-```
+```text
 input → working (steps 1–7) → inventors → preview / export
 ```
 
@@ -46,11 +46,11 @@ input → working (steps 1–7) → inventors → preview / export
 - **Export** — save as `.md` (with metadata) or `.docx` (Word document).
 - **Prompt injection protection** — server-side detection and rejection of jailbreak patterns.
 - **Cancellation** — cancel an in-progress generation at any time.
- - **Diagram & Figure Generation** — create flowcharts/diagrams in-app or upload images in the Figures step (Step 08) and include them in exported documents.
+- **Diagram & Figure Generation** — create flowcharts/diagrams in-app or upload images in the Figures step and include them in exported documents.
 
 ## Architecture
 
-```
+```text
 patent-workbench/
 ├── client/          # React 18 + Vite + Mantine v7 + Tailwind CSS frontend
 ├── server/          # Express + TypeScript API (LLM proxy)
