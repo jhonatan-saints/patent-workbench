@@ -34,16 +34,15 @@ export interface ModelsResponse {
 
 // Workflow domain types
 export type WorkflowModuleId =
-  | 'idea_analysis'
-  | 'title'
-  | 'field'
-  | 'background'
-  | 'summary'
-  | 'claims'
-  | 'description'
-  | 'abstract';
+  | 'problem'
+  | 'previous_solutions'
+  | 'differences'
+  | 'invention_summary'
+  | 'variations'
+  | 'other_applications'
+  | 'full_description';
 
-export type WorkflowPhase = 'input' | 'working' | 'inventors' | 'preview';
+export type WorkflowPhase = 'input' | 'working' | 'figures' | 'inventors' | 'preview';
 export type InputMode = 'auto' | 'guided' | 'manual';
 
 // 'input' = showing the 3-mode input panel (auto/guided/manual)
@@ -88,13 +87,25 @@ export interface InventorInfo {
   employeeId?: string;
 }
 
+export interface FigureItem {
+  id: string;
+  dataUrl: string;   // base64 data URL
+  name: string;      // e.g. "Figure 1"
+  caption: string;
+  width?: number;
+  height?: number;
+  type?: 'image' | 'diagram';
+}
+
 export interface PatentArtifact {
   baseIdea: string;
   baseDomain: string;
   constraints?: string;
+  inventionTitle?: string;
   idfNumber?: string;
   businessGroup?: string;
   inventors: InventorInfo[];
+  figures: FigureItem[];
   sections: Partial<Record<WorkflowModuleId, ArtifactSection>>;
   model: string;
   startedAt: number;
@@ -139,9 +150,12 @@ export interface WorkbenchState {
   setModel: (model: string) => void;
   checkStatus: () => Promise<void>;
   startWorkflow: (idea: string, domain: string, constraints: string | undefined) => void;
+  goToFigures: () => void;
   goToInventors: () => void;
   updateInventors: (inventors: InventorInfo[]) => void;
   updatePatentMeta: (idfNumber: string | undefined, businessGroup: string | undefined) => void;
+  updateFigures: (figures: FigureItem[]) => void;
+  updateInventionTitle: (title: string) => void;
   generateStepOptions: (overridePrompt?: string) => Promise<void>;
   cancelGeneration: () => void;
   submitManualContent: (content: string) => void;

@@ -79,6 +79,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       baseDomain: domain.trim(),
       constraints: constraints?.trim() || undefined,
       inventors: [],
+      figures: [],
       sections: {},
       model: selectedModel,
       startedAt: Date.now(),
@@ -210,14 +211,14 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
         return s;
       }),
       currentStepIndex: isComplete ? currentStepIndex : nextIndex,
-      // Stay in working phase; user navigates to preview via step 09
+      // Stay in working phase; user navigates to figures/preview via sidebar
       workflowPhase: 'working',
       generationStatus: 'idle',
     }));
 
     if (isComplete) {
-      // Auto-navigate to inventors step when all 8 steps are done
-      set({ workflowPhase: 'inventors' });
+      // Auto-navigate to figures step when all 7 content steps are done
+      set({ workflowPhase: 'figures' });
     }
   },
 
@@ -286,6 +287,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     }
   },
 
+  goToFigures: () => set({ workflowPhase: 'figures' }),
+
   goToInventors: () => set({ workflowPhase: 'inventors' }),
 
   updateInventors: (inventors) => {
@@ -305,6 +308,20 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
           businessGroup: businessGroup || undefined,
         },
       };
+    });
+  },
+
+  updateFigures: (figures) => {
+    set((state) => {
+      if (!state.artifact) return {};
+      return { artifact: { ...state.artifact, figures } };
+    });
+  },
+
+  updateInventionTitle: (inventionTitle) => {
+    set((state) => {
+      if (!state.artifact) return {};
+      return { artifact: { ...state.artifact, inventionTitle } };
     });
   },
 
@@ -395,7 +412,10 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       };
     });
     set({
-      artifact: session.artifact,
+      artifact: {
+        ...session.artifact,
+        figures: session.artifact.figures ?? [],
+      },
       steps,
       currentStepIndex: steps.length - 1,
       workflowPhase: 'preview',

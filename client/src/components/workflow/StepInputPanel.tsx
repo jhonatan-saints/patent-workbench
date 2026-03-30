@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Box,
   Stack,
@@ -17,7 +16,7 @@ import {
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { WORKFLOW_MODULES } from '@/utils/workflowTemplates';
-import type { WorkflowModuleId, PatentArtifact, InputMode } from '@/types';
+import type { WorkflowModuleId, InputMode } from '@/types';
 
 const LABEL_STYLES = {
   fontFamily: 'var(--font-mono)',
@@ -38,55 +37,6 @@ const INPUT_STYLES = {
   },
 };
 
-interface InventionBaseFieldsProps {
-  readonly artifact: PatentArtifact;
-  readonly onUpdate: (idea: string, domain: string, constraints: string | undefined) => void;
-}
-
-function InventionBaseFields({ artifact, onUpdate }: InventionBaseFieldsProps) {
-  const [idea, setIdea] = useState(artifact.baseIdea);
-  const [domain, setDomain] = useState(artifact.baseDomain);
-  const [constraints, setConstraints] = useState(artifact.constraints ?? '');
-
-  const handleBlur = () => {
-    onUpdate(idea, domain, constraints || undefined);
-  };
-
-  return (
-    <Stack gap={10}>
-      <Textarea
-        label="Invention Concept"
-        placeholder="Describe the core idea, mechanism, or technical approach of your invention..."
-        value={idea}
-        onChange={(e) => setIdea(e.currentTarget.value)}
-        onBlur={handleBlur}
-        minRows={4}
-        maxRows={10}
-        autosize
-        styles={INPUT_STYLES}
-      />
-      <TextInput
-        label="Technology Domain"
-        placeholder="e.g., Artificial Intelligence / Natural Language Processing"
-        value={domain}
-        onChange={(e) => setDomain(e.currentTarget.value)}
-        onBlur={handleBlur}
-        styles={INPUT_STYLES}
-      />
-      <Textarea
-        label="Constraints & Notes"
-        placeholder="e.g., Must work offline, targets embedded devices, prior art includes..."
-        value={constraints}
-        onChange={(e) => setConstraints(e.currentTarget.value)}
-        onBlur={handleBlur}
-        minRows={2}
-        maxRows={6}
-        autosize
-        styles={INPUT_STYLES}
-      />
-    </Stack>
-  );
-}
 
 interface Props {
   readonly moduleId: WorkflowModuleId;
@@ -101,7 +51,6 @@ export function StepInputPanel({ moduleId }: Props) {
     generateStepOptions,
     cancelGeneration,
     submitManualContent,
-    updateArtifactBase,
     setStepInputState,
   } = useWorkbenchStore();
 
@@ -191,14 +140,8 @@ export function StepInputPanel({ moduleId }: Props) {
       {/* AUTO mode */}
       {mode === 'auto' && (
         <Stack gap={12}>
-          {moduleId === 'idea_analysis' && artifact ? (
-            <InventionBaseFields
-              artifact={artifact}
-              onUpdate={(idea, domain, constraints) => updateArtifactBase(idea, domain, constraints)}
-            />
-          ) : (
-            artifact && (
-              <Box
+          {artifact && (
+            <Box
                 style={{
                   background: 'var(--surface)',
                   border: '1px solid var(--border)',
@@ -228,7 +171,6 @@ export function StepInputPanel({ moduleId }: Props) {
                   )}
                 </Stack>
               </Box>
-            )
           )}
           {isGenerating ? (
             <Button

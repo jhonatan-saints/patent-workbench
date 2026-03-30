@@ -19,6 +19,7 @@ import { OptionsPanel } from '@/components/workflow/OptionsPanel';
 import { ArtifactPreview } from '@/components/workflow/ArtifactPreview';
 import { PreviewPhase } from '@/components/workflow/PreviewPhase';
 import { InventorsStep } from '@/components/workflow/InventorsStep';
+import { FiguresStep } from '@/components/workflow/FiguresStep';
 import { SessionsPanel } from '@/components/workflow/SessionsPanel';
 import { useWorkbenchStore } from '@/store/workbench';
 import { AppLoader } from '@/components/AppLoader';
@@ -90,6 +91,7 @@ function ThemeToggle() {
 export function App() {
   const { workflowPhase } = useWorkbenchStore();
   const isWorking = workflowPhase === 'working';
+  const isFigures = workflowPhase === 'figures';
   const isInventors = workflowPhase === 'inventors';
   const isPreview = workflowPhase === 'preview';
 
@@ -180,6 +182,20 @@ export function App() {
               left={<OptionsPanel />}
               right={<ArtifactPreview />}
             />
+          </Box>
+        )}
+
+        {/* Figures phase (step 08) */}
+        {isFigures && (
+          <Box
+            style={{
+              height: 'calc(100vh - 52px)',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <FiguresStep />
           </Box>
         )}
 

@@ -42,7 +42,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
     setEditing(false);
   };
 
-  const isTitle = moduleId === 'title';
+  const isTitle = false;
 
   return (
     <Box>
@@ -242,19 +242,110 @@ export function PreviewPhase() {
             }}
           >
             <Stack gap={28}>
-              {WORKFLOW_ORDER.map((moduleId, i) => {
+              {/* Inventors block — IDF format: blue labels, field-per-line */}
+              {artifact.inventors.length > 0 && (
+                <Box>
+                  <Text
+                    style={{
+                      color: '#4472C4',
+                      fontFamily: 'Calibri, Arial, sans-serif',
+                      fontSize: 18,
+                      fontWeight: 400,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Inventors
+                  </Text>
+                  {artifact.inventors.map((inv) => (
+                    <Box key={inv.id} mb={8}>
+                      <Text style={{ color: '#4472C4', fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, marginTop: 10, marginBottom: 2 }}>Name:</Text>
+                      <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, fontWeight: 700, color: '#111' }}>{inv.name}</Text>
+                      {inv.address && (<>
+                        <Text style={{ color: '#4472C4', fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, marginTop: 10, marginBottom: 2 }}>Home Address:</Text>
+                        <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111' }}>{inv.address}</Text>
+                      </>)}
+                      {inv.telephone && (<>
+                        <Text style={{ color: '#4472C4', fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, marginTop: 10, marginBottom: 2 }}>Home Telephone:</Text>
+                        <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111' }}>{inv.telephone}</Text>
+                      </>)}
+                      <Text style={{ color: '#4472C4', fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, marginTop: 10, marginBottom: 2 }}>Home Email:</Text>
+                      <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111' }}>{inv.email ?? ''}</Text>
+                      {inv.citizenship && (<>
+                        <Text style={{ color: '#4472C4', fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, marginTop: 10, marginBottom: 2 }}>Citizenship:</Text>
+                        <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111' }}>{inv.citizenship}</Text>
+                      </>)}
+                      {inv.employeeId && (<>
+                        <Text style={{ color: '#4472C4', fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, marginTop: 10, marginBottom: 2 }}>Employee ID:</Text>
+                        <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, fontWeight: 700, color: '#111' }}>{inv.employeeId}</Text>
+                      </>)}
+                    </Box>
+                  ))}
+                  <Divider mt={20} mb={0} style={{ borderColor: '#ddd' }} />
+                </Box>
+              )}
+
+              {/* Invention Title + IDF metadata — bold black labels */}
+              {(artifact.inventionTitle || artifact.idfNumber || artifact.businessGroup) && (
+                <Box>
+                  <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 2 }}>Invention Title</Text>
+                  <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111', marginBottom: 10 }}>
+                    {artifact.inventionTitle ?? artifact.baseIdea}
+                  </Text>
+                  <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 2 }}>IDF Number</Text>
+                  {artifact.idfNumber && (
+                    <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111', marginBottom: 10 }}>{artifact.idfNumber}</Text>
+                  )}
+                  {artifact.businessGroup && (<>
+                    <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 2 }}>Business Group</Text>
+                    <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111' }}>{artifact.businessGroup}</Text>
+                  </>)}
+                  <Divider mt={20} mb={0} style={{ borderColor: '#ddd' }} />
+                </Box>
+              )}
+
+              {/* Content sections */}
+              {WORKFLOW_ORDER.map((moduleId) => {
                 const section = artifact.sections[moduleId];
                 if (!section) return null;
 
                 return (
                   <Box key={moduleId}>
-                    {i > 0 && (
-                      <Divider mb={24} style={{ borderColor: '#ddd' }} />
-                    )}
                     <EditableSection moduleId={moduleId} content={section.content} />
                   </Box>
                 );
               })}
+
+              {/* Figures section */}
+              {artifact.figures?.length > 0 && (
+                <Box>
+                  <Divider mb={24} style={{ borderColor: '#ddd' }} />
+                  <Text
+                    style={{
+                      color: '#4472C4',
+                      fontFamily: 'Calibri, Arial, sans-serif',
+                      fontSize: 18,
+                      fontWeight: 400,
+                      marginBottom: 16,
+                    }}
+                  >
+                    Figures
+                  </Text>
+                  <Stack gap={20}>
+                    {artifact.figures.map((fig) => (
+                      <Box key={fig.id} style={{ textAlign: 'center' }}>
+                        <img
+                          src={fig.dataUrl}
+                          alt={fig.name}
+                          style={{ maxWidth: '100%', border: '1px solid #ddd', borderRadius: 4 }}
+                        />
+                        <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 12, color: '#555', marginTop: 6, fontStyle: 'italic' }}>
+                          {fig.name}{fig.caption ? ` — ${fig.caption}` : ''}
+                        </Text>
+                      </Box>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
 
               {completedSections.length === 0 && (
                 <Text size="sm" c="var(--text-muted)" ta="center" py={40}>
