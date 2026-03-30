@@ -1,4 +1,5 @@
 import { Group, Button, Text, Box, Select } from '@mantine/core';
+import type { Dispatch, SetStateAction } from 'react';
 import { IconFileText, IconFileTypePdf, IconFileWord, IconMarkdown } from '@tabler/icons-react';
 import { useState } from 'react';
 import {
@@ -17,7 +18,6 @@ import type { PatentArtifact } from '@/types';
 type ExportFormat = 'md' | 'txt' | 'pdf' | 'docx';
 
 // IDF-style formatters
-
 function inventorBlock(artifact: PatentArtifact): string {
   const lines: string[] = [];
   if (artifact.idfNumber) lines.push(`IDF Number: ${artifact.idfNumber}`);
@@ -234,7 +234,7 @@ async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
         text: label,
         heading: HeadingLevel.HEADING_1,
         spacing: { before: 360, after: 120 },
-        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '333333' } },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '333333' } }
       })
     );
 
@@ -245,7 +245,7 @@ async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
         new Paragraph({
           children: [new TextRun({ text: para.trim(), size: 24 })],
           spacing: { after: 160 },
-          alignment: AlignmentType.JUSTIFIED,
+          alignment: AlignmentType.JUSTIFIED
         })
       );
     }
@@ -258,7 +258,7 @@ async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
         {
           id: 'Normal',
           name: 'Normal',
-          run: { font: 'Times New Roman', size: 24 },
+          run: { font: 'Times New Roman', size: 24 }
         },
       ],
     },
@@ -284,7 +284,13 @@ function formatIcon(format: ExportFormat) {
   return <IconFileText size={13} />;
 }
 
-export function ExportPanel() {
+export function ExportPanel({
+  zoom,
+  setZoom,
+}: Readonly<{
+  zoom?: number;
+  setZoom?: Dispatch<SetStateAction<number>>;
+}>) {
   const { artifact, saveCurrentSession } = useWorkbenchStore();
   const [format, setFormat] = useState<ExportFormat>('docx');
   const [exporting, setExporting] = useState(false);
@@ -342,6 +348,29 @@ export function ExportPanel() {
       }}
     >
       <Group gap={8} justify="flex-end">
+        {typeof zoom === 'number' && setZoom && (
+          <Group gap={4} style={{ flexShrink: 0, marginRight: 16 }}>
+            <Button
+              variant="subtle"
+              size="xs"
+              onClick={() => setZoom((z) => Math.max(0.5, Number.parseFloat((z - 0.1).toFixed(1))))}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', minWidth: 28, padding: '0 6px' }}
+            >
+              −
+            </Button>
+            <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)', minWidth: 36, textAlign: 'center' }}>
+              {Math.round(zoom * 100)}%
+            </Text>
+            <Button
+              variant="subtle"
+              size="xs"
+              onClick={() => setZoom((z) => Math.min(1.5, Number.parseFloat((z + 0.1).toFixed(1))))}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', minWidth: 28, padding: '0 6px' }}
+            >
+              +
+            </Button>
+          </Group>
+        )}
         <Text size="xs" c="var(--text-muted)" ff="monospace">
           Export:
         </Text>
@@ -352,8 +381,7 @@ export function ExportPanel() {
           data={[
             { value: 'docx', label: '.docx' },
             { value: 'pdf', label: '.pdf' },
-            { value: 'txt', label: '.txt' },
-            { value: 'md', label: '.md' },
+            { value: 'txt', label: '.txt' }
           ]}
           style={{ width: 90 }}
           styles={{
@@ -364,11 +392,11 @@ export function ExportPanel() {
               border: '1px solid var(--border)',
               color: 'var(--text-primary)',
               height: 28,
-              minHeight: 28,
+              minHeight: 28
             },
             dropdown: {
               background: 'var(--surface)',
-              border: '1px solid var(--border)',
+              border: '1px solid var(--border)'
             },
           }}
         />
@@ -385,7 +413,7 @@ export function ExportPanel() {
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: '0.05em',
-            height: 28,
+            height: 28
           }}
         >
           DOWNLOAD
