@@ -22,7 +22,7 @@ const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173'
 const bodyLimit = process.env.BODY_LIMIT || '128kb'
 
 
-// ─── Security headers ────────────────────────────────────────────────────────
+// Security headers
 app.use(
   helmet({
     contentSecurityPolicy: true,
@@ -33,20 +33,20 @@ app.use(
   })
 )
 
-// ─── CORS ────────────────────────────────────────────────────────────────────
+// CORS
 app.use(cors({ origin: corsOrigin }))
 
-// ─── Body parsing ────────────────────────────────────────────────────────────
+// Body parsing
 app.use(express.json({ limit: bodyLimit }))
 app.use(compression())
 
-// ─── Request ID ──────────────────────────────────────────────────────────────
+// Request ID
 app.use((req, _res, next) => {
   req.headers['x-request-id'] ??= randomUUID()
   next()
 })
 
-// ─── Rate limiting ───────────────────────────────────────────────────────────
+// Rate limiting
 app.use(
   rateLimit({
     windowMs: Number(process.env.RATE_WINDOW_MS) || 15 * 60 * 1000,
@@ -62,7 +62,7 @@ app.use(
   })
 )
 
-// ─── Logging (sem body — dados confidenciais) ─────────────────────────────────
+// Logging (without body — sensitive data)
 app.use(
   pinoHttp({
     logger,
@@ -83,9 +83,9 @@ app.use(
   }) as any
 )
 
-// ─── Schema ──────────────────────────────────────────────────────────────────
+// Schema
 const generateSchema = z.object({
-  prompt: z.string().min(1, 'Prompt is required').max(4000, 'Prompt too long'),
+  prompt: z.string().min(1, 'Prompt is required').max(16000, 'Prompt too long'),
   model: z.string().optional(),
 })
 
@@ -95,13 +95,13 @@ const llmResponseSchema = z.object({
   response: z.string().min(0).optional(),
 })
 
-// ─── GET /models ──────────────────────────────────────────────────────────────
+// GET /models
 app.get('/models', async (_req: Request, res: Response) => {
   const models = await listModels()
   return res.json({ success: true, data: { models } })
 })
 
-// ─── GET /status ──────────────────────────────────────────────────────────────
+// GET /status
 app.get('/status', async (_req: Request, res: Response) => {
   const start = Date.now()
   const llmAvailable = await checkLLM()
@@ -117,7 +117,7 @@ app.get('/status', async (_req: Request, res: Response) => {
   })
 })
 
-// ─── POST /generate ───────────────────────────────────────────────────────────
+// POST /generate
 app.post(
   '/generate',
   validateBody(generateSchema),
@@ -157,7 +157,7 @@ app.post(
   }
 )
 
-// ─── Error handler (sempre por último) ───────────────────────────────────────
+// Error handler (must be last middleware)
 app.use(errorHandler)
 
 export default app
