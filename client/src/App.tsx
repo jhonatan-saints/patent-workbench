@@ -21,6 +21,7 @@ import { PreviewPhase } from '@/components/workflow/PreviewPhase';
 import { InventorsStep } from '@/components/workflow/InventorsStep';
 import { SessionsPanel } from '@/components/workflow/SessionsPanel';
 import { useWorkbenchStore } from '@/store/workbench';
+import { AppLoader } from '@/components/AppLoader';
 
 function ResizableSplit({ left, right }: { readonly left: ReactNode; readonly right: ReactNode }) {
   const [leftPct, setLeftPct] = useState(50);
@@ -91,6 +92,16 @@ export function App() {
   const isWorking = workflowPhase === 'working';
   const isInventors = workflowPhase === 'inventors';
   const isPreview = workflowPhase === 'preview';
+
+  // Loading state for initial mount
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    // wait 2.5 seconds before removing the loading for better UX
+    const handle = setTimeout(() => setLoading(false), 2500);
+    return () => clearTimeout(handle);
+  }, []);
+
+  if (loading) return <AppLoader />;
 
   return (
     <AppShell
