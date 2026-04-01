@@ -7,6 +7,11 @@ import type {
   ModelsResponse,
 } from '@/types';
 
+interface ModelContextResponse {
+  success: true;
+  data: { contextLength: number | null };
+}
+
 const BASE_URL = '/api';
 
 const DEFAULT_TIMEOUT_MS = 120_000; // 2 min — LLMs are slow
@@ -96,6 +101,17 @@ export async function getStatus(): Promise<StatusResponse> {
     return (result as { success: true; data: StatusResponse }).data;
   } catch {
     return { server: 'error', llm: 'unavailable', latency: 0 };
+  }
+}
+
+export async function getModelContextLength(model: string): Promise<number | null> {
+  try {
+    const encoded = encodeURIComponent(model);
+    const result = await apiFetch<ModelContextResponse>(`/models/${encoded}/context`, {}, 5_000);
+    if ('success' in result && result.success === false) return null;
+    return result.data.contextLength;
+  } catch {
+    return null;
   }
 }
 

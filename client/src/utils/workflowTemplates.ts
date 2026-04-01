@@ -32,6 +32,7 @@ export const WORKFLOW_ORDER: WorkflowModuleId[] = [
 
 const MAX_SECTION_CHARS = 200;
 const MAX_PRIOR_SECTIONS = 3;
+const MAX_CONTEXT_FILE_CHARS = 40_000; // total across all files
 
 function truncate(text: string, max = MAX_SECTION_CHARS): string {
   return text.length > max ? text.slice(0, max) + '…' : text;
@@ -61,6 +62,17 @@ export function buildArtifactContext(
       const section = artifact.sections[m]!;
       const label = SECTION_LABELS[m];
       lines.push(`[${label}] ${truncate(section.content)}`);
+    }
+  }
+
+  if (artifact.contextFiles?.length) {
+    lines.push('', 'Reference documents:');
+    let remaining = MAX_CONTEXT_FILE_CHARS;
+    for (const file of artifact.contextFiles) {
+      if (remaining <= 0) break;
+      const content = file.content.slice(0, remaining);
+      lines.push(`[${file.name}]\n${content}`);
+      remaining -= content.length;
     }
   }
 

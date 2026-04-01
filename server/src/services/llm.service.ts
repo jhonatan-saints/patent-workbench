@@ -77,3 +77,25 @@ export async function listModels(): Promise<string[]> {
     return [];
   }
 }
+
+export async function getModelContextLength(name: string): Promise<number | null> {
+  try {
+    const res = await fetch(`${OLLAMA_URL}/api/show`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+
+    // Only trust num_ctx explicitly set in the Modelfile parameters.
+    // The Ollama app can override context at runtime globally — that setting
+    // is NOT exposed by /api/show, so model_info.*.context_length (architectural
+    // maximum) cannot be used reliably and is ignored here.
+    const params: string = data?.parameters ?? '';
+    const numCtxMatch = /(?:^|\n)num_ctx\s+(\d+)/.exec(params);
+    return numCtxMatch ? Number(numCtxMatch[1]) : null;
+  } catch {
+    return null;
+  }
+}

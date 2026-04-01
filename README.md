@@ -27,11 +27,12 @@ For every step the LLM generates three distinct options to choose from. You pick
 ### Workflow phases
 
 ```text
-input → working (steps 1–7) → inventors → preview / export
+input → working (steps 1–7) → figures → inventors → preview / export
 ```
 
-- **input** — Enter invention idea, technical domain, and optional constraints.
+- **input** — Enter invention idea, technical domain, optional constraints, and optional reference documents (context files).
 - **working** — Step through the seven modules; for each step pick auto, guided, or manual input mode.
+- **figures** — Create flowcharts/diagrams with the built-in diagram editor, upload images, or attach structured JSON diagrams; add captions to each figure.
 - **inventors** — Add inventor details (name, address, citizenship, employee ID, etc.) and optional patent metadata (IDF number, business group).
 - **preview** — Review the complete assembled artifact, edit any section inline, and export.
 
@@ -39,14 +40,16 @@ input → working (steps 1–7) → inventors → preview / export
 
 - **Three-option selection** — every generation returns three distinct options to compare and choose from.
 - **Input modes** — per step: *Auto* (fully LLM-driven), *Guided* (fill structured form fields), or *Manual* (write freeform text directly).
+- **Context files** — attach reference documents (plain text) at the start of a workflow; content is included in prompts up to a 40 000-character budget.
 - **Model selector** — switch between any Ollama-compatible model (Mistral, Llama 3, Phi-3, Gemma 2, CodeLlama, …).
+- **Model context length** — automatically fetches the `num_ctx` value configured in the selected model's Modelfile and displays it in the UI.
 - **Token meter** — live prompt + completion token counts per step.
 - **LLM status indicator** — real-time connectivity check with latency; polls every 30 seconds.
 - **Session history** — in-memory record of up to 20 completed sessions; browse, restore, or delete.
 - **Export** — save as `.md` (with metadata) or `.docx` (Word document).
 - **Prompt injection protection** — server-side detection and rejection of jailbreak patterns.
 - **Cancellation** — cancel an in-progress generation at any time.
-- **Diagram & Figure Generation** — create flowcharts/diagrams in-app or upload images in the Figures step and include them in exported documents.
+- **Diagram & Figure Generation** — create flowcharts/diagrams in-app, upload images, or attach JSON diagrams in the Figures step; all figures are embedded in exported documents.
 
 ## Architecture
 
