@@ -94,7 +94,7 @@ export interface FigureItem {
   caption: string;
   width?: number;
   height?: number;
-  type?: 'image' | 'diagram';
+  type?: 'image' | 'diagram' | 'json';
 }
 
 export interface PatentArtifact {

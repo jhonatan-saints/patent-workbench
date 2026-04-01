@@ -379,17 +379,17 @@ export function ExportPanel({
         downloadFile(buildText(artifact), `${stem}.txt`, 'text/plain');
       } else if (format === 'pdf') {
         const html = buildPDFHTML(artifact);
-        const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
-        const blobUrl = URL.createObjectURL(blob);
-        const win = window.open(blobUrl, '_blank');
-        if (win) {
-          win.addEventListener('load', () => {
-            setTimeout(() => {
-              win.print();
-              URL.revokeObjectURL(blobUrl);
-            }, 300);
-          });
-        }
+        const iframe = document.createElement('iframe');
+        iframe.setAttribute('title', 'Patent IDF Print');
+        iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;visibility:hidden;';
+        iframe.srcdoc = html;
+        document.body.appendChild(iframe);
+        iframe.onload = () => {
+          setTimeout(() => {
+            iframe.contentWindow?.print();
+            iframe.remove();
+          }, 300);
+        };
       } else if (format === 'docx') {
         const blob = await buildDocx(artifact);
         const url = URL.createObjectURL(blob);

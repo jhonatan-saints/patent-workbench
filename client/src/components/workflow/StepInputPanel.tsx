@@ -52,6 +52,7 @@ export function StepInputPanel({ moduleId }: Props) {
     cancelGeneration,
     submitManualContent,
     setStepInputState,
+    updateArtifactBase,
   } = useWorkbenchStore();
 
   const module = WORKFLOW_MODULES[moduleId];
@@ -141,36 +142,39 @@ export function StepInputPanel({ moduleId }: Props) {
       {mode === 'auto' && (
         <Stack gap={12}>
           {artifact && (
-            <Box
-                style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 6,
-                  padding: '10px 14px',
-                }}
-              >
-                <Stack gap={6}>
-                  <Text size="xs" ff="monospace" fw={700} style={{ color: 'var(--text-muted)', letterSpacing: '0.08em' }}>
-                    CONTEXT
-                  </Text>
-                  <Text size="xs" style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>Idea · </span>
-                    {artifact.baseIdea}
-                  </Text>
-                  {artifact.baseDomain && (
-                    <Text size="xs" style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                      <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>Domain · </span>
-                      {artifact.baseDomain}
-                    </Text>
-                  )}
-                  {artifact.constraints && (
-                    <Text size="xs" style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                      <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>Notes · </span>
-                      {artifact.constraints}
-                    </Text>
-                  )}
-                </Stack>
-              </Box>
+            <Stack gap={14}>
+              <Textarea
+                label="Invention Concept"
+                description="What does your invention do? What problem does it solve?"
+                placeholder="Describe the core idea, mechanism, or technical approach of your invention..."
+                value={artifact.baseIdea}
+                onChange={(e) => updateArtifactBase(e.currentTarget.value, artifact.baseDomain, artifact.constraints)}
+                minRows={5}
+                maxRows={10}
+                disabled={isGenerating}
+                styles={INPUT_STYLES}
+              />
+              <TextInput
+                label="Technology Domain"
+                description="e.g., Telecommunications, Medical Devices, Software, Mechanical Systems"
+                placeholder="e.g., Artificial Intelligence / Natural Language Processing"
+                value={artifact.baseDomain}
+                onChange={(e) => updateArtifactBase(artifact.baseIdea, e.currentTarget.value, artifact.constraints)}
+                disabled={isGenerating}
+                styles={INPUT_STYLES}
+              />
+              <Textarea
+                label="Constraints & Notes"
+                description="Optional. Key prior art, technical scope constraints, or inventor notes."
+                placeholder="e.g., Must work offline, targets embedded devices, prior art includes..."
+                value={artifact.constraints ?? ''}
+                onChange={(e) => updateArtifactBase(artifact.baseIdea, artifact.baseDomain, e.currentTarget.value || undefined)}
+                minRows={3}
+                maxRows={6}
+                disabled={isGenerating}
+                styles={INPUT_STYLES}
+              />
+            </Stack>
           )}
           {isGenerating ? (
             <Button
