@@ -8,60 +8,86 @@ A local-first visual IDE for patent ideation, drafting, and iteration — powere
 
 ## What it does
 
-Patent Workbench guides you through a structured, seven-step workflow to produce a complete patent application draft. Each step uses a dedicated prompt template built on the REG (Role + Examples + Goal) pattern, instructing the model to reason like a USPTO patent analyst/attorney and produce output that conforms to standard patent language conventions.
+Patent Workbench guides inventors through a structured, five-phase workflow that produces a complete patent application draft. Each of the seven drafting steps uses a dedicated prompt template built on the **REG** (Role + Examples + Goal) pattern, instructing the model to reason like a USPTO patent analyst or attorney and produce output that conforms to standard IDF language conventions.
 
-For every step the LLM generates three distinct options to choose from. You pick the one that best fits your intent — or regenerate — before moving to the next section.
+At every step the LLM generates **three distinct options** to compare. You pick the one that best fits your intent — or regenerate — before the workflow advances automatically.
 
-### Workflow
+Context from earlier steps and any uploaded reference documents is injected into subsequent prompts via a **RAG** (Retrieval-Augmented Generation) mechanism, so later sections remain coherent with earlier ones without requiring the user to re-explain the invention.
 
-| # | Step | Purpose | Est. tokens |
-| --- | --- | --- | --- |
-| 1 | Problem Description | Describe the problem the invention addresses and its impact | ~250 |
-| 2 | Previous Solutions | Summarize existing approaches and limitations | ~250 |
-| 3 | Key Differences | Explain how the invention differs from prior art (novel elements) | ~200 |
-| 4 | Invention Summary | High-level overview of the invention and key technologies | ~300 |
-| 5 | Possible Variations | Alternative embodiments and broadened scope suggestions | ~200 |
-| 6 | Other Applications | Additional use cases and domain transfer opportunities | ~180 |
-| 7 | Full Description | Complete technical description enabling a person skilled in the art | ~600 |
+---
 
-### Workflow phases
+## Workflow
+
+### Phases
 
 ```text
 input → working (steps 1–7) → figures → inventors → preview / export
 ```
 
-- **input** — Enter invention idea, technical domain, optional constraints, and optional reference documents (context files).
-- **working** — Step through the seven modules; for each step pick auto, guided, or manual input mode.
-- **figures** — Create flowcharts/diagrams with the built-in diagram editor, upload images, or attach structured JSON diagrams; add captions to each figure.
-- **inventors** — Add inventor details (name, address, citizenship, employee ID, etc.) and optional patent metadata (IDF number, business group).
-- **preview** — Review the complete assembled artifact, edit any section inline, and export.
+| Phase | Description |
+| --- | --- |
+| **input** | Enter invention idea, technical domain, optional constraints, and optional reference documents (context files) |
+| **working** | Step through the seven IDF modules; pick Auto, Guided, or Manual mode for each |
+| **figures** | Create flowcharts with the built-in diagram editor, upload images, or attach structured JSON diagrams; add captions |
+| **inventors** | Add inventor details (name, address, citizenship, employee ID, etc.) and optional patent metadata (IDF number, business group) |
+| **preview** | Review the fully assembled artifact, edit any section inline, and export as `.md` or `.docx` |
 
-### Key features
+### Seven drafting steps
 
-- **Three-option selection** — every generation returns three distinct options to compare and choose from.
-- **Input modes** — per step: *Auto* (fully LLM-driven), *Guided* (fill structured form fields), or *Manual* (write freeform text directly).
-- **Context files** — attach reference documents (plain text) at the start of a workflow; content is included in prompts up to a 40 000-character budget.
-- **Model selector** — switch between any Ollama-compatible model (Mistral, Llama 3, Phi-3, Gemma 2, CodeLlama, …).
-- **Model context length** — automatically fetches the `num_ctx` value configured in the selected model's Modelfile and displays it in the UI.
-- **Token meter** — live prompt + completion token counts per step.
+| # | Step | IDF Section | Est. tokens |
+| --- | --- | --- | --- |
+| 1 | Problem Description | Why the invention was needed; business/technical pain | ~250 |
+| 2 | Previous Solutions | Existing approaches and their limitations | ~250 |
+| 3 | Key Differences | Novel elements vs. prior art; the inventive step | ~200 |
+| 4 | Invention Summary | High-level overview + key technologies + market context | ~300 |
+| 5 | Possible Variations | Alternative embodiments to broaden patent scope | ~200 |
+| 6 | Other Applications | Domain transfer and additional use cases | ~180 |
+| 7 | Full Description | Complete technical description enabling PHOSITA | ~600 |
+
+Total accumulated context across a full workflow run: **~2 500 tokens**.
+
+### Input modes (per step)
+
+| Mode | Behaviour |
+| --- | --- |
+| **Auto** | Prompt is assembled automatically from the base idea, prior sections, and context files |
+| **Guided** | User fills structured form fields; fields are interpolated into the template before sending to the LLM |
+| **Manual** | User writes the section content directly; no LLM call is made |
+
+---
+
+## Key features
+
+- **Three-option selection** — every generation returns three distinct options to compare side-by-side.
+- **Context files (RAG)** — attach reference documents (`.txt`, `.md`, `.csv`, `.json`, etc.) at the start; content is injected into prompts up to a 40 000-character budget.
+- **Model selector** — switch between any Ollama-compatible model (Mistral, Llama 3, Phi-3, Gemma 2, etc.).
+- **Model context length** — automatically fetches the `num_ctx` value from the model's Modelfile and shows it in the UI; context file upload is conditionally enabled for models with ≥ 16 384 tokens.
+- **Token meter** — live prompt + completion token counts per step, totalled across the session.
 - **LLM status indicator** — real-time connectivity check with latency; polls every 30 seconds.
 - **Session history** — in-memory record of up to 20 completed sessions; browse, restore, or delete.
-- **Export** — save as `.md` (with metadata) or `.docx` (Word document).
-- **Prompt injection protection** — server-side detection and rejection of jailbreak patterns.
-- **Cancellation** — cancel an in-progress generation at any time.
-- **Diagram & Figure Generation** — create flowcharts/diagrams in-app, upload images, or attach JSON diagrams in the Figures step; all figures are embedded in exported documents.
+- **Diagram editor** — in-app flowchart creator (`@xyflow/react`); exports as PNG or JSON.
+- **Export** — save as `.md` with YAML frontmatter or `.docx` (Word document with embedded figures).
+- **Prompt injection protection** — server-side detection and rejection of jailbreak/override patterns.
+- **Cancellation** — abort an in-progress generation at any time via AbortController.
+- **Dark / light mode** and **resizable split view** (input + options on the left, live preview on the right).
+
+---
 
 ## Architecture
 
 ```text
 patent-workbench/
-├── client/          # React 18 + Vite + Mantine v7 + Tailwind CSS frontend
-├── server/          # Express + TypeScript API (LLM proxy)
-├── docs/            # Project documentation
-└── scripts/         # Setup and build scripts
+├── client/          # React 18 + Vite + Mantine v7 + Tailwind CSS v4 frontend
+├── server/          # Express + TypeScript API (LLM proxy + validation)
+├── docs/            # Algorithm and architecture documentation
+└── scripts/         # Setup and build utilities
 ```
 
-The client talks exclusively to the Express backend via a typed API layer. The server validates, sanitizes, and forwards requests to Ollama running on `localhost:11434`. The LLM never receives requests directly from the browser.
+The client talks exclusively to the Express backend via a typed API layer (`client/src/api/client.ts`). The server validates, sanitizes, and forwards requests to Ollama running on `localhost:11434`. **The LLM never receives requests directly from the browser.**
+
+All prompt assembly — including REG system contexts, RAG context injection, and option-format enforcement — happens in the client before the request is sent to the server. The server is responsible for security, rate limiting, and transport; the client owns the prompt strategy.
+
+---
 
 ## Prerequisites
 
@@ -69,43 +95,45 @@ The client talks exclusively to the Express backend via a typed API layer. The s
 - [Ollama](https://ollama.com) installed and running locally
 - At least one model pulled, e.g. `ollama pull mistral`
 
+---
+
 ## Ollama setup
 
-### Security — keep Ollama local
+### Keep Ollama local
 
-Ollama must run exclusively on localhost. Never expose it to the network or enable cloud features while using Patent Workbench, as prompts contain confidential invention disclosures.
+Ollama must run exclusively on localhost. Never expose it to the network while using Patent Workbench, as prompts contain confidential invention disclosures.
 
-In the **Ollama desktop app settings**, make sure the following options are **disabled**:
+In the **Ollama desktop app settings**, ensure the following are **disabled**:
 
-- **Expose Ollama to the network** — keeps the API bound to `127.0.0.1` only; disabling this prevents other machines on the network from reaching your local models.
-- **Cloud** — disables any cloud-assisted features or telemetry that could transmit prompt data externally.
-- **Auto-download models** — prevents Ollama from silently pulling models in response to API requests; models must be pulled explicitly with `ollama pull <model>`.
+| Setting | Why |
+| --- | --- |
+| **Expose Ollama to the network** | Keeps the API bound to `127.0.0.1` only |
+| **Cloud** | Prevents any telemetry or prompt data leaving the machine |
+| **Auto-download models** | Prevents silent model pulls in response to API requests |
 
 ### Context length recommendations
 
-Each full workflow run accumulates up to ~2 500 tokens of context. Set `num_ctx` according to available RAM so the model does not silently truncate prior sections. Current recommended mappings:
+Each full workflow run accumulates ~2 500 tokens of context. Set `num_ctx` high enough so the model does not silently truncate earlier sections.
 
-| Available memory | Recommended `num_ctx` | Notes |
+| Available RAM | Recommended `num_ctx` | Notes |
 | --- | --- | --- |
-| 16 GB RAM | 4 096 | Minimum viable; may still truncate on the last steps for very large prompts |
-| 32 GB RAM | 8 192 – 16 384 | Ideal for most workflows — covers full workflow comfortably for larger models |
-| 64 GB RAM or more | &gt;16 384 | For extremely large context lengths (above 16 384 tokens) or very large models |
+| 16 GB | 4 096 | Minimum viable; may truncate on the final steps for large prompts |
+| 32 GB | 8 192 – 16 384 | Ideal for most workflows |
+| 64 GB+ | > 16 384 | For very large models or context-heavy reference documents |
 
-Apply the setting in your `~/.ollama/config.json` (or `%USERPROFILE%\.ollama\config.json` on Windows):
+Apply via `~/.ollama/config.json` (or `%USERPROFILE%\.ollama\config.json` on Windows):
 
 ```json
-{
-  "num_ctx": 4096
-}
+{ "num_ctx": 8192 }
 ```
 
-Or pass it per-request via the Ollama CLI when running a model (example uses the minimum recommended `num_ctx`):
+Or per-model at run time:
 
 ```bash
-ollama run mistral --num_ctx 4096
+ollama run mistral --num_ctx 8192
 ```
 
-Running with a `num_ctx` smaller than the accumulated prompt length causes silent truncation. If generated output starts losing context from earlier steps, increase this value or use a quantised model that fits a larger context into the same memory budget.
+---
 
 ## Getting started
 
@@ -124,7 +152,9 @@ npm run server:dev   # Express on localhost:3001 (watch mode)
 npm run client       # Vite on localhost:3003/patent-workbench
 ```
 
-Open [http://localhost:3003/patent-workbench](http://localhost:3003/patent-workbench). The status indicator in the header turns green once Ollama is reachable.
+Open [http://localhost:3003/patent-workbench](http://localhost:3003/patent-workbench). The status badge in the header turns green once Ollama is reachable.
+
+---
 
 ## Available scripts
 
@@ -132,14 +162,17 @@ Open [http://localhost:3003/patent-workbench](http://localhost:3003/patent-workb
 | --- | --- |
 | `npm run setup` | Install deps for both workspaces |
 | `npm start` | Run client and server concurrently |
-| `npm run server:dev` | Server in watch mode |
-| `npm run client` | Vite dev server on `localhost:3003` |
+| `npm run server:dev` | Server in watch mode on `:3001` |
+| `npm run client` | Vite dev server on `:3003` |
 | `npm run client:build` | Build client to `client/dist/` |
 | `npm run lint` | ESLint + Markdown + StyleLint |
 | `npm run format` | Prettier |
 
 For server-specific configuration (env vars, endpoints, rate limits) see [server/README.md](server/README.md).
-For client architecture details see [client/README.md](client/README.md).
+For client architecture and component details see [client/README.md](client/README.md).
+For algorithm documentation see [docs/reg-rag-algorithms.md](docs/reg-rag-algorithms.md).
+
+---
 
 ## Contributing
 
@@ -147,23 +180,20 @@ For client architecture details see [client/README.md](client/README.md).
 - Run `npm run lint` and `npm run format` before submitting.
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
 
-## Licensing notes for contributors
-
-- Public repo: client utilities, UI components, generic `workflowTemplates` and tooling are released under **Apache-2.0**. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
-- Proprietary artifacts: the REG algorithm and company/enterprise templates are proprietary and not published here. Those are licensed separately under a commercial EULA (sample: [EULA_PROPRIETARY.md](EULA_PROPRIETARY.md)).
-
-If you plan to contribute code that depends on proprietary artifacts, please open an issue first to discuss a clean separation so public contributions remain license-compatible.
+---
 
 ## Licensing
 
-This project is split between open-source components and proprietary enterprise components:
+This project uses a split-licensing model:
 
-- **Open-source (client utilities, UI, generic templates, and tooling):**
-  Released under the Apache-2.0 license. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
-- **Proprietary (REG algorithm and enterprise templates):**
-  The core REG algorithm and company-specific template packages are proprietary and are not included in the public repository. Enterprise deployments and those proprietary artifacts are licensed separately under a commercial EULA. See [EULA_PROPRIETARY.md](EULA_PROPRIETARY.md) for a sample of the proprietary license used for private packages.
+- **Open-source (Apache-2.0)** — all UI components, the React/Vite setup, generic workflow template structures, utilities, types, API layer, and tooling. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+- **Proprietary (Commercial EULA)** — the REG algorithm's specific system-context strings and enterprise/company-branded templates are proprietary and are not published in this repository. Those artifacts are licensed separately. See [EULA_PROPRIETARY.md](EULA_PROPRIETARY.md).
 
-If you are interested in an on-premise enterprise license, a POC, or a private build that includes the REG algorithm and enterprise templates, please contact the maintainers.
+If you plan to contribute code that depends on proprietary artifacts, open an issue first so the separation remains clean and public contributions stay license-compatible.
+
+For on-premise enterprise licenses, POC access, or private builds that include the REG algorithm and enterprise templates, contact the maintainers.
+
+---
 
 ## Contact
 

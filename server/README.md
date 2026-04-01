@@ -1,6 +1,6 @@
 # Server — patent-workbench
 
-Express + TypeScript backend that validates, sanitizes, and proxies generation requests to a local Ollama instance.
+Express + TypeScript backend that validates, sanitizes, and proxies generation requests to a local Ollama instance. The server is the sole gateway between the React client and the LLM — the browser never communicates with Ollama directly.
 
 ## Requirements
 
@@ -12,19 +12,22 @@ Express + TypeScript backend that validates, sanitizes, and proxies generation r
 ```bash
 cd server
 npm install
+cp .env.example .env   # adjust as needed
 npm run dev
 ```
 
-Copy `.env.example` to `.env` and adjust as needed before starting.
+---
 
 ## Scripts
 
 | Script | Description |
 | --- | --- |
-| `dev` | Start dev server with ts-node-dev (watch mode) |
+| `dev` | Start dev server with `ts-node-dev` in watch mode |
 | `build` | Compile TypeScript to `dist/` |
-| `start` | Run compiled server |
+| `start` | Run the compiled server (`dist/server.js`) |
 | `lint` | Run ESLint |
+
+---
 
 ## Endpoints
 
@@ -36,46 +39,64 @@ Health check. Returns server status, LLM reachability, and round-trip latency to
 { "success": true, "data": { "server": "ok", "llm": "ok", "latency": 12 } }
 ```
 
+When Ollama is unreachable the `llm` field returns `"unavailable"` and the HTTP status is still `200` — the client UI reflects the error via the status indicator badge.
+
+---
+
 ### `GET /models`
 
 Returns the list of models currently available in the local Ollama instance.
 
 ```json
-{ "success": true, "data": { "models": ["mistral", "llama3:8b"] } }
+{ "success": true, "data": { "models": ["mistral", "llama3:8b", "phi3"] } }
 ```
+
+---
 
 ### `GET /models/:name/context`
 
-Returns the `num_ctx` value explicitly set in the model's Modelfile parameters. Returns `null` if `num_ctx` is not set (i.e., the Ollama app global setting is used).
+Returns the `num_ctx` value **explicitly set in the model's Modelfile parameters**. Returns `null` if `num_ctx` is not set in the Modelfile (i.e. only the Ollama global runtime setting exists, which is not exposed by `/api/show`).
 
 ```json
-{ "success": true, "data": { "contextLength": 4096 } }
+{ "success": true, "data": { "contextLength": 8192 } }
 ```
+
+> **Note:** The architectural maximum (`model_info.*.context_length` from `/api/show`) is intentionally ignored. Only the Modelfile `num_ctx` parameter is trusted because the Ollama desktop app's global context override is invisible to the API and can silently differ.
+
+---
 
 ### `POST /generate`
 
-Forward a prompt to the local LLM and return the response with token counts.
+Forward a validated, sanitized prompt to the local LLM and return the response with token counts.
 
-Request body:
+**Request body:**
 
 ```json
 { "prompt": "string (required)", "model": "string (optional, default: mistral)" }
 ```
 
-Success response:
+**Success response:**
 
 ```json
 {
   "success": true,
   "data": {
-    "response": "string",
-    "promptTokens": 120,
-    "completionTokens": 340
+    "response": "OPTION 1:\n...\n\nOPTION 2:\n...\n\nOPTION 3:\n...",
+    "promptTokens": 420,
+    "completionTokens": 310
   }
 }
 ```
 
-Example:
+**Error responses:**
+
+| Status | Cause |
+| --- | --- |
+| `400` | Validation failed (missing/empty prompt, prompt too long) or injection pattern detected |
+| `429` | Rate limit exceeded |
+| `502` | Ollama returned an error or an unexpected response shape |
+
+**Example:**
 
 ```bash
 curl -X POST http://localhost:3001/generate \
@@ -83,17 +104,98 @@ curl -X POST http://localhost:3001/generate \
   -d '{"prompt": "Write a patent abstract for a self-healing polymer.", "model": "mistral"}'
 ```
 
+---
+
 ## Request pipeline
 
-1. **Helmet** — sets security headers (CSP, HSTS, X-Frame-Options, etc.)
-2. **CORS** — configurable allowed origin (`CORS_ORIGIN`)
-3. **Compression** — gzip response bodies
-4. **Request ID** — UUID injected into request headers for tracing
-5. **Rate limiting** — global limit across all routes + a tighter, separate limit on `POST /generate` (see `GENERATE_RATE_WINDOW_MS` / `GENERATE_RATE_MAX`)
-6. **Zod validation** — rejects malformed request bodies with HTTP 400
-7. **Sanitize middleware** — trims whitespace, enforces max prompt length, detects and rejects prompt injection patterns (e.g. "ignore instructions", "act as", "jailbreak")
-8. **LLM service** — calls Ollama `/api/generate` with a configurable timeout via `AbortController` (default 2 min, controlled by `LLM_TIMEOUT_MS`)
-9. **Error handler** — centralised; never exposes stack traces to the client
+Every `POST /generate` request passes through the following middleware stack in order:
+
+```text
+Helmet → CORS → Body Parser → Compression → Request ID
+  → Global Rate Limit → /generate Rate Limit → Pino HTTP Logger
+  → Zod Validation → Prompt Sanitization → LLM Service → Error Handler
+```
+
+### 1. Helmet
+
+Sets security headers: `Content-Security-Policy`, `Strict-Transport-Security` (1 year), `X-Content-Type-Options: nosniff`, `Cross-Origin-Embedder-Policy`, and `Referrer-Policy: no-referrer`.
+
+### 2. CORS
+
+Configured via `CORS_ORIGIN` (default `http://localhost:5173`). Rejects requests from any other origin.
+
+### 3. Body parser + Compression
+
+Parses JSON bodies up to `BODY_LIMIT` (default `512kb`). Response bodies are gzip-compressed.
+
+### 4. Request ID
+
+Injects a UUID into `x-request-id` header if absent. Used for tracing across log lines.
+
+### 5. Rate limiting
+
+Two independent limiters:
+
+| Limiter | Scope | Window | Max requests |
+| --- | --- | --- | --- |
+| Global | All routes | 15 min (`RATE_WINDOW_MS`) | 100 (`RATE_MAX`) |
+| Generate | `POST /generate` only | 1 min (`GENERATE_RATE_WINDOW_MS`) | 20 (`GENERATE_RATE_MAX`) |
+
+### 6. Pino HTTP logger
+
+Logs method, URL, request ID, and response status. **Request bodies are never logged** — prompts may contain confidential invention disclosures.
+
+### 7. Zod validation
+
+Schema enforced on `POST /generate`:
+
+```ts
+z.object({
+  prompt: z.string().min(1).max(PROMPT_MAX_LENGTH),  // default 64 000 chars
+  model:  z.string().optional(),
+})
+```
+
+Malformed bodies return HTTP `400` with a structured error.
+
+### 8. Prompt sanitization
+
+The `sanitizePrompt` middleware:
+
+1. Trims leading/trailing whitespace.
+2. Collapses runs of spaces/tabs to a single space (newlines are preserved so structured prompt formats stay intact).
+3. Truncates to `PROMPT_MAX_LENGTH` characters.
+4. Scans for prompt injection patterns and returns HTTP `400` if any match:
+
+| Pattern | Regex |
+| --- | --- |
+| Ignore instructions | `/ignore (all\|previous\|above )?instructions/i` |
+| Identity override | `/you are now/i` |
+| Role substitution | `/act as (a\|an )?/i` |
+| Jailbreak keyword | `/jailbreak/i` |
+| Disregard instructions | `/disregard (all\|previous\|your )?/i` |
+| Forget instructions | `/forget (all\|previous\|your )?instructions/i` |
+| Persona swap | `/new persona/i` |
+| Bypass safeguards | `/bypass (your\|all )?/i` |
+
+### 9. LLM service
+
+Calls Ollama `POST /api/generate` with `stream: false`. Two abort signals are composed:
+
+- **Timeout signal** — fires after `LLM_TIMEOUT_MS` (default 2 min) via `setTimeout + AbortController`.
+- **Client disconnect signal** — the Express route listens for `req.on('close')` and aborts the Ollama fetch immediately when the HTTP client disconnects (e.g. user clicks Stop in the UI).
+
+Token counts (`prompt_eval_count`, `eval_count`) are extracted from Ollama's response and forwarded to the client.
+
+### 10. Error handler
+
+Centralised last-resort middleware. Never exposes stack traces or internal details to the client. All unhandled errors return:
+
+```json
+{ "success": false, "error": "Internal server error" }
+```
+
+---
 
 ## Configuration
 
@@ -107,20 +209,40 @@ Copy `.env.example` to `.env`:
 | `DEFAULT_MODEL` | `mistral` | Fallback model when none is specified in the request |
 | `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
 | `BODY_LIMIT` | `512kb` | Max JSON body size |
-| `RATE_WINDOW_MS` | `900000` | Rate-limit window in ms (15 min, global) |
+| `RATE_WINDOW_MS` | `900000` | Global rate-limit window in ms (15 min) |
 | `RATE_MAX` | `100` | Max requests per window (global) |
-| `GENERATE_RATE_WINDOW_MS` | `60000` | Rate-limit window in ms for `/generate` (1 min) |
-| `GENERATE_RATE_MAX` | `20` | Max requests per window for `/generate` |
+| `GENERATE_RATE_WINDOW_MS` | `60000` | Rate-limit window for `/generate` (1 min) |
+| `GENERATE_RATE_MAX` | `20` | Max `/generate` requests per window |
 | `PROMPT_MAX_LENGTH` | `64000` | Max prompt length in characters |
-| `LLM_TIMEOUT_MS` | `120000` | Ollama request timeout in ms |
+| `LLM_TIMEOUT_MS` | `120000` | Ollama request timeout in ms (2 min) |
 | `LOG_LEVEL` | `info` | Pino log level |
 | `SHUTDOWN_TIMEOUT_MS` | `30000` | Graceful shutdown timeout in ms |
+
+---
+
+## Source structure
+
+```
+src/
+├── app.ts                  # Express app: routes, middleware registration
+├── server.ts               # Entry point; binds port, graceful shutdown
+├── logger.ts               # Pino instance (shared across modules)
+├── middleware/
+│   ├── errorHandler.ts     # Last-resort error handler
+│   ├── sanitize.ts         # Prompt trim, truncation, injection detection
+│   └── validate.ts         # Zod body validation factory
+└── services/
+    └── llm.service.ts      # Ollama HTTP integration (generate, checkLLM, listModels, getModelContextLength)
+```
+
+---
 
 ## TODOs
 
 - Add unit and integration tests for routes and the LLM service layer (mock Ollama responses).
-- Add CI to run linting and tests on pull requests.
 - Expand prompt injection detection patterns.
+
+---
 
 ## Maintainer
 

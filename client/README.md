@@ -1,33 +1,50 @@
 # Client — patent-workbench
 
-React + Vite frontend for Patent Workbench. Provides a structured, step-by-step interface for drafting all seven patent sections using a local LLM, with three generated options to compare at each step.
+React + Vite frontend for Patent Workbench. Provides a structured, five-phase interface for drafting all seven IDF sections using a local LLM, with three generated options to compare and select at each step.
 
 ## Stack
 
-- React 18 + TypeScript
-- Vite (dev server and bundler)
-- Tailwind CSS v4 (via `@tailwindcss/vite`)
-- Mantine v7 (UI component library)
-- Zustand (state management)
-- Tabler Icons
-- `docx` (Word document export)
+| Technology | Version | Role |
+| --- | --- | --- |
+| React | 18.3.1 | UI framework |
+| TypeScript | — | Type safety across all modules |
+| Vite | 5.3.4 | Dev server and bundler |
+| Tailwind CSS | v4 (via `@tailwindcss/vite`) | Utility-first styling |
+| Mantine | v7.11.0 | Component library (forms, modals, layout) |
+| Zustand | — | Lightweight global state management |
+| Tabler Icons | — | Icon set |
+| `@xyflow/react` | — | In-app flowchart / diagram editor |
+| `docx` | — | Word document export |
+| `html-to-image` | — | PNG export from diagram editor |
 
-## Structure
+---
+
+## Source structure
 
 ```
 src/
-├── api/            # Typed API client — all server calls go through here
+├── api/
+│   └── client.ts              # Typed API client — all server calls go through here
 ├── components/
-│   └── workflow/   # Per-phase and per-step workflow components
-├── services/       # LLM client service wrappers
-├── store/          # Zustand store (workbench.ts)
-├── theme/          # Mantine theme customization
-├── types/          # Shared TypeScript type definitions
-├── utils/          # workflowTemplates, sanitize, optionParser
-├── assets/         # Fonts and icons
-├── App.tsx         # Root layout (AppShell + resizable split view)
-└── main.tsx        # React entry point (MantineProvider)
+│   └── workflow/              # Per-phase and per-step workflow components
+├── services/
+│   └── llm.service.ts         # LLM client service wrapper
+├── store/
+│   └── workbench.ts           # Zustand store (entire app state machine)
+├── theme/
+│   └── preset.ts              # Mantine theme customisation
+├── types/
+│   └── index.ts               # Shared TypeScript type definitions
+├── utils/
+│   ├── workflowTemplates.ts   # REG system contexts + RAG context builder
+│   ├── optionParser.ts        # Parse OPTION 1/2/3 from LLM response
+│   └── sanitize.ts            # Output XSS prevention + ID generation
+├── assets/                    # Fonts and icons
+├── App.tsx                    # Root layout (AppShell + resizable split view)
+└── main.tsx                   # React entry point (MantineProvider)
 ```
+
+---
 
 ## Components
 
@@ -35,17 +52,17 @@ src/
 
 | Component | Phase | Description |
 | --- | --- | --- |
-| `IdeaInputStep` | input | Invention idea, domain, constraints, and optional context file upload; launches the workflow |
-| `StepProgress` | working | Left sidebar listing all 7 steps with status badges; click to navigate |
-| `StepInputPanel` | working | Per-step input panel with Auto / Guided / Manual mode tabs |
+| `IdeaInputStep` | input | Collects invention idea, domain, constraints, and optional context files; launches the workflow |
+| `StepProgress` | working | Left sidebar listing all 7 steps with status badges; click any step to navigate back to it |
+| `StepInputPanel` | working | Per-step panel with Auto / Guided / Manual mode tabs; triggers generation |
 | `OptionsPanel` | working | Grid of the three generated options for the current step |
 | `OptionCard` | working | Individual option card with select and copy actions |
-| `ArtifactPreview` | working | Live right-panel preview of all selected sections so far |
-| `FiguresStep` | figures | Manage figures: upload images, create diagrams, attach JSON diagrams; set captions |
-| `DiagramEditor` | figures | In-app flowchart/diagram editor (produces PNG or JSON output) |
+| `ArtifactPreview` | working | Live right-panel preview of all sections selected so far |
+| `FiguresStep` | figures | Manage figures: upload images, create diagrams, attach JSON diagrams, set captions |
+| `DiagramEditor` | figures | In-app flowchart editor (`@xyflow/react`); exports PNG or JSON |
 | `JsonViewer` | figures | Read-only viewer for JSON diagram attachments |
-| `InventorsStep` | inventors | Form to add/remove inventors and optional patent metadata |
-| `PreviewPhase` | preview | Full artifact review with inline editing and export |
+| `InventorsStep` | inventors | Form to add/remove inventors and optional patent metadata (IDF number, business group) |
+| `PreviewPhase` | preview | Full artifact review with inline section editing and export |
 | `SessionsPanel` | all | In-memory session history browser (restore or delete past runs) |
 
 ### Other components
@@ -53,8 +70,10 @@ src/
 | Component | Description |
 | --- | --- |
 | `StatusIndicator` | Header badge — LLM connection status and round-trip latency |
-| `ExportPanel` | Export the artifact as `.md` or `.docx` |
+| `ExportPanel` | Export the artifact as `.md` (with YAML frontmatter) or `.docx` |
 | `AppLoader` | Splash screen shown while the app initialises |
+
+---
 
 ## Workflow phases
 
@@ -62,41 +81,187 @@ src/
 input → working → figures → inventors → preview
 ```
 
-1. **input** — `IdeaInputStep` collects the base invention idea, technical domain, optional constraints, and optional context files (plain-text reference documents).
-2. **working** — Steps 1–7 in sequence. For each step the user picks an input mode, generates options, and selects one. Completing all steps auto-navigates to the figures phase.
-3. **figures** — `FiguresStep` lets the user add diagrams (via `DiagramEditor`), upload images, or attach JSON diagrams (viewed with `JsonViewer`); each figure gets a caption.
-4. **inventors** — `InventorsStep` collects inventor details and optional patent metadata (IDF number, business group).
-5. **preview** — `PreviewPhase` shows the fully assembled artifact with inline edit support and export.
+### Phase 1 — input
+
+`IdeaInputStep` collects:
+
+- **Invention concept** (required) — the base idea, passed to all subsequent prompts
+- **Technology domain** (optional) — injected as `Domain:` in the RAG context
+- **Constraints / notes** (optional, max 120 chars in context) — additional framing passed to each prompt
+- **Context files** (optional) — plain-text reference documents; conditionally enabled when the selected model reports `num_ctx ≥ 16 384`. Injected into prompts up to a 40 000-character total budget.
+
+Calling `startWorkflow()` initialises the `PatentArtifact`, resets all seven steps to `pending`, and advances to the `working` phase.
+
+### Phase 2 — working
+
+Steps 1–7 in sequence. For each step:
+
+1. `StepInputPanel` shows three mode tabs (Auto / Guided / Manual).
+2. User picks a mode and triggers generation (or writes manually).
+3. `OptionsPanel` displays the three returned options side-by-side.
+4. User selects one → `selectOption()` saves it to `artifact.sections` and auto-advances to the next step.
+5. When all seven steps are done the workflow transitions automatically to the figures phase.
+
+The user can navigate to any previously completed step via `StepProgress` and regenerate at any time.
 
 ### Input modes (per step)
 
 | Mode | Behaviour |
 | --- | --- |
-| **Auto** | Prompt is assembled automatically from the base idea and prior sections |
-| **Guided** | User fills structured form fields; fields are interpolated into the template |
-| **Manual** | User writes the section content directly; no LLM call is made |
+| **Auto** | Prompt assembled from the REG system context + RAG artifact context; no user input required |
+| **Guided** | User fills structured form fields (defined per module in `workflowTemplates.ts`); fields are interpolated into the prompt before the LLM call |
+| **Manual** | User writes the section content directly; `submitManualContent()` is called, no LLM request is made |
 
-## State (workbench.ts)
+### Phase 3 — figures
 
-The Zustand store manages the entire application state. Key slices:
+`FiguresStep` lets the user:
+- Upload image files (stored as base64 data URLs)
+- Create flowcharts with `DiagramEditor` (exports PNG or JSON)
+- Attach existing JSON diagrams (previewed in `JsonViewer`)
+- Set a caption for each figure
 
-- **LLM** — `llmStatus` (`checking` / `ok` / `unavailable`), `llmLatency`, `availableModels`, `selectedModel`, `modelContextLength` (fetched from `GET /models/:name/context`); polled every 30 seconds via `checkStatus()`.
-- **Workflow** — `workflowPhase` (`input` / `working` / `figures` / `inventors` / `preview`), `steps` (array of 7 `WorkflowStep`), `currentStepIndex`, `artifact` (`PatentArtifact`), `generationStatus`, `lastError`.
-- **Sessions** — `sessions` array (max 20); each `WorkflowSession` stores the full artifact, model, total tokens, and per-step input states.
+All figures are embedded as base64 in the exported `.docx`.
 
-The abort controller for in-progress generations lives at module level (outside Zustand state) to avoid triggering re-renders on cancel.
+### Phase 4 — inventors
 
-## Template system
+`InventorsStep` collects per-inventor details (`name`, `address`, `telephone`, `email`, `citizenship`, `employeeId`) and patent-level metadata (`inventionTitle`, `idfNumber`, `businessGroup`).
 
-`src/utils/workflowTemplates.ts` exports `WORKFLOW_MODULES`, `WORKFLOW_ORDER`, `SECTION_LABELS`, and `buildArtifactContext`.
+### Phase 5 — preview
 
-Each of the seven modules defines:
+`PreviewPhase` shows the fully assembled artifact. Each section supports inline editing via `updateSectionContent()`. Export options:
 
-- `label` / `description` — displayed in `StepProgress`
-- `systemContext` — frames the LLM as a USPTO patent analyst/attorney (REG pattern)
-- `buildPrompt(artifact)` — calls `buildArtifactContext()` which injects: invention idea, domain, constraints, inventor names, the last 3 prior sections (truncated to 200 chars each), and any context files (up to a 40 000-character total budget)
-- `guidedFields` — field definitions rendered as a form by `StepInputPanel` in Guided mode
-- `buildGuidedPrompt(artifact, fields)` — variant of `buildPrompt` that interpolates the user-filled guided fields into the context before sending to the LLM
+- **Markdown** — full artifact with YAML frontmatter (inventor metadata, model, timestamps)
+- **Word (.docx)** — styled document with embedded figures
+
+---
+
+## State management (`store/workbench.ts`)
+
+The Zustand store manages the entire application state. It is divided into three logical slices:
+
+### LLM slice
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `selectedModel` | `string` | Active Ollama model name |
+| `availableModels` | `string[]` | Models returned by `GET /models` |
+| `modelContextLength` | `number \| null` | `num_ctx` from model's Modelfile (via `GET /models/:name/context`) |
+| `llmStatus` | `'ok' \| 'unavailable' \| 'checking'` | Connectivity to Ollama |
+| `llmLatency` | `number \| null` | Round-trip latency in ms |
+
+`checkStatus()` polls `GET /status` and `GET /models` every 30 seconds. When models change, `selectedModel` is updated to the closest match by base name.
+
+### Workflow slice
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `workflowPhase` | `WorkflowPhase` | Current phase: `'input' \| 'working' \| 'figures' \| 'inventors' \| 'preview'` |
+| `steps` | `WorkflowStep[]` | Array of 7 steps; each tracks `status`, `options`, `selectedOption`, token counts, and input mode state |
+| `currentStepIndex` | `number` | Active step (`-1` during input phase) |
+| `artifact` | `PatentArtifact \| null` | The draft being assembled |
+| `generationStatus` | `'idle' \| 'loading' \| 'success' \| 'error'` | State of the current LLM call |
+| `lastError` | `string \| null` | Last generation error message |
+
+Step lifecycle: `pending → input → generating → selecting → done`
+
+Key actions:
+
+| Action | Description |
+| --- | --- |
+| `startWorkflow(idea, domain, constraints, contextFiles)` | Initialises `PatentArtifact` and transitions to `working` |
+| `generateStepOptions(overridePrompt?)` | Assembles full prompt, calls `POST /generate`, parses options |
+| `selectOption(option)` | Saves option to `artifact.sections`, advances to next step |
+| `cancelGeneration()` | Calls `AbortController.abort()`; step reverts to `input` |
+| `regenerateOptions()` | Resets current step to `input` so the user can try again |
+| `submitManualContent(content)` | Bypasses LLM; wraps content as a `GeneratedOption` and calls `selectOption` |
+| `goToStep(index)` | Navigates to any step; restores an actionable status |
+| `updateSectionContent(moduleId, content)` | Inline edit of a previously selected section |
+| `resetWorkflow()` | Saves current session, aborts any in-flight request, resets to `input` |
+
+> The `AbortController` for in-progress generations lives at module level (outside Zustand) to avoid triggering re-renders on cancel.
+
+### Sessions slice
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `sessions` | `WorkflowSession[]` | In-memory session history (max 20; cleared on page reload) |
+
+| Action | Description |
+| --- | --- |
+| `saveCurrentSession()` | Snapshots current artifact + step input states; upserts by `startedAt` |
+| `loadSession(session)` | Restores a past session; navigates to `preview` phase |
+| `deleteSession(id)` | Removes a session from history |
+| `clearSessions()` | Clears entire history |
+
+---
+
+## Template system (`utils/workflowTemplates.ts`)
+
+`WORKFLOW_MODULES` exports one `WorkflowModule` per IDF section. Each module defines:
+
+| Field | Description |
+| --- | --- |
+| `label` / `description` | Displayed in `StepProgress` and the input panel |
+| `systemContext` | REG-pattern system context (Role + Examples + Goal); prepended to every Auto prompt |
+| `buildPrompt(artifact)` | Calls `buildArtifactContext()` to assemble the RAG user prompt |
+| `guidedFields` | Field definitions rendered as a form in Guided mode |
+| `buildGuidedPrompt(artifact, fields)` | Variant of `buildPrompt` that interpolates guided field values |
+
+Full prompt structure (Auto mode):
+
+```
+{systemContext}
+
+---
+
+{buildArtifactContext(artifact, moduleId)}
+
+Generate 3 [Section] options...
+```
+
+See [docs/reg-rag-algorithms.md](../docs/reg-rag-algorithms.md) for a detailed explanation of the REG and RAG algorithms.
+
+---
+
+## Option parsing (`utils/optionParser.ts`)
+
+`parseOptions(response)` extracts the three options from the LLM response using a regex:
+
+```
+/OPTION\s+\d+\s*:\s*\n?([\s\S]*?)(?=OPTION\s+\d+\s*:|$)/gi
+```
+
+If fewer than two `OPTION N:` markers are found (e.g. the model ignored the format instruction), the full response is returned as a single option as a fallback. Results are capped at three.
+
+---
+
+## Output sanitization (`utils/sanitize.ts`)
+
+`sanitizeOutput(html)` strips potentially dangerous content from LLM responses before rendering:
+
+- `<script>` tags and their contents
+- `javascript:` protocol strings
+- Inline event handlers (`on*=...`)
+- `<iframe>`, `<embed>`, `<object>` tags
+
+`generateId()` produces a short random identifier used for `GeneratedOption.id`, `FigureItem.id`, and `WorkflowSession.id`.
+
+---
+
+## API layer (`api/client.ts`)
+
+All server communication is centralised in `client.ts`. Functions:
+
+| Function | Method | Endpoint |
+| --- | --- | --- |
+| `getStatus()` | GET | `/status` |
+| `getModels()` | GET | `/models` |
+| `getModelContextLength(name)` | GET | `/models/:name/context` |
+| `generatePatentContent(req, signal)` | POST | `/generate` |
+
+Requests are made relative to `/api` (proxied to `localhost:3001` by Vite during development). `isApiError(result)` is a type guard used across the store and components.
+
+---
 
 ## Dev
 
@@ -105,7 +270,7 @@ npm install
 npm run dev    # Vite dev server on localhost:3003/patent-workbench
 ```
 
-API requests are proxied to `localhost:3001` during development (configured in `vite.config.ts`). The server must be running separately.
+API requests are proxied to `localhost:3001` during development (configured in `vite.config.ts`). The server must be running separately (`npm run server:dev` from the repo root).
 
 ## Build
 
