@@ -16,7 +16,6 @@ import {
   type Node,
   type Edge,
   MarkerType,
-  getNodesBounds,
   getViewportForBounds,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -106,7 +105,7 @@ function DiagramEditorInner(props: Readonly<DiagramEditorProps>) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [labelInput, setLabelInput] = useState('');
   const [transparentBg, setTransparentBg] = useState(false);
-  const { getNodes } = useReactFlow();
+  const { getNodes, getNodesBounds } = useReactFlow();
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const onConnect = useCallback(
@@ -189,7 +188,7 @@ function DiagramEditorInner(props: Readonly<DiagramEditorProps>) {
     } catch (err) {
       console.error('Diagram export failed:', err);
     }
-  }, [getNodes, onAddFigure, figureNumber, transparentBg]);
+  }, [getNodes, getNodesBounds, onAddFigure, figureNumber, transparentBg]);
 
   return (
     <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
