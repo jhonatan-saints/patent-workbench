@@ -135,10 +135,18 @@ app.post(
   async (req: Request, res: Response) => {
     const { prompt, model } = req.body as GenerateBody
 
+    // Abort Ollama immediately when the HTTP client disconnects (e.g. user clicks Stop)
+    const clientController = new AbortController()
+    req.on('close', () => clientController.abort())
+
     const result = await generate({
       model: model || defaultModel,
       prompt,
+      signal: clientController.signal,
     })
+
+    // Client disconnected — socket is gone, nothing to send
+    if (clientController.signal.aborted) return
 
     if (!result) {
       return res.status(502).json({

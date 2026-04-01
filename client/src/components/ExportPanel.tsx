@@ -175,9 +175,9 @@ function buildPDFHTML(artifact: PatentArtifact): string {
 <meta charset="UTF-8"/>
 <title>${titleContent.slice(0, 80)}</title>
 <style>
-  @page { margin: 1in; size: letter; }
+  @page { margin: 0; size: letter; }
   * { box-sizing: border-box; }
-  body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; margin: 0; color: #000; line-height: 1.5; }
+  body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; margin: 0; padding: 1in; color: #000; line-height: 1.5; }
   .idf-section-label { color: #4472C4; font-size: 14pt; font-weight: normal; margin: 0 0 6pt 0; }
   .field-label { color: #4472C4; font-size: 11pt; font-weight: normal; margin: 10pt 0 1pt 0; }
   .field-value { font-size: 11pt; font-weight: normal; color: #000; margin: 0 0 0 0; }

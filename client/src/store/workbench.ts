@@ -398,6 +398,18 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     });
   },
 
+  updateContextFiles: (files) => {
+    set((state) => {
+      if (!state.artifact) return {};
+      return {
+        artifact: {
+          ...state.artifact,
+          contextFiles: files.length ? files : undefined,
+        },
+      };
+    });
+  },
+
   setStepInputState: (index, patch) => {
     set((state) => ({
       steps: state.steps.map((s, i) => (i === index ? { ...s, ...patch } : s)),

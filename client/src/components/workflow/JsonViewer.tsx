@@ -7,6 +7,7 @@ import {
   Text,
   NumberInput,
   Switch,
+  useMantineColorScheme,
 } from '@mantine/core';
 import { IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import { toPng } from 'html-to-image';
@@ -47,6 +48,7 @@ const TOOLBAR_INPUT_STYLES = {
 // Color schemes
 
 const DARK_COLORS = {
+  bg: '#1e1e1e',
   string: '#a5d6a7',
   boolean: '#ff9800',
   number: '#64b5f6',
@@ -54,14 +56,15 @@ const DARK_COLORS = {
   key: '#90caf9',
   punct: '#bdbdbd',
   text: '#e0e0e0',
-  placeholder: '#555',
+  placeholder: '#777',
 };
 
 const LIGHT_COLORS = {
+  bg: '#ffffff',
   string: '#2e7d32',
   boolean: '#e65100',
   number: '#1565c0',
-  null: '#616161',
+  null: '#757575',
   key: '#0d47a1',
   punct: '#424242',
   text: '#212121',
@@ -76,13 +79,17 @@ function JsonString({ value, c }: Readonly<{ value: string; c: ColorScheme }>) {
 }
 
 function JsonPrimitive({ value, c }: Readonly<{ value: unknown; c: ColorScheme }>) {
-  if (value === null) return <span style={{ color: c.null }}>null</span>;
-  if (typeof value === 'boolean')
-    return <span style={{ color: c.boolean }}>{String(value)}</span>;
-  if (typeof value === 'number')
-    return <span style={{ color: c.number }}>{value}</span>;
-  if (typeof value === 'string') return <JsonString value={value} c={c} />;
-  return <span style={{ color: c.text }}>{String(value)}</span>;
+  if (value === null || value === undefined)
+    return <span style={{ color: c.null }}>{value === null ? 'null' : 'undefined'}</span>;
+
+  switch (typeof value) {
+    case 'boolean': return <span style={{ color: c.boolean }}>{value ? 'true' : 'false'}</span>;
+    case 'number':  return <span style={{ color: c.number }}>{value}</span>;
+    case 'string':  return <JsonString value={value} c={c} />;
+    case 'bigint':  return <span style={{ color: c.number }}>{value.toString()}</span>;
+    case 'symbol':  return <span style={{ color: c.string }}>{value.toString()}</span>;
+    default:        return <span style={{ color: c.text }}>[complex]</span>;
+  }
 }
 
 function JsonNode({
@@ -98,16 +105,21 @@ function JsonNode({
     return (
       <>
         <span style={{ color: c.punct }}>[</span>
-        {value.map((item, i) => (
-          // stable index key — display-only, no reordering
-          // biome-ignore lint/suspicious/noArrayIndexKey: display list
-          <div key={i} style={{ paddingLeft: 20 }}>
-            <JsonNode value={item} depth={depth + 1} c={c} />
-            {i < value.length - 1 && (
-              <span style={{ color: c.punct }}>,</span>
-            )}
-          </div>
-        ))}
+        {value.map((item, i) => {
+          let itemTag: string;
+          if (item === null) itemTag = 'null';
+          else if (typeof item === 'object') itemTag = 'obj';
+          else itemTag = String(item);
+          const k = `${i}:${itemTag}`;
+          return (
+            <div key={k} style={{ paddingLeft: 20 }}>
+              <JsonNode value={item} depth={depth + 1} c={c} />
+              {i < value.length - 1 && (
+                <span style={{ color: c.punct }}>,</span>
+              )}
+            </div>
+          );
+        })}
         <span style={{ color: c.punct }}>]</span>
       </>
     );
@@ -167,13 +179,14 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
     }
   };
 
-  const colors = transparentBg ? LIGHT_COLORS : DARK_COLORS;
+  const { colorScheme } = useMantineColorScheme();
+  const colors = colorScheme === 'dark' ? DARK_COLORS : LIGHT_COLORS;
 
   const handleExport = useCallback(async () => {
     if (!previewRef.current || parsed === null) return;
     try {
       const dataUrl = await toPng(previewRef.current, {
-        backgroundColor: transparentBg ? undefined : '#1e1e1e',
+        backgroundColor: transparentBg ? undefined : colors.bg,
         width: exportW,
         height: exportH,
         style: {
@@ -194,7 +207,7 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
     } catch (err) {
       console.error('JSON export failed:', err);
     }
-  }, [parsed, exportW, exportH, transparentBg, onAddFigure, figureNumber]);
+  }, [parsed, exportW, exportH, transparentBg, onAddFigure, figureNumber, colors.bg]);
 
   return (
     <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -338,42 +351,32 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
           >
             PREVIEW · {exportW} × {exportH} px
           </Text>
-          {/* Checkerboard wrapper — visual only, not exported */}
           <Box
+            ref={previewRef}
             style={{
+              background: colors.bg,
               borderRadius: 6,
               overflow: 'hidden',
-              background: transparentBg
-                ? 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 16px 16px'
-                : undefined,
+              padding: '20px 24px',
+              fontFamily: "'Cascadia Code', 'Fira Code', 'Consolas', monospace",
+              fontSize: 13,
+              lineHeight: 1.7,
+              color: colors.text,
+              minHeight: 200,
+              width: '100%',
             }}
           >
-            <Box
-              ref={previewRef}
-              style={{
-                background: transparentBg ? 'transparent' : '#1e1e1e',
-                padding: '20px 24px',
-                fontFamily: "'Cascadia Code', 'Fira Code', 'Consolas', monospace",
-                fontSize: 13,
-                lineHeight: 1.7,
-                color: colors.text,
-                minHeight: 200,
-                width: '100%',
-                overflow: 'auto',
-              }}
-            >
-              {parsed === null ? (
-                <Text
-                  size="xs"
-                  ff="monospace"
-                  style={{ color: colors.placeholder }}
-                >
-                  {jsonText.trim() ? 'Invalid JSON…' : 'Enter valid JSON on the left to preview…'}
-                </Text>
-              ) : (
-                <JsonNode value={parsed} c={colors} />
-              )}
-            </Box>
+            {parsed === null ? (
+              <Text
+                size="xs"
+                ff="monospace"
+                style={{ color: colors.placeholder }}
+              >
+                {jsonText.trim() ? 'Invalid JSON…' : 'Enter valid JSON on the left to preview…'}
+              </Text>
+            ) : (
+              <JsonNode value={parsed} c={colors} />
+            )}
           </Box>
         </Box>
       </Box>

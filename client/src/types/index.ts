@@ -177,6 +177,7 @@ export interface WorkbenchState {
   resetWorkflow: () => void;
   updateSectionContent: (moduleId: WorkflowModuleId, content: string) => void;
   updateArtifactBase: (idea: string, domain: string, constraints: string | undefined) => void;
+  updateContextFiles: (files: ContextFile[]) => void;
   saveCurrentSession: () => void;
   loadSession: (session: WorkflowSession) => void;
   clearSessions: () => void;

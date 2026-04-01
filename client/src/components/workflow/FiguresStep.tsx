@@ -149,7 +149,7 @@ export function FiguresStep() {
                 ff="monospace"
                 style={{ color: 'var(--text-primary)', letterSpacing: '0.06em' }}
               >
-                FIGURES & DIAGRAMS
+                FIGURES
               </Text>
             </Group>
             <Text size="xs" c="var(--text-muted)" ff="monospace">
