@@ -44,7 +44,7 @@ const TOOLBAR_INPUT_STYLES = {
   },
 };
 
-// ── Color schemes ─────────────────────────────────────────────────────────────
+// Color schemes
 
 const DARK_COLORS = {
   string: '#a5d6a7',
@@ -70,8 +70,7 @@ const LIGHT_COLORS = {
 
 type ColorScheme = typeof DARK_COLORS;
 
-// ── Syntax-highlighted JSON renderer ─────────────────────────────────────────
-
+// Syntax-highlighted JSON renderer
 function JsonString({ value, c }: Readonly<{ value: string; c: ColorScheme }>) {
   return <span style={{ color: c.string }}>"{value}"</span>;
 }
@@ -136,7 +135,7 @@ function JsonNode({
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// Main component
 
 interface Props {
   onAddFigure: (figure: FigureItem) => void;
@@ -257,8 +256,8 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
           onClick={() => void handleExport()}
           disabled={parsed === null}
           style={{
-            background: parsed !== null ? 'var(--accent)' : 'var(--surface-raised)',
-            color: parsed !== null ? 'var(--accent-text)' : 'var(--text-muted)',
+            background: parsed === null ? 'var(--surface-raised)' : 'var(--accent)',
+            color: parsed === null ? 'var(--text-muted)' : 'var(--accent-text)',
             fontFamily: 'var(--font-mono)',
             fontSize: 11,
             border: 'none',

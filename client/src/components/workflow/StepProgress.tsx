@@ -159,7 +159,7 @@ export function StepProgress() {
               whiteSpace: 'nowrap',
             }}
           >
-            08 · FIGURES & DIAGRAMS
+            08 · FIGURES
           </Text>
         </Group>
       </Box>

@@ -143,7 +143,7 @@ export function IdeaInputStep() {
             }}
             label={
               <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)' }}>
-                Reference Documents <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(16k+ context required)</span>
+                Reference Documents <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(16k+ context length required)</span>
               </Text>
             }
           />
