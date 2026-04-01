@@ -13,6 +13,7 @@ import {
 import { IconGavel, IconHistory, IconSun, IconMoon } from '@tabler/icons-react';
 import { useRef, useState, useEffect, type ReactNode } from 'react';
 import { StatusIndicator } from '@/components/StatusIndicator';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { StepProgress } from '@/components/workflow/StepProgress';
 import { IdeaInputStep } from '@/components/workflow/IdeaInputStep';
 import { OptionsPanel } from '@/components/workflow/OptionsPanel';
@@ -23,6 +24,7 @@ import { FiguresStep } from '@/components/workflow/FiguresStep';
 import { SessionsPanel } from '@/components/workflow/SessionsPanel';
 import { useWorkbenchStore } from '@/store/workbench';
 import { AppLoader } from '@/components/AppLoader';
+import { useI18n } from '@/i18n';
 
 function ResizableSplit({ left, right }: { readonly left: ReactNode; readonly right: ReactNode }) {
   const [leftPct, setLeftPct] = useState(50);
@@ -64,8 +66,9 @@ function ResizableSplit({ left, right }: { readonly left: ReactNode; readonly ri
 function ThemeToggle() {
   const { setColorScheme } = useMantineColorScheme();
   const scheme = useComputedColorScheme('dark');
+  const { t } = useI18n();
   return (
-    <Tooltip label={scheme === 'dark' ? 'Switch to light' : 'Switch to dark'} position="bottom">
+    <Tooltip label={scheme === 'dark' ? t('res_SwitchToLight') : t('res_SwitchToDark')} position="bottom">
       <ActionIcon
         aria-label="theme toggle"
         variant="subtle"
@@ -81,6 +84,7 @@ function ThemeToggle() {
 
 export function App() {
   const { workflowPhase } = useWorkbenchStore();
+  const { t } = useI18n();
   const isWorking = workflowPhase === 'working';
   const isFigures = workflowPhase === 'figures';
   const isInventors = workflowPhase === 'inventors';
@@ -114,13 +118,14 @@ export function App() {
           <Group gap={12}>
             <IconGavel size={20} className="text-accent" />
             <Text fw={700} size="sm" className="font-display tracking-[0.08em] text-fg uppercase">
-              Patent Workbench
+              {t('res_PatentWorkbench')}
             </Text>
             <Text size="xs" ff="monospace" className="pl-3 border-l border-stroke text-fg-muted">
-              local-first · zero telemetry
+              {t('res_LocalFirstZeroTelemetry')}
             </Text>
           </Group>
           <Group gap={8} className="items-center">
+            <LanguageSwitcher />
             <ThemeToggle />
             <StatusIndicator />
           </Group>
@@ -173,11 +178,11 @@ export function App() {
           <Group gap={8} mb={6}>
             <IconHistory size={14} className="text-accent" />
             <Text size="xs" fw={700} tt="uppercase" ff="monospace" className="text-accent tracking-[2px]">
-              Sessions
+              {t('res_Sessions')}
             </Text>
           </Group>
           <Text size="xs" c="var(--text-muted)" mb={12}>
-            In-memory only · cleared on exit
+            {t('res_InMemoryOnly')}
           </Text>
           <Divider mb={14} className="border-stroke" />
           <Box className="flex-1 overflow-hidden">

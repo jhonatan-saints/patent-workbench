@@ -2,15 +2,11 @@ import { useEffect } from 'react';
 import { Group, Badge, Text, Tooltip, ActionIcon } from '@mantine/core';
 import { IconRefresh, IconCircleFilled } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
-
-const STATUS_MAP = {
-  ok:          { color: 'var(--status-online)',   label: 'LLM ONLINE'  },
-  unavailable: { color: 'var(--status-offline)',  label: 'LLM OFFLINE' },
-  checking:    { color: 'var(--status-checking)', label: 'CHECKING...' },
-} satisfies Record<string, { color: string; label: string }>;
+import { useI18n } from '@/i18n';
 
 export function StatusIndicator() {
   const { llmStatus, llmLatency, checkStatus } = useWorkbenchStore();
+  const { t } = useI18n();
 
   useEffect(() => {
     checkStatus();
@@ -18,12 +14,22 @@ export function StatusIndicator() {
     return () => clearInterval(interval);
   }, [checkStatus]);
 
+  const STATUS_MAP = {
+    ok:          { color: 'var(--status-online)',   label: t('res_LlmOnline')   },
+    unavailable: { color: 'var(--status-offline)',  label: t('res_LlmOffline')  },
+    checking:    { color: 'var(--status-checking)', label: t('res_Checking')    },
+  } satisfies Record<string, { color: string; label: string }>;
+
   const { color, label } = STATUS_MAP[llmStatus] ?? STATUS_MAP.checking;
 
   return (
     <Group gap={8}>
       <Tooltip
-        label={llmLatency === null ? 'Checking connection...' : `Latency: ${llmLatency}ms`}
+        label={
+          llmLatency === null
+            ? t('res_CheckingConnection')
+            : t('res_LatencyMs', { ms: llmLatency })
+        }
         position="bottom"
       >
         <Badge
@@ -53,7 +59,7 @@ export function StatusIndicator() {
         variant="subtle"
         size="xs"
         onClick={checkStatus}
-        title="Refresh status"
+        title={t('res_RefreshStatus')}
         className="text-fg-muted"
       >
         <IconRefresh size={14} />
