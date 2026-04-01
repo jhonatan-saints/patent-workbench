@@ -5,12 +5,14 @@ import {
   Background,
   BackgroundVariant,
   Controls,
+  MiniMap,
   addEdge,
   useNodesState,
   useEdgesState,
   Handle,
   Position,
   useReactFlow,
+  ConnectionMode,
   type Connection,
   type NodeProps,
   type Node,
@@ -19,8 +21,16 @@ import {
   getViewportForBounds,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Button, Group, Text, Box, TextInput, Switch } from '@mantine/core';
-import { IconTrash, IconCheck, IconSquare, IconDiamond } from '@tabler/icons-react';
+import { Button, Group, Text, Box, TextInput, Switch, ColorInput, Select } from '@mantine/core';
+import {
+  IconTrash,
+  IconCheck,
+  IconSquare,
+  IconDiamond,
+  IconPlayerPlay,
+  IconPlayerStop,
+  IconArrowsRightLeft,
+} from '@tabler/icons-react';
 import { toPng } from 'html-to-image';
 import { generateId } from '@/utils/sanitize';
 import type { FigureItem } from '@/types';
@@ -28,43 +38,62 @@ import type { FigureItem } from '@/types';
 const IMAGE_W = 900;
 const IMAGE_H = 500;
 
-function ProcessNode(props: Readonly<NodeProps>) {
-  const { data, selected } = props;
+const H_STYLE: React.CSSProperties = {
+  width: 10,
+  height: 10,
+  background: '#888',
+  border: '2px solid #fff',
+  borderRadius: '50%',
+  zIndex: 10,
+};
+
+function AllHandles() {
+  return (
+    <>
+      <Handle type="source" position={Position.Top} id="top" style={H_STYLE} />
+      <Handle type="source" position={Position.Right} id="right" style={H_STYLE} />
+      <Handle type="source" position={Position.Bottom} id="bottom" style={H_STYLE} />
+      <Handle type="source" position={Position.Left} id="left" style={H_STYLE} />
+    </>
+  );
+}
+
+function ProcessNode({ data, selected }: Readonly<NodeProps>) {
+  const bg = (data.bgColor as string) || '#ffffff';
+  const border = (data.borderColor as string) || '#aaaaaa';
   return (
     <div
       style={{
         padding: '8px 20px',
         borderRadius: 4,
-        border: `2px solid ${selected ? 'var(--accent, #6366f1)' : '#bbb'}`,
-        background: '#fff',
+        border: `2px solid ${selected ? '#6366f1' : border}`,
+        background: bg,
         fontSize: 13,
         fontFamily: 'monospace',
         minWidth: 120,
         textAlign: 'center',
         color: '#111',
+        position: 'relative',
       }}
     >
-      <Handle type="target" position={Position.Top} />
-      <Handle type="target" position={Position.Left} />
-      <span>{(data.label as string) || 'Step'}</span>
-      <Handle type="source" position={Position.Bottom} />
-      <Handle type="source" position={Position.Right} />
+      <AllHandles />
+      <span>{(data.label as string) || 'Process'}</span>
     </div>
   );
 }
 
-function DecisionNode(props: Readonly<NodeProps>) {
-  const { data, selected } = props;
+function DecisionNode({ data, selected }: Readonly<NodeProps>) {
+  const bg = (data.bgColor as string) || '#ffffff';
+  const border = (data.borderColor as string) || '#aaaaaa';
   return (
-    <div style={{ width: 110, height: 110, position: 'relative' }}>
-      <Handle type="target" position={Position.Top} style={{ top: 2, left: '50%' }} />
-      <Handle type="target" position={Position.Left} style={{ left: 2, top: '50%' }} />
+    <div style={{ width: 120, height: 120, position: 'relative' }}>
+      <AllHandles />
       <div
         style={{
           position: 'absolute',
-          inset: 12,
-          background: '#fff',
-          border: `2px solid ${selected ? 'var(--accent, #6366f1)' : '#bbb'}`,
+          inset: 10,
+          background: bg,
+          border: `2px solid ${selected ? '#6366f1' : border}`,
           transform: 'rotate(45deg)',
         }}
       />
@@ -78,46 +107,156 @@ function DecisionNode(props: Readonly<NodeProps>) {
           fontSize: 11,
           fontFamily: 'monospace',
           textAlign: 'center',
-          padding: '0 18px',
+          padding: '0 20px',
           pointerEvents: 'none',
           color: '#111',
         }}
       >
-        {(data.label as string) || '?'}
+        {(data.label as string) || 'Decision?'}
       </div>
-      <Handle type="source" position={Position.Bottom} style={{ bottom: 2, left: '50%' }} />
-      <Handle type="source" position={Position.Right} style={{ right: 2, top: '50%' }} />
     </div>
   );
 }
 
-const NODE_TYPES = { process: ProcessNode, decision: DecisionNode };
+function StartNode({ data, selected }: Readonly<NodeProps>) {
+  const bg = (data.bgColor as string) || '#d1fae5';
+  const border = (data.borderColor as string) || '#10b981';
+  return (
+    <div
+      style={{
+        padding: '8px 28px',
+        borderRadius: 999,
+        border: `2px solid ${selected ? '#6366f1' : border}`,
+        background: bg,
+        fontSize: 12,
+        fontFamily: 'monospace',
+        minWidth: 90,
+        textAlign: 'center',
+        color: '#111',
+        position: 'relative',
+      }}
+    >
+      <AllHandles />
+      <span>{(data.label as string) || 'Start'}</span>
+    </div>
+  );
+}
+
+function EndNode({ data, selected }: Readonly<NodeProps>) {
+  const bg = (data.bgColor as string) || '#fee2e2';
+  const border = (data.borderColor as string) || '#ef4444';
+  const ringColor = selected ? '#6366f1' : border;
+  return (
+    <div
+      style={{
+        padding: '8px 28px',
+        borderRadius: 999,
+        border: `2px solid ${ringColor}`,
+        background: bg,
+        fontSize: 12,
+        fontFamily: 'monospace',
+        minWidth: 90,
+        textAlign: 'center',
+        color: '#111',
+        position: 'relative',
+        boxShadow: `0 0 0 4px ${ringColor}`,
+        margin: 4,
+      }}
+    >
+      <AllHandles />
+      <span>{(data.label as string) || 'End'}</span>
+    </div>
+  );
+}
+
+function IONode({ data, selected }: Readonly<NodeProps>) {
+  const bg = (data.bgColor as string) || '#eff6ff';
+  const border = (data.borderColor as string) || '#3b82f6';
+  return (
+    <div style={{ position: 'relative', minWidth: 130 }}>
+      <AllHandles />
+      <div
+        style={{
+          padding: '8px 20px',
+          background: bg,
+          border: `2px solid ${selected ? '#6366f1' : border}`,
+          fontSize: 12,
+          fontFamily: 'monospace',
+          textAlign: 'center',
+          color: '#111',
+          transform: 'skewX(-15deg)',
+        }}
+      >
+        <span style={{ display: 'inline-block', transform: 'skewX(15deg)' }}>
+          {(data.label as string) || 'Input/Output'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const NODE_TYPES = {
+  process: ProcessNode,
+  decision: DecisionNode,
+  start: StartNode,
+  end: EndNode,
+  io: IONode,
+};
+
+const EDGE_TYPE_OPTIONS = [
+  { value: 'default', label: 'Bezier' },
+  { value: 'straight', label: 'Straight' },
+  { value: 'step', label: 'Step' },
+  { value: 'smoothstep', label: 'Smooth Step' },
+];
+
+const NODE_DEFAULTS: Record<
+  string,
+  { label: string; bgColor: string; borderColor: string }
+> = {
+  process: { label: 'Process', bgColor: '#ffffff', borderColor: '#aaaaaa' },
+  decision: { label: 'Decision?', bgColor: '#ffffff', borderColor: '#aaaaaa' },
+  start: { label: 'Start', bgColor: '#d1fae5', borderColor: '#10b981' },
+  end: { label: 'End', bgColor: '#fee2e2', borderColor: '#ef4444' },
+  io: { label: 'Input/Output', bgColor: '#eff6ff', borderColor: '#3b82f6' },
+};
+
+const BTN = { fontFamily: 'var(--font-mono)', fontSize: 11, flexShrink: 0 } as const;
 
 interface DiagramEditorProps {
   onAddFigure: (figure: FigureItem) => void;
   figureNumber: number;
 }
 
-function DiagramEditorInner(props: Readonly<DiagramEditorProps>) {
-  const { onAddFigure, figureNumber } = props;
+function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEditorProps>) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+
   const [labelInput, setLabelInput] = useState('');
+  const [nodeBg, setNodeBg] = useState('#ffffff');
+  const [nodeBorder, setNodeBorder] = useState('#aaaaaa');
+  const [edgeColor, setEdgeColor] = useState('#555555');
+  const [edgeType, setEdgeType] = useState('default');
+  const [edgeLabelInput, setEdgeLabelInput] = useState('');
+
   const [transparentBg, setTransparentBg] = useState(false);
   const { getNodes, getNodesBounds } = useReactFlow();
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const onConnect = useCallback(
-    (connection: Connection & { id?: string; sourceHandle?: string | null; targetHandle?: string | null }) =>
+    (connection: Connection) =>
       setEdges((eds: Edge[]) => {
         const newEdge: Edge = {
-          id: connection.id ?? generateId(),
+          id: generateId(),
           source: connection.source,
           target: connection.target,
           sourceHandle: connection.sourceHandle ?? undefined,
           targetHandle: connection.targetHandle ?? undefined,
-          markerEnd: { type: MarkerType.ArrowClosed },
+          type: 'default',
+          markerEnd: { type: MarkerType.ArrowClosed, color: '#555' },
           style: { strokeWidth: 2, stroke: '#555' },
         };
         return addEdge(newEdge, eds);
@@ -125,31 +264,102 @@ function DiagramEditorInner(props: Readonly<DiagramEditorProps>) {
     [setEdges]
   );
 
-  const onSelectionChange = useCallback(({ nodes: sel }: { nodes: Node[] }) => {
-    if (sel.length === 1) {
-      setSelectedId(sel[0].id);
-      setLabelInput((sel[0].data.label as string) || '');
-    } else {
-      setSelectedId(null);
-    }
-  }, []);
+  const onSelectionChange = useCallback(
+    ({ nodes: selNodes, edges: selEdges }: { nodes: Node[]; edges: Edge[] }) => {
+      if (selNodes.length === 1 && selEdges.length === 0) {
+        const n = selNodes[0];
+        setSelectedNodeId(n.id);
+        setSelectedEdgeId(null);
+        setLabelInput((n.data.label as string) || '');
+        setNodeBg((n.data.bgColor as string) || '#ffffff');
+        setNodeBorder((n.data.borderColor as string) || '#aaaaaa');
+      } else if (selEdges.length === 1 && selNodes.length === 0) {
+        const e = selEdges[0];
+        setSelectedEdgeId(e.id);
+        setSelectedNodeId(null);
+        setEdgeColor((e.style?.stroke as string) || '#555555');
+        setEdgeType((e.type as string) || 'default');
+        setEdgeLabelInput((e.label as string) || '');
+      } else {
+        setSelectedNodeId(null);
+        setSelectedEdgeId(null);
+      }
+    },
+    []
+  );
 
   const applyLabel = useCallback(() => {
-    if (!selectedId) return;
+    if (!selectedNodeId) return;
     setNodes((nds: Node[]) =>
-      nds.map((n: Node) => (n.id === selectedId ? { ...n, data: { ...n.data, label: labelInput } } : n))
+      nds.map((n: Node) => (n.id === selectedNodeId ? { ...n, data: { ...n.data, label: labelInput } } : n))
     );
-  }, [selectedId, labelInput, setNodes]);
+  }, [selectedNodeId, labelInput, setNodes]);
+
+  const applyNodeColors = useCallback(
+    (bg: string, border: string) => {
+      if (!selectedNodeId) return;
+      setNodes((nds: Node[]) =>
+        nds.map((n: Node) =>
+          n.id === selectedNodeId ? { ...n, data: { ...n.data, bgColor: bg, borderColor: border } } : n
+        )
+      );
+    },
+    [selectedNodeId, setNodes]
+  );
+
+  const applyEdgeStyle = useCallback(
+    (color: string, type: string, label: string) => {
+      if (!selectedEdgeId) return;
+      setEdges((eds: Edge[]) =>
+        eds.map((e: Edge) =>
+          e.id === selectedEdgeId
+            ? {
+                ...e,
+                type,
+                label: label || undefined,
+                style: { ...e.style, stroke: color },
+                markerEnd: { type: MarkerType.ArrowClosed, color },
+              }
+            : e
+        )
+      );
+    },
+    [selectedEdgeId, setEdges]
+  );
+
+  const deleteSelected = useCallback(() => {
+    if (selectedNodeId) {
+      setNodes((nds: Node[]) => nds.filter((n: Node) => n.id !== selectedNodeId));
+      setEdges((eds: Edge[]) =>
+        eds.filter((e: Edge) => e.source !== selectedNodeId && e.target !== selectedNodeId)
+      );
+      setSelectedNodeId(null);
+    } else if (selectedEdgeId) {
+      setEdges((eds: Edge[]) => eds.filter((e: Edge) => e.id !== selectedEdgeId));
+      setSelectedEdgeId(null);
+    }
+  }, [selectedNodeId, selectedEdgeId, setNodes, setEdges]);
 
   const addNode = useCallback(
-    (type: 'process' | 'decision') => {
-      const newNode: Node = {
-        id: generateId(),
-        type,
-        position: { x: 80 + Math.random() * 300, y: 80 + Math.random() * 150 },
-        data: { label: type === 'process' ? 'New Step' : 'Decision' },
-      };
-      setNodes((nds: Node[]) => [...nds, newNode]);
+    (type: keyof typeof NODE_TYPES) => {
+      const d = NODE_DEFAULTS[type];
+      const nodeId = generateId();
+      setNodes((nds: Node[]) => [
+        ...nds.map((n: Node) => ({ ...n, selected: false })),
+        {
+          id: nodeId,
+          type,
+          position: { x: 100 + Math.random() * 280, y: 80 + Math.random() * 160 },
+          data: { ...d },
+          selected: true,
+        },
+      ]);
+      // Auto-select so color/label controls appear immediately
+      setSelectedNodeId(nodeId);
+      setSelectedEdgeId(null);
+      setLabelInput(d.label);
+      setNodeBg(d.bgColor);
+      setNodeBorder(d.borderColor);
     },
     [setNodes]
   );
@@ -157,13 +367,10 @@ function DiagramEditorInner(props: Readonly<DiagramEditorProps>) {
   const handleExport = useCallback(async () => {
     const allNodes = getNodes();
     if (allNodes.length === 0) return;
-
     const rfViewport = canvasRef.current?.querySelector<HTMLElement>('.react-flow__viewport');
     if (!rfViewport) return;
-
     const bounds = getNodesBounds(allNodes);
     const vp = getViewportForBounds(bounds, IMAGE_W, IMAGE_H, 0.5, 2, 0.2);
-
     try {
       const dataUrl = await toPng(rfViewport, {
         backgroundColor: transparentBg ? undefined : '#ffffff',
@@ -190,117 +397,213 @@ function DiagramEditorInner(props: Readonly<DiagramEditorProps>) {
     }
   }, [getNodes, getNodesBounds, onAddFigure, figureNumber, transparentBg]);
 
+  const hasSelection = selectedNodeId !== null || selectedEdgeId !== null;
+
   return (
     <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Toolbar */}
-      <Group
-        gap={8}
-        p="8px 14px"
-        wrap="nowrap"
+      {/* ── Toolbar ── */}
+      <Box
+        p="6px 10px"
         style={{
           background: 'var(--surface-raised)',
           borderBottom: '1px solid var(--border)',
           flexShrink: 0,
+          overflowX: 'auto',
         }}
       >
-        <Button
-          size="xs"
-          variant="default"
-          leftSection={<IconSquare size={12} />}
-          onClick={() => addNode('process')}
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}
-        >
-          + PROCESS
-        </Button>
-        <Button
-          size="xs"
-          variant="default"
-          leftSection={<IconDiamond size={12} />}
-          onClick={() => addNode('decision')}
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}
-        >
-          + DECISION
-        </Button>
+        {/* Row 1: node type buttons */}
+        <Group gap={4} wrap="nowrap" mb={4}>
+          <Text size="xs" ff="monospace" c="dimmed" style={{ flexShrink: 0, fontSize: 10 }}>
+            ADD:
+          </Text>
+          <Button size="xs" variant="light" color="teal" leftSection={<IconPlayerPlay size={11} />} onClick={() => addNode('start')} style={BTN}>
+            START
+          </Button>
+          <Button size="xs" variant="light" color="indigo" leftSection={<IconSquare size={11} />} onClick={() => addNode('process')} style={BTN}>
+            PROCESS
+          </Button>
+          <Button size="xs" variant="light" color="orange" leftSection={<IconDiamond size={11} />} onClick={() => addNode('decision')} style={BTN}>
+            DECISION
+          </Button>
+          <Button size="xs" variant="light" color="blue" leftSection={<IconArrowsRightLeft size={11} />} onClick={() => addNode('io')} style={BTN}>
+            I/O
+          </Button>
+          <Button size="xs" variant="light" color="red" leftSection={<IconPlayerStop size={11} />} onClick={() => addNode('end')} style={BTN}>
+            END
+          </Button>
 
-        {selectedId && (
-          <>
-            <Box style={{ width: 1, height: 20, background: 'var(--border)', flexShrink: 0 }} />
-            <TextInput
+          <Box style={{ flex: 1 }} />
+
+          <Group gap={8}>
+            <Switch
               size="xs"
-              value={labelInput}
-              onChange={(e) => setLabelInput(e.currentTarget.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') applyLabel();
-              }}
-              placeholder="Node label…"
-              style={{ width: 180 }}
-              styles={{
-                input: {
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text-primary)',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 12,
-                },
-              }}
+              checked={transparentBg}
+              onChange={(e) => setTransparentBg(e.currentTarget.checked)}
+              label={<Text size="xs" ff="monospace" c="dimmed">TRANSPARENT BG</Text>}
             />
             <Button
               size="xs"
-              variant="default"
-              onClick={applyLabel}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}
+              variant="outline"
+              color="red"
+              leftSection={<IconTrash size={11} />}
+              onClick={() => { setNodes([]); setEdges([]); }}
+              disabled={nodes.length === 0}
+              style={BTN}
             >
-              RENAME
+              CLEAR ALL
             </Button>
-          </>
+            <Button
+              size="xs"
+              leftSection={<IconCheck size={11} />}
+              onClick={handleExport}
+              disabled={nodes.length === 0}
+              style={{
+                ...BTN,
+                background: 'var(--accent)',
+                color: 'var(--accent-text)',
+                border: 'none',
+              }}
+            >
+              ADD TO FIGURES
+            </Button>
+          </Group>
+        </Group>
+
+        {/* Row 2: selection controls (only shown when something is selected) */}
+        {hasSelection && (
+          <Group gap={6} wrap="nowrap" pt={4} style={{ borderTop: '1px solid var(--border)' }}>
+            {selectedNodeId && (
+              <>
+                <Text size="xs" ff="monospace" c="dimmed" style={{ flexShrink: 0, fontSize: 10 }}>
+                  NODE:
+                </Text>
+                <TextInput
+                  size="xs"
+                  value={labelInput}
+                  onChange={(e) => setLabelInput(e.currentTarget.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') applyLabel(); }}
+                  placeholder="Label…"
+                  style={{ width: 140, flexShrink: 0 }}
+                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 12 } }}
+                />
+                <Button size="xs" variant="outline" color="gray" onClick={applyLabel} style={BTN}>
+                  RENAME
+                </Button>
+                <ColorInput
+                  size="xs"
+                  value={nodeBg}
+                  onChange={(v) => { setNodeBg(v); applyNodeColors(v, nodeBorder); }}
+                  placeholder="Fill color"
+                  style={{ width: 110, flexShrink: 0 }}
+                  format="hex"
+                  withEyeDropper={false}
+                  popoverProps={{ zIndex: 9999 }}
+                  swatches={['#ffffff','#f1f5f9','#dbeafe','#d1fae5','#fef9c3','#fee2e2','#ede9fe','#fce7f3','#111827','#374151']}
+                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
+                />
+                <ColorInput
+                  size="xs"
+                  value={nodeBorder}
+                  onChange={(v) => { setNodeBorder(v); applyNodeColors(nodeBg, v); }}
+                  placeholder="Border color"
+                  style={{ width: 110, flexShrink: 0 }}
+                  format="hex"
+                  withEyeDropper={false}
+                  popoverProps={{ zIndex: 9999 }}
+                  swatches={['#aaaaaa','#6366f1','#10b981','#ef4444','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#111827','#000000']}
+                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
+                />
+              </>
+            )}
+
+            {selectedEdgeId && (
+              <>
+                <Text size="xs" ff="monospace" c="dimmed" style={{ flexShrink: 0, fontSize: 10 }}>
+                  EDGE:
+                </Text>
+                <ColorInput
+                  size="xs"
+                  value={edgeColor}
+                  onChange={(v) => { setEdgeColor(v); applyEdgeStyle(v, edgeType, edgeLabelInput); }}
+                  placeholder="Line color"
+                  style={{ width: 110, flexShrink: 0 }}
+                  format="hex"
+                  withEyeDropper={false}
+                  popoverProps={{ zIndex: 9999 }}
+                  swatches={['#555555','#000000','#6366f1','#10b981','#ef4444','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#ffffff']}
+                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
+                />
+                <Select
+                  size="xs"
+                  data={EDGE_TYPE_OPTIONS}
+                  value={edgeType}
+                  onChange={(v) => {
+                    if (!v) return;
+                    setEdgeType(v);
+                    applyEdgeStyle(edgeColor, v, edgeLabelInput);
+                  }}
+                  style={{ width: 120, flexShrink: 0 }}
+                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
+                />
+                <TextInput
+                  size="xs"
+                  value={edgeLabelInput}
+                  onChange={(e) => setEdgeLabelInput(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') applyEdgeStyle(edgeColor, edgeType, edgeLabelInput);
+                  }}
+                  placeholder="Edge label (e.g. Yes/No)…"
+                  style={{ width: 170, flexShrink: 0 }}
+                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
+                />
+                <Button
+                  size="xs"
+                  variant="outline"
+                  color="gray"
+                  onClick={() => applyEdgeStyle(edgeColor, edgeType, edgeLabelInput)}
+                  style={BTN}
+                >
+                  APPLY
+                </Button>
+              </>
+            )}
+
+            <Box style={{ flex: 1 }} />
+
+            <Button
+              size="xs"
+              variant="filled"
+              color="red"
+              leftSection={<IconTrash size={11} />}
+              onClick={deleteSelected}
+              style={BTN}
+            >
+              DELETE
+            </Button>
+          </Group>
         )}
+      </Box>
 
-        <Box style={{ flex: 1 }} />
-
-        <Switch
-          size="xs"
-          checked={transparentBg}
-          onChange={(e) => setTransparentBg(e.currentTarget.checked)}
-          label={
-            <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)' }}>
-              TRANSPARENT BG
-            </Text>
-          }
-        />
-
-        <Button
-          size="xs"
-          variant="subtle"
-          color="red"
-          leftSection={<IconTrash size={12} />}
-          onClick={() => {
-            setNodes([]);
-            setEdges([]);
-          }}
-          disabled={nodes.length === 0}
-          style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}
-        >
-          CLEAR
-        </Button>
-        <Button
-          size="xs"
-          leftSection={<IconCheck size={12} />}
-          onClick={handleExport}
-          disabled={nodes.length === 0}
-          style={{
-            background: 'var(--accent)',
-            color: 'var(--accent-text)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            border: 'none',
-          }}
-        >
-          ADD TO FIGURES
-        </Button>
-      </Group>
-
-      {/* Canvas */}
+      {/* ── Canvas ── */}
       <div ref={canvasRef} style={{ flex: 1 }}>
+        <style>{`
+          .react-flow__controls-button {
+            background: var(--surface-raised);
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+            fill: var(--text-primary);
+          }
+          .react-flow__controls-button:hover {
+            background: var(--surface-active, var(--surface));
+          }
+          .react-flow__controls-button svg {
+            fill: var(--text-primary);
+          }
+          .react-flow__minimap-mask {
+            fill: var(--surface);
+            opacity: 0.6;
+          }
+        `}</style>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -309,30 +612,44 @@ function DiagramEditorInner(props: Readonly<DiagramEditorProps>) {
           onConnect={onConnect}
           onSelectionChange={onSelectionChange}
           nodeTypes={NODE_TYPES}
+          connectionMode={ConnectionMode.Loose}
           fitView
-          deleteKeyCode="Delete"
-          style={{
-            background: transparentBg
-              ? 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 16px 16px'
-              : '#fafafa',
+          deleteKeyCode={['Delete', 'Backspace']}
+          proOptions={{ hideAttribution: true }}
+          style={{ background: 'var(--surface)' }}
+          defaultEdgeOptions={{
+            type: 'default',
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#888' },
+            style: { strokeWidth: 2, stroke: '#888' },
           }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#ccc" />
-          <Controls />
+          <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--border)" />
+          <Controls
+            style={{
+              background: 'var(--surface-raised)',
+              border: '1px solid var(--border)',
+              borderRadius: 6,
+              boxShadow: 'none',
+              overflow: 'hidden',
+            }}
+          />
+          <MiniMap
+            zoomable
+            pannable
+            style={{
+              background: 'var(--surface-raised)',
+              border: '1px solid var(--border)',
+              borderRadius: 6,
+            }}
+            nodeColor={(n) => (n.data?.bgColor as string) || 'var(--surface-raised)'}
+          />
         </ReactFlow>
       </div>
 
-      {/* Hint bar */}
-      <Box
-        p="5px 14px"
-        style={{
-          background: 'var(--surface-raised)',
-          borderTop: '1px solid var(--border)',
-          flexShrink: 0,
-        }}
-      >
+      {/* ── Hint bar ── */}
+      <Box p="4px 12px" style={{ background: 'var(--surface-raised)', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
         <Text size="xs" c="var(--text-muted)" ff="monospace">
-          Click to select · Select a node to rename it · Drag from handles to connect · Delete key removes selected
+          Click to select · Drag handle dot to connect · Click edge to select · Del / Backspace to delete · Ctrl+Z to undo
         </Text>
       </Box>
     </Box>

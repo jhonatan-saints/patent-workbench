@@ -4,6 +4,7 @@ import {
   IconAlertCircle,
   IconHome,
   IconRefresh,
+  IconPlayerStop,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { WORKFLOW_MODULES } from '@/utils/workflowTemplates';
@@ -50,6 +51,7 @@ export function OptionsPanel() {
     regenerateOptions,
     goToStep,
     resetWorkflow,
+    cancelGeneration,
   } = useWorkbenchStore();
 
   const step = steps[currentStepIndex];
@@ -113,6 +115,19 @@ export function OptionsPanel() {
             >
               {isFirstStep ? 'START OVER' : 'BACK'}
             </Button>
+
+            {isGenerating && (
+              <Button
+                variant="filled"
+                color="red"
+                size="xs"
+                leftSection={<IconPlayerStop size={12} />}
+                onClick={cancelGeneration}
+                style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}
+              >
+                STOP
+              </Button>
+            )}
 
             {!showInputPanel && !isGenerating && hasOptions && (
               <Button

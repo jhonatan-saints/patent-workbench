@@ -79,7 +79,7 @@ function WorkflowStepItem({ step, index, isActive, isDone, isFuture, canNavigate
           >
             {String(index + 1).padStart(2, '0')} · {step.label.toUpperCase()}
           </Text>
-          {isDone && step.promptTokens + step.completionTokens > 0 && (
+          {step.status === 'done' && step.promptTokens + step.completionTokens > 0 && (
             <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 1 }}>
               {step.promptTokens + step.completionTokens}t
             </Text>

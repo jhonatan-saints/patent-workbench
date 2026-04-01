@@ -1,6 +1,7 @@
 type GenerateParams = {
   model: string;
   prompt: string;
+  signal?: AbortSignal;
 };
 
 type GenerateResult = {
@@ -17,9 +18,19 @@ const LLM_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS) || 120_000;
 export async function generate({
   model,
   prompt,
+  signal: clientSignal,
 }: GenerateParams): Promise<GenerateResult | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
+
+  // Abort the Ollama request when the HTTP client disconnects
+  if (clientSignal) {
+    if (clientSignal.aborted) {
+      clearTimeout(timeout);
+      return null;
+    }
+    clientSignal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
 
   try {
     const res = await fetch(`${OLLAMA_URL}/api/generate`, {
@@ -49,8 +60,9 @@ export async function generate({
       completionTokens: data.eval_count ?? 0,
     };
   } catch (err) {
+    clearTimeout(timeout);
     if ((err as Error).name === 'AbortError') {
-      logger.error('LLM request timeout');
+      logger.info({ cancelled: !!clientSignal?.aborted }, 'LLM request aborted');
     } else {
       logger.error({ err }, 'LLM request failed');
     }
