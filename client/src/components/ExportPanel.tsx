@@ -11,6 +11,7 @@ import {
 } from 'docx';
 import { useWorkbenchStore } from '@/store/workbench';
 import { WORKFLOW_ORDER, SECTION_LABELS } from '@/utils/workflowTemplates';
+import { escapeHtml } from '@/utils/sanitize';
 import type { PatentArtifact } from '@/types';
 
 type ExportFormat = 'md' | 'txt' | 'pdf' | 'docx';
@@ -117,12 +118,12 @@ function buildPDFHTML(artifact: PatentArtifact): string {
     .map(
       (inv) => `
     <div class="field-label">Name:</div>
-    <div class="field-value-bold">${inv.name}</div>
-    ${inv.address ? `<div class="field-label">Home Address:</div><div class="field-value">${inv.address}</div>` : ''}
-    ${inv.telephone ? `<div class="field-label">Home Telephone:</div><div class="field-value">${inv.telephone}</div>` : ''}
-    ${inv.email ? `<div class="field-label">Home Email:</div><div class="field-value">${inv.email}</div>` : '<div class="field-label">Home Email:</div><div class="field-value">&nbsp;</div>'}
-    ${inv.citizenship ? `<div class="field-label">Citizenship:</div><div class="field-value">${inv.citizenship}</div>` : ''}
-    ${inv.employeeId ? `<div class="field-label">Employee ID:</div><div class="field-value-bold">${inv.employeeId}</div>` : ''}
+    <div class="field-value-bold">${escapeHtml(inv.name)}</div>
+    ${inv.address ? `<div class="field-label">Home Address:</div><div class="field-value">${escapeHtml(inv.address)}</div>` : ''}
+    ${inv.telephone ? `<div class="field-label">Home Telephone:</div><div class="field-value">${escapeHtml(inv.telephone)}</div>` : ''}
+    ${inv.email ? `<div class="field-label">Home Email:</div><div class="field-value">${escapeHtml(inv.email)}</div>` : '<div class="field-label">Home Email:</div><div class="field-value">&nbsp;</div>'}
+    ${inv.citizenship ? `<div class="field-label">Citizenship:</div><div class="field-value">${escapeHtml(inv.citizenship)}</div>` : ''}
+    ${inv.employeeId ? `<div class="field-label">Employee ID:</div><div class="field-value-bold">${escapeHtml(inv.employeeId)}</div>` : ''}
   `
     )
     .join('');
@@ -134,11 +135,11 @@ function buildPDFHTML(artifact: PatentArtifact): string {
 
   const inventionTitleBlock = `
     <p class="meta-label">Invention Title</p>
-    <p class="field-value">${titleContent}</p>`;
+    <p class="field-value">${escapeHtml(titleContent)}</p>`;
 
-  const idfValueHtml = artifact.idfNumber ? `<p class="field-value">${artifact.idfNumber}</p>` : '';
+  const idfValueHtml = artifact.idfNumber ? `<p class="field-value">${escapeHtml(artifact.idfNumber)}</p>` : '';
   const bgHtml = artifact.businessGroup
-    ? `<p class="meta-label">Business Group</p><p class="field-value">${artifact.businessGroup}</p>`
+    ? `<p class="meta-label">Business Group</p><p class="field-value">${escapeHtml(artifact.businessGroup)}</p>`
     : '';
   const idfMetaBlock = `
     <p class="meta-label">IDF Number</p>
@@ -151,9 +152,9 @@ function buildPDFHTML(artifact: PatentArtifact): string {
       const label = SECTION_LABELS[moduleId];
       const paragraphs = content
         .split(/\n{2,}/)
-        .map((p) => `<p>${p.trim().replaceAll('\n', '<br/>')}</p>`)
+        .map((p) => `<p>${escapeHtml(p.trim()).replaceAll('\n', '<br/>')}</p>`)
         .join('');
-      return `<section><h2>${label}</h2>${paragraphs}</section>`;
+      return `<section><h2>${escapeHtml(label)}</h2>${paragraphs}</section>`;
     })
     .join('\n');
 
@@ -162,8 +163,8 @@ function buildPDFHTML(artifact: PatentArtifact): string {
         <h2>Figures</h2>
         ${artifact.figures.map((fig) => `
           <div style="text-align:center; margin-bottom: 20pt;">
-            <img src="${fig.dataUrl}" alt="${fig.name}" style="max-width:100%; border:1px solid #ddd;"/>
-            <p style="font-size:10pt; color:#555; font-style:italic; margin-top:4pt;">${fig.name}${fig.caption ? ` — ${fig.caption}` : ''}</p>
+            <img src="${fig.dataUrl}" alt="${escapeHtml(fig.name)}" style="max-width:100%; border:1px solid #ddd;"/>
+            <p style="font-size:10pt; color:#555; font-style:italic; margin-top:4pt;">${escapeHtml(fig.name)}${fig.caption ? ` — ${escapeHtml(fig.caption)}` : ''}</p>
           </div>
         `).join('')}
       </section>`
@@ -173,7 +174,7 @@ function buildPDFHTML(artifact: PatentArtifact): string {
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<title>${titleContent.slice(0, 80)}</title>
+<title>${escapeHtml(titleContent.slice(0, 80))}</title>
 <style>
   @page { margin: 0; size: letter; }
   * { box-sizing: border-box; }

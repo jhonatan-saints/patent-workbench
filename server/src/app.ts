@@ -105,9 +105,21 @@ app.get('/models', async (_req: Request, res: Response) => {
   return res.json({ success: true, data: { models } })
 })
 
+const modelNameSchema = z.object({
+  name: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[a-zA-Z0-9._:/-]+$/, 'Invalid model name'),
+})
+
 // GET /models/:name/context
 app.get('/models/:name/context', async (req: Request, res: Response) => {
-  const contextLength = await getModelContextLength(req.params.name)
+  const parsed = modelNameSchema.safeParse({ name: req.params.name })
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: 'Invalid model name' })
+  }
+  const contextLength = await getModelContextLength(parsed.data.name)
   return res.json({ success: true, data: { contextLength } })
 })
 
