@@ -232,17 +232,25 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       guidedFields: s.guidedFields,
       manualDraft: s.manualDraft,
     }));
-    const session: WorkflowSession = {
-      id: generateId(),
-      startedAt: artifact.startedAt,
-      completedAt: Date.now(),
-      baseIdea: artifact.baseIdea,
-      artifact,
-      model: selectedModel,
-      totalTokens,
-      stepInputStates,
-    };
-    set((state) => ({ sessions: [session, ...state.sessions].slice(0, 20) }));
+    set((state) => {
+      const existingIndex = state.sessions.findIndex((s) => s.startedAt === artifact.startedAt);
+      const session: WorkflowSession = {
+        id: existingIndex >= 0 ? state.sessions[existingIndex].id : generateId(),
+        startedAt: artifact.startedAt,
+        completedAt: Date.now(),
+        baseIdea: artifact.baseIdea,
+        artifact,
+        model: selectedModel,
+        totalTokens,
+        stepInputStates,
+      };
+      if (existingIndex >= 0) {
+        const updated = [...state.sessions];
+        updated[existingIndex] = session;
+        return { sessions: updated };
+      }
+      return { sessions: [session, ...state.sessions].slice(0, 20) };
+    });
   },
 
   regenerateOptions: () => {
@@ -371,9 +379,9 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       return {
         artifact: {
           ...state.artifact,
-          baseIdea: idea.trim(),
-          baseDomain: domain.trim(),
-          constraints: constraints?.trim() || undefined,
+          baseIdea: idea,
+          baseDomain: domain,
+          constraints: constraints || undefined,
         },
       };
     });

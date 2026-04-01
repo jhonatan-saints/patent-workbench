@@ -19,11 +19,13 @@ import {
   IconArrowLeft,
   IconArrowRight,
   IconVectorTriangle,
+  IconBraces,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import type { FigureItem } from '@/types';
 import { generateId } from '@/utils/sanitize';
 import { DiagramEditor } from './DiagramEditor';
+import { JsonViewer } from './JsonViewer';
 
 const INPUT_STYLES = {
   label: {
@@ -41,12 +43,37 @@ const INPUT_STYLES = {
   },
 };
 
+const FIGURE_TYPE_LABELS: Record<string, string> = { diagram: 'DIAGRAM', json: 'JSON' };
+function figureTypeLabel(type: FigureItem['type']): string {
+  return FIGURE_TYPE_LABELS[type ?? ''] ?? 'IMAGE';
+}
+
+function makeImageFigure(dataUrl: string, img: HTMLImageElement, figureNumber: number): FigureItem {
+  return {
+    id: generateId(),
+    dataUrl,
+    name: `Figure ${figureNumber}`,
+    caption: '',
+    width: img.naturalWidth,
+    height: img.naturalHeight,
+    type: 'image',
+  };
+}
+
 export function FiguresStep() {
   const { artifact, updateFigures, goToInventors, goToStep, steps } = useWorkbenchStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [figures, setFigures] = useState<FigureItem[]>(() => artifact?.figures ?? []);
-  const [mode, setMode] = useState<'upload' | 'diagram'>('upload');
+  const [mode, setMode] = useState<'upload' | 'diagram' | 'json'>('upload');
+
+  const addImageFromDataUrl = (dataUrl: string) => {
+    const img = new Image();
+    img.onload = () => {
+      setFigures((prev) => [...prev, makeImageFigure(dataUrl, img, prev.length + 1)]);
+    };
+    img.src = dataUrl;
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -56,25 +83,7 @@ export function FiguresStep() {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const dataUrl = ev.target?.result as string;
-        const img = new Image();
-        img.onload = () => {
-          setFigures((prev) => {
-            const figureNumber = prev.length + 1;
-            return [
-              ...prev,
-              {
-                id: generateId(),
-                dataUrl,
-                name: `Figure ${figureNumber}`,
-                caption: '',
-                width: img.naturalWidth,
-                height: img.naturalHeight,
-                type: 'image' as const,
-              },
-            ];
-          });
-        };
-        img.src = dataUrl;
+        addImageFromDataUrl(dataUrl);
       };
       reader.readAsDataURL(file);
     });
@@ -88,14 +97,15 @@ export function FiguresStep() {
 
   const updateFigureDimension = (id: string, field: 'width' | 'height', value: number | string) => {
     const num = typeof value === 'string' ? Number.parseInt(value, 10) : value;
-    setFigures((prev) => prev.map((f) => (f.id === id ? { ...f, [field]: Number.isNaN(num) ? undefined : num } : f)));
+    const safeNum = Number.isNaN(num) ? undefined : num;
+    setFigures((prev) => prev.map((f) => (f.id === id ? { ...f, [field]: safeNum } : f)));
   };
 
   const removeFigure = (id: string) => {
     setFigures((prev) => prev.filter((f) => f.id !== id));
   };
 
-  const handleAddDiagram = (fig: FigureItem) => {
+  const handleAddFigureFromEditor = (fig: FigureItem) => {
     setFigures((prev) => [...prev, fig]);
     setMode('upload');
   };
@@ -169,7 +179,7 @@ export function FiguresStep() {
       >
         <SegmentedControl
           value={mode}
-          onChange={(v) => setMode(v as 'upload' | 'diagram')}
+          onChange={(v) => setMode(v as 'upload' | 'diagram' | 'json')}
           size="xs"
           data={[
             {
@@ -194,6 +204,17 @@ export function FiguresStep() {
                 </Group>
               ),
             },
+            {
+              value: 'json',
+              label: (
+                <Group gap={6} wrap="nowrap">
+                  <IconBraces size={12} />
+                  <Text ff="monospace" size="xs" fw={600} style={{ letterSpacing: '0.05em' }}>
+                    JSON OBJECT
+                  </Text>
+                </Group>
+              ),
+            },
           ]}
           styles={{
             root: { background: 'var(--surface-raised)', border: '1px solid var(--border)' },
@@ -201,12 +222,11 @@ export function FiguresStep() {
         />
       </Box>
 
-      {/* Body */}
-      {mode === 'upload' ? (
+      {/* Body — upload */}
+      {mode === 'upload' && (
         <ScrollArea style={{ flex: 1 }}>
           <Box p={28} style={{ maxWidth: 800, margin: '0 auto' }}>
             <Stack gap={20}>
-              {/* Upload area */}
               <Box
                 onClick={() => fileInputRef.current?.click()}
                 style={{
@@ -244,7 +264,6 @@ export function FiguresStep() {
                 </Text>
               </Box>
 
-              {/* Figure cards */}
               {figures.map((fig, idx) => (
                 <Box
                   key={fig.id}
@@ -270,9 +289,9 @@ export function FiguresStep() {
                         fw={700}
                         style={{ color: 'var(--text-muted)', letterSpacing: '0.06em' }}
                       >
-                        {fig.type === 'diagram' ? 'DIAGRAM' : 'IMAGE'} {idx + 1}
+                        {figureTypeLabel(fig.type)} {idx + 1}
                       </Text>
-                      {fig.type === 'diagram' && (
+                      {fig.type !== 'image' && fig.type != null && (
                         <Text
                           size="xs"
                           ff="monospace"
@@ -285,7 +304,7 @@ export function FiguresStep() {
                             border: '1px solid var(--accent)',
                           }}
                         >
-                          DIAGRAM
+                          {figureTypeLabel(fig.type)}
                         </Text>
                       )}
                     </Group>
@@ -363,10 +382,23 @@ export function FiguresStep() {
             </Stack>
           </Box>
         </ScrollArea>
-      ) : (
+      )}
+
+      {/* Body — diagram editor */}
+      {mode === 'diagram' && (
         <Box style={{ flex: 1, overflow: 'hidden' }}>
           <DiagramEditor
-            onAddFigure={handleAddDiagram}
+            onAddFigure={handleAddFigureFromEditor}
+            figureNumber={figures.length + 1}
+          />
+        </Box>
+      )}
+
+      {/* Body — JSON viewer */}
+      {mode === 'json' && (
+        <Box style={{ flex: 1, overflow: 'hidden' }}>
+          <JsonViewer
+            onAddFigure={handleAddFigureFromEditor}
             figureNumber={figures.length + 1}
           />
         </Box>

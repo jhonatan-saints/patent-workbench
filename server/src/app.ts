@@ -20,6 +20,10 @@ const app = express()
 
 const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173'
 const bodyLimit = process.env.BODY_LIMIT || '128kb'
+const promptSchemaMax = Number(process.env.PROMPT_MAX_LENGTH) || 16000
+const defaultModel = process.env.DEFAULT_MODEL || 'mistral'
+const generateRateWindowMs = Number(process.env.GENERATE_RATE_WINDOW_MS) || 60_000
+const generateRateMax = Number(process.env.GENERATE_RATE_MAX) || 20
 
 
 // Security headers
@@ -57,8 +61,8 @@ app.use(
 app.use(
   '/generate',
   rateLimit({
-    windowMs: 60 * 1000,
-    max: 20,
+    windowMs: generateRateWindowMs,
+    max: generateRateMax,
   })
 )
 
@@ -85,7 +89,7 @@ app.use(
 
 // Schema
 const generateSchema = z.object({
-  prompt: z.string().min(1, 'Prompt is required').max(16000, 'Prompt too long'),
+  prompt: z.string().min(1, 'Prompt is required').max(promptSchemaMax, 'Prompt too long'),
   model: z.string().optional(),
 })
 
@@ -126,7 +130,7 @@ app.post(
     const { prompt, model } = req.body as GenerateBody
 
     const result = await generate({
-      model: model || 'mistral',
+      model: model || defaultModel,
       prompt,
     })
 

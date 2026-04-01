@@ -20,7 +20,7 @@ import {
   getViewportForBounds,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Button, Group, Text, Box, TextInput } from '@mantine/core';
+import { Button, Group, Text, Box, TextInput, Switch } from '@mantine/core';
 import { IconTrash, IconCheck, IconSquare, IconDiamond } from '@tabler/icons-react';
 import { toPng } from 'html-to-image';
 import { generateId } from '@/utils/sanitize';
@@ -105,6 +105,7 @@ function DiagramEditorInner(props: Readonly<DiagramEditorProps>) {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [labelInput, setLabelInput] = useState('');
+  const [transparentBg, setTransparentBg] = useState(false);
   const { getNodes } = useReactFlow();
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -166,7 +167,7 @@ function DiagramEditorInner(props: Readonly<DiagramEditorProps>) {
 
     try {
       const dataUrl = await toPng(rfViewport, {
-        backgroundColor: '#ffffff',
+        backgroundColor: transparentBg ? undefined : '#ffffff',
         width: IMAGE_W,
         height: IMAGE_H,
         style: {
@@ -188,7 +189,7 @@ function DiagramEditorInner(props: Readonly<DiagramEditorProps>) {
     } catch (err) {
       console.error('Diagram export failed:', err);
     }
-  }, [getNodes, onAddFigure, figureNumber]);
+  }, [getNodes, onAddFigure, figureNumber, transparentBg]);
 
   return (
     <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -257,6 +258,17 @@ function DiagramEditorInner(props: Readonly<DiagramEditorProps>) {
 
         <Box style={{ flex: 1 }} />
 
+        <Switch
+          size="xs"
+          checked={transparentBg}
+          onChange={(e) => setTransparentBg(e.currentTarget.checked)}
+          label={
+            <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)' }}>
+              TRANSPARENT BG
+            </Text>
+          }
+        />
+
         <Button
           size="xs"
           variant="subtle"
@@ -300,7 +312,11 @@ function DiagramEditorInner(props: Readonly<DiagramEditorProps>) {
           nodeTypes={NODE_TYPES}
           fitView
           deleteKeyCode="Delete"
-          style={{ background: '#fafafa' }}
+          style={{
+            background: transparentBg
+              ? 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 16px 16px'
+              : '#fafafa',
+          }}
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#ccc" />
           <Controls />
