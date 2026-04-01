@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Stack,
   Textarea,
@@ -8,9 +8,16 @@ import {
   Group,
   Box,
   Select,
+  ActionIcon,
+  Switch,
 } from '@mantine/core';
-import { IconBrain, IconWand } from '@tabler/icons-react';
+import { IconBrain, IconWand, IconPaperclip, IconX, IconFile } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { generateId } from '@/utils/sanitize';
+import type { ContextFile } from '@/types';
+
+const ACCEPTED_TEXT_TYPES = '.txt,.md,.json,.csv,.xml,.yaml,.yml,.log';
+const MAX_FILE_BYTES = 500_000; // 500 KB per file
 
 const INPUT_STYLES = {
   label: {
@@ -34,17 +41,39 @@ function formatModelLabel(name: string): string {
 }
 
 export function IdeaInputStep() {
-  const { startWorkflow, llmStatus, selectedModel, availableModels, setModel } =
+  const { startWorkflow, llmStatus, selectedModel, availableModels, modelContextLength, setModel } =
     useWorkbenchStore();
 
   const [idea, setIdea] = useState('');
   const [domain, setDomain] = useState('');
   const [constraints, setConstraints] = useState('');
+  const [contextFiles, setContextFiles] = useState<ContextFile[]>([]);
+  const [contextFilesEnabled, setContextFilesEnabled] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canStart = idea.trim().length > 0 && llmStatus === 'ok';
+  const autoDetected = modelContextLength !== null && modelContextLength >= 16384;
+  const supportsContextFiles = autoDetected || contextFilesEnabled;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    for (const file of files) {
+      if (file.size > MAX_FILE_BYTES) continue;
+      void file.text().then((content) => {
+        setContextFiles((prev) => [
+          ...prev,
+          { id: generateId(), name: file.name, content, size: file.size },
+        ]);
+      });
+    }
+    e.target.value = '';
+  };
+
+  const removeContextFile = (id: string) =>
+    setContextFiles((prev) => prev.filter((f) => f.id !== id));
 
   const handleStart = () => {
-    startWorkflow(idea, domain, constraints || undefined);
+    startWorkflow(idea, domain, constraints || undefined, contextFiles.length ? contextFiles : undefined);
   };
 
   return (
@@ -101,6 +130,84 @@ export function IdeaInputStep() {
           maxRows={6}
           styles={INPUT_STYLES}
         />
+
+        {/* Context files toggle — shown when not auto-detected */}
+        {!autoDetected && (
+          <Switch
+            size="xs"
+            checked={contextFilesEnabled}
+            onChange={(e) => {
+              const enabled = e.currentTarget.checked;
+              setContextFilesEnabled(enabled);
+              if (!enabled) setContextFiles([]);
+            }}
+            label={
+              <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)' }}>
+                Reference Documents <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(16k+ context required)</span>
+              </Text>
+            }
+          />
+        )}
+
+        {/* Context files panel */}
+        {supportsContextFiles && (
+          <Box>
+            <Group justify="space-between" align="center" mb={6}>
+              <Text style={INPUT_STYLES.label}>Reference Documents</Text>
+              <Button
+                size="xs"
+                variant="subtle"
+                leftSection={<IconPaperclip size={12} />}
+                onClick={() => fileInputRef.current?.click()}
+                style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)' }}
+              >
+                ATTACH FILE
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_TEXT_TYPES}
+                multiple
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
+            </Group>
+            <Text size="xs" c="var(--text-muted)" mb={contextFiles.length ? 8 : 0}>
+              Attach text files (TXT, MD, JSON, CSV…) to include as context. Max 500 KB per file.
+            </Text>
+            {contextFiles.length > 0 && (
+              <Stack gap={4}>
+                {contextFiles.map((f) => (
+                  <Group key={f.id} gap={8} wrap="nowrap"
+                    style={{
+                      background: 'var(--surface-raised)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 4,
+                      padding: '5px 10px',
+                    }}
+                  >
+                    <IconFile size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                    <Text size="xs" ff="monospace" style={{ flex: 1, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {f.name}
+                    </Text>
+                    <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)', flexShrink: 0 }}>
+                      {(f.size / 1024).toFixed(1)} KB
+                    </Text>
+                    <ActionIcon
+                      size="xs"
+                      variant="subtle"
+                      color="red"
+                      onClick={() => removeContextFile(f.id)}
+                      aria-label={`Remove ${f.name}`}
+                    >
+                      <IconX size={11} />
+                    </ActionIcon>
+                  </Group>
+                ))}
+              </Stack>
+            )}
+          </Box>
+        )}
 
         {/* Model + Start */}
         <Group justify="space-between" align="flex-end" mt={4}>

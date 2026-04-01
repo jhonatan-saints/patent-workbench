@@ -87,6 +87,13 @@ export interface InventorInfo {
   employeeId?: string;
 }
 
+export interface ContextFile {
+  id: string;
+  name: string;
+  content: string;  // plain text content
+  size: number;     // original byte size
+}
+
 export interface FigureItem {
   id: string;
   dataUrl: string;   // base64 data URL
@@ -101,6 +108,7 @@ export interface PatentArtifact {
   baseIdea: string;
   baseDomain: string;
   constraints?: string;
+  contextFiles?: ContextFile[];
   inventionTitle?: string;
   idfNumber?: string;
   businessGroup?: string;
@@ -132,6 +140,7 @@ export interface WorkbenchState {
   // LLM
   selectedModel: string;
   availableModels: string[];
+  modelContextLength: number | null;
   llmStatus: 'ok' | 'unavailable' | 'checking';
   llmLatency: number | null;
 
@@ -149,7 +158,8 @@ export interface WorkbenchState {
   // Actions
   setModel: (model: string) => void;
   checkStatus: () => Promise<void>;
-  startWorkflow: (idea: string, domain: string, constraints: string | undefined) => void;
+  startWorkflow: (idea: string, domain: string, constraints: string | undefined, contextFiles?: ContextFile[]) => void;
+  fetchModelContextLength: (model: string) => Promise<void>;
   goToFigures: () => void;
   goToInventors: () => void;
   updateInventors: (inventors: InventorInfo[]) => void;

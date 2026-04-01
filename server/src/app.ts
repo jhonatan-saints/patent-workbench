@@ -8,7 +8,7 @@ import pinoHttp from 'pino-http'
 import 'express-async-errors'
 import dotenv from 'dotenv'
 import { z } from 'zod'
-import { generate, checkLLM, listModels } from './services/llm.service'
+import { generate, checkLLM, listModels, getModelContextLength } from './services/llm.service'
 import logger from './logger'
 import errorHandler from './middleware/errorHandler'
 import { validateBody } from './middleware/validate'
@@ -19,8 +19,8 @@ dotenv.config()
 const app = express()
 
 const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173'
-const bodyLimit = process.env.BODY_LIMIT || '128kb'
-const promptSchemaMax = Number(process.env.PROMPT_MAX_LENGTH) || 16000
+const bodyLimit = process.env.BODY_LIMIT || '512kb'
+const promptSchemaMax = Number(process.env.PROMPT_MAX_LENGTH) || 64000
 const defaultModel = process.env.DEFAULT_MODEL || 'mistral'
 const generateRateWindowMs = Number(process.env.GENERATE_RATE_WINDOW_MS) || 60_000
 const generateRateMax = Number(process.env.GENERATE_RATE_MAX) || 20
@@ -103,6 +103,12 @@ const llmResponseSchema = z.object({
 app.get('/models', async (_req: Request, res: Response) => {
   const models = await listModels()
   return res.json({ success: true, data: { models } })
+})
+
+// GET /models/:name/context
+app.get('/models/:name/context', async (req: Request, res: Response) => {
+  const contextLength = await getModelContextLength(req.params.name)
+  return res.json({ success: true, data: { contextLength } })
 })
 
 // GET /status

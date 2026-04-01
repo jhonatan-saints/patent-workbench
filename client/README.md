@@ -1,6 +1,6 @@
 # Client — patent-workbench
 
-React + Vite frontend for Patent Workbench. Provides a structured, step-by-step interface for drafting all eight patent sections using a local LLM, with three generated options to compare at each step.
+React + Vite frontend for Patent Workbench. Provides a structured, step-by-step interface for drafting all seven patent sections using a local LLM, with three generated options to compare at each step.
 
 ## Stack
 
@@ -35,12 +35,15 @@ src/
 
 | Component | Phase | Description |
 | --- | --- | --- |
-| `IdeaInputStep` | input | Invention idea, domain, and constraints form; launches the workflow |
-| `StepProgress` | working | Left sidebar listing all 8 steps with status badges; click to navigate |
+| `IdeaInputStep` | input | Invention idea, domain, constraints, and optional context file upload; launches the workflow |
+| `StepProgress` | working | Left sidebar listing all 7 steps with status badges; click to navigate |
 | `StepInputPanel` | working | Per-step input panel with Auto / Guided / Manual mode tabs |
 | `OptionsPanel` | working | Grid of the three generated options for the current step |
 | `OptionCard` | working | Individual option card with select and copy actions |
 | `ArtifactPreview` | working | Live right-panel preview of all selected sections so far |
+| `FiguresStep` | figures | Manage figures: upload images, create diagrams, attach JSON diagrams; set captions |
+| `DiagramEditor` | figures | In-app flowchart/diagram editor (produces PNG or JSON output) |
+| `JsonViewer` | figures | Read-only viewer for JSON diagram attachments |
 | `InventorsStep` | inventors | Form to add/remove inventors and optional patent metadata |
 | `PreviewPhase` | preview | Full artifact review with inline editing and export |
 | `SessionsPanel` | all | In-memory session history browser (restore or delete past runs) |
@@ -56,13 +59,14 @@ src/
 ## Workflow phases
 
 ```
-input → working → inventors → preview
+input → working → figures → inventors → preview
 ```
 
-1. **input** — `IdeaInputStep` collects the base invention idea, technical domain, and optional constraints.
-2. **working** — Steps 1–8 in sequence. For each step the user picks an input mode, generates options, and selects one.
-3. **inventors** — `InventorsStep` collects inventor details and optional patent metadata (IDF number, business group).
-4. **preview** — `PreviewPhase` shows the fully assembled artifact with inline edit support and export.
+1. **input** — `IdeaInputStep` collects the base invention idea, technical domain, optional constraints, and optional context files (plain-text reference documents).
+2. **working** — Steps 1–7 in sequence. For each step the user picks an input mode, generates options, and selects one. Completing all steps auto-navigates to the figures phase.
+3. **figures** — `FiguresStep` lets the user add diagrams (via `DiagramEditor`), upload images, or attach JSON diagrams (viewed with `JsonViewer`); each figure gets a caption.
+4. **inventors** — `InventorsStep` collects inventor details and optional patent metadata (IDF number, business group).
+5. **preview** — `PreviewPhase` shows the fully assembled artifact with inline edit support and export.
 
 ### Input modes (per step)
 
@@ -76,23 +80,23 @@ input → working → inventors → preview
 
 The Zustand store manages the entire application state. Key slices:
 
-- **LLM** — `llmStatus` (`checking` / `ok` / `unavailable`), `llmLatency`, `availableModels`, `selectedModel`; polled every 30 seconds via `checkStatus()`.
-- **Workflow** — `workflowPhase`, `steps` (array of 8 `WorkflowStep`), `currentStepIndex`, `artifact` (`PatentArtifact`), `generationStatus`, `lastError`.
+- **LLM** — `llmStatus` (`checking` / `ok` / `unavailable`), `llmLatency`, `availableModels`, `selectedModel`, `modelContextLength` (fetched from `GET /models/:name/context`); polled every 30 seconds via `checkStatus()`.
+- **Workflow** — `workflowPhase` (`input` / `working` / `figures` / `inventors` / `preview`), `steps` (array of 7 `WorkflowStep`), `currentStepIndex`, `artifact` (`PatentArtifact`), `generationStatus`, `lastError`.
 - **Sessions** — `sessions` array (max 20); each `WorkflowSession` stores the full artifact, model, total tokens, and per-step input states.
 
 The abort controller for in-progress generations lives at module level (outside Zustand state) to avoid triggering re-renders on cancel.
 
 ## Template system
 
-`src/utils/workflowTemplates.ts` exports `WORKFLOW_MODULES` and `WORKFLOW_ORDER`.
+`src/utils/workflowTemplates.ts` exports `WORKFLOW_MODULES`, `WORKFLOW_ORDER`, `SECTION_LABELS`, and `buildArtifactContext`.
 
-Each of the eight modules defines:
+Each of the seven modules defines:
 
 - `label` / `description` — displayed in `StepProgress`
-- `systemContext` — frames the LLM as a USPTO patent attorney (REG pattern)
-- `buildPrompt(artifact)` — assembles the user prompt from the current `PatentArtifact`; prior sections are truncated to 200 characters (last 3 only) to stay within context windows
+- `systemContext` — frames the LLM as a USPTO patent analyst/attorney (REG pattern)
+- `buildPrompt(artifact)` — calls `buildArtifactContext()` which injects: invention idea, domain, constraints, inventor names, the last 3 prior sections (truncated to 200 chars each), and any context files (up to a 40 000-character total budget)
 - `guidedFields` — field definitions rendered as a form by `StepInputPanel` in Guided mode
-- `estimatedTokens` — used by the token meter
+- `buildGuidedPrompt(artifact, fields)` — variant of `buildPrompt` that interpolates the user-filled guided fields into the context before sending to the LLM
 
 ## Dev
 

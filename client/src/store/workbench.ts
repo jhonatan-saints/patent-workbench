@@ -5,7 +5,7 @@ import type {
   WorkflowSession,
   GeneratedOption,
 } from '@/types';
-import { generatePatentContent, getModels, getStatus, isApiError } from '@/api/client';
+import { generatePatentContent, getModels, getStatus, getModelContextLength, isApiError } from '@/api/client';
 import { sanitizeOutput, generateId } from '@/utils/sanitize';
 import { WORKFLOW_MODULES, WORKFLOW_ORDER } from '@/utils/workflowTemplates';
 import { parseOptions } from '@/utils/optionParser';
@@ -33,6 +33,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   // LLM
   selectedModel: DEFAULT_MODEL,
   availableModels: [],
+  modelContextLength: null,
   llmStatus: 'checking',
   llmLatency: null,
 
@@ -49,7 +50,15 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
 
   // Actions
 
-  setModel: (model) => set({ selectedModel: model }),
+  setModel: (model) => {
+    set({ selectedModel: model });
+    void get().fetchModelContextLength(model);
+  },
+
+  fetchModelContextLength: async (model) => {
+    const contextLength = await getModelContextLength(model);
+    set({ modelContextLength: contextLength });
+  },
 
   checkStatus: async () => {
     const [status, models] = await Promise.all([getStatus(), getModels()]);
@@ -68,16 +77,18 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
         if (best !== state.selectedModel) next.selectedModel = best;
       }
 
+      if (next.selectedModel) void get().fetchModelContextLength(next.selectedModel);
       return next;
     });
   },
 
-  startWorkflow: (idea, domain, constraints) => {
+  startWorkflow: (idea, domain, constraints, contextFiles) => {
     const { selectedModel } = get();
     const artifact: PatentArtifact = {
       baseIdea: idea.trim(),
       baseDomain: domain.trim(),
       constraints: constraints?.trim() || undefined,
+      contextFiles: contextFiles?.length ? contextFiles : undefined,
       inventors: [],
       figures: [],
       sections: {},
