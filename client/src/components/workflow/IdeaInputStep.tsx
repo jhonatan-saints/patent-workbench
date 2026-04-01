@@ -14,27 +14,11 @@ import {
 import { IconBrain, IconWand, IconPaperclip, IconX, IconFile } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { generateId } from '@/utils/sanitize';
+import { INPUT_STYLES, btnPrimary } from '@/theme/styles';
 import type { ContextFile } from '@/types';
 
 const ACCEPTED_TEXT_TYPES = '.txt,.md,.json,.csv,.xml,.yaml,.yml,.log';
 const MAX_FILE_BYTES = 500_000; // 500 KB per file
-
-const INPUT_STYLES = {
-  label: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: 11,
-    fontWeight: 700,
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase' as const,
-    color: 'var(--text-secondary)',
-  },
-  description: { color: 'var(--text-muted)', fontSize: 12 },
-  input: {
-    background: 'var(--surface-raised)',
-    border: '1px solid var(--border)',
-    color: 'var(--text-primary)',
-  },
-};
 
 function formatModelLabel(name: string): string {
   return name.split(':')[0];
@@ -81,13 +65,12 @@ export function IdeaInputStep() {
       {/* Header */}
       <Stack gap={6} mb={32}>
         <Group gap={10}>
-          <IconBrain size={35} style={{ color: 'var(--accent)' }} />
+          <IconBrain size={35} className="text-accent" />
           <Text
             component="h2"
             fw={700}
             size="xl"
-            className="font-display tracking-wide"
-            style={{ color: 'var(--text-primary)' }}
+            className="font-display tracking-wide text-fg"
           >
             Describe Your Invention
           </Text>
@@ -142,8 +125,9 @@ export function IdeaInputStep() {
               if (!enabled) setContextFiles([]);
             }}
             label={
-              <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)' }}>
-                Reference Documents <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(16k+ context length required)</span>
+              <Text size="xs" ff="monospace" className="text-fg-muted">
+                Reference Documents{' '}
+                <span className="font-normal text-fg-muted">(16k+ context length required)</span>
               </Text>
             }
           />
@@ -153,13 +137,15 @@ export function IdeaInputStep() {
         {supportsContextFiles && (
           <Box>
             <Group justify="space-between" align="center" mb={6}>
-              <Text style={INPUT_STYLES.label}>Reference Documents</Text>
+              <Text className="font-mono text-[11px] font-bold tracking-[0.06em] uppercase text-fg-secondary">
+                Reference Documents
+              </Text>
               <Button
                 size="xs"
                 variant="subtle"
                 leftSection={<IconPaperclip size={12} />}
                 onClick={() => fileInputRef.current?.click()}
-                style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)' }}
+                className="font-mono text-[11px] text-accent"
               >
                 ATTACH FILE
               </Button>
@@ -168,7 +154,7 @@ export function IdeaInputStep() {
                 type="file"
                 accept={ACCEPTED_TEXT_TYPES}
                 multiple
-                style={{ display: 'none' }}
+                className="hidden"
                 onChange={handleFileChange}
               />
             </Group>
@@ -178,19 +164,17 @@ export function IdeaInputStep() {
             {contextFiles.length > 0 && (
               <Stack gap={4}>
                 {contextFiles.map((f) => (
-                  <Group key={f.id} gap={8} wrap="nowrap"
-                    style={{
-                      background: 'var(--surface-raised)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 4,
-                      padding: '5px 10px',
-                    }}
+                  <Group
+                    key={f.id}
+                    gap={8}
+                    wrap="nowrap"
+                    className="bg-surface-raised border border-stroke rounded py-1.25 px-2.5"
                   >
-                    <IconFile size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                    <Text size="xs" ff="monospace" style={{ flex: 1, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <IconFile size={12} className="text-fg-muted shrink-0" />
+                    <Text size="xs" ff="monospace" className="flex-1 text-fg truncate">
                       {f.name}
                     </Text>
-                    <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)', flexShrink: 0 }}>
+                    <Text size="xs" ff="monospace" className="text-fg-muted shrink-0">
                       {(f.size / 1024).toFixed(1)} KB
                     </Text>
                     <ActionIcon
@@ -237,15 +221,7 @@ export function IdeaInputStep() {
             onClick={handleStart}
             disabled={!canStart}
             size="md"
-            style={{
-              background: canStart ? 'var(--accent)' : 'var(--surface-raised)',
-              color: canStart ? 'var(--accent-text)' : 'var(--text-muted)',
-              fontFamily: 'var(--font-mono)',
-              fontWeight: 700,
-              fontSize: 12,
-              letterSpacing: '0.08em',
-              border: 'none',
-            }}
+            style={btnPrimary(canStart)}
           >
             START WORKFLOW
           </Button>
@@ -263,52 +239,28 @@ export function IdeaInputStep() {
           </Text>
         )}
       </Stack>
+
       {/* Animated border with center dot (from center outwards) */}
       <div className="relative flex items-center justify-center h-7 mb-6 pt-30 select-none">
-        {/* Left animated line */}
         <div
-          className="origin-left animate-grow-line-side"
+          className="origin-left animate-grow-line-side absolute top-1/2 left-1/2 h-0.5 w-1/2 rounded-sm"
           style={{
-            position: 'absolute',
-            left: '50%',
-            top: '50%',
-            height: '2px',
-            width: '50%',
             background: 'linear-gradient(to left, transparent 0%, var(--accent) 80%)',
-            borderRadius: '2px',
             boxShadow: '0 0 2px var(--accent-glow)',
             transform: 'translateY(-50%) scaleX(0)',
           }}
         />
-        {/* Right animated line */}
         <div
-          className="origin-right animate-grow-line-side"
+          className="origin-right animate-grow-line-side absolute top-1/2 right-1/2 h-0.5 w-1/2 rounded-sm"
           style={{
-            position: 'absolute',
-            right: '50%',
-            top: '50%',
-            height: '2px',
-            width: '50%',
             background: 'linear-gradient(to right, transparent 0%, var(--accent) 80%)',
-            borderRadius: '2px',
             boxShadow: '0 0 2px var(--accent-glow)',
             transform: 'translateY(-50%) scaleX(0)',
           }}
         />
-        {/* Center dot (always visible) */}
         <div
-          className="z-10"
-          style={{
-            width: 10,
-            height: 10,
-            borderRadius: '50%',
-            background: 'var(--accent)',
-            boxShadow: '0 0 8px var(--accent-glow)',
-            position: 'absolute',
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-          }}
+          className="z-10 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-accent"
+          style={{ boxShadow: '0 0 8px var(--accent-glow)' }}
         />
       </div>
     </Box>

@@ -76,15 +76,26 @@
   --color-accent:         var(--accent);
   --color-accent-dim:     var(--accent-dim);
   --color-accent-glow:    var(--accent-glow);
+  --color-accent-text:    var(--accent-text);
 
   /* Foreground */
   --color-fg:             var(--text-primary);
   --color-fg-secondary:   var(--text-secondary);
   --color-fg-muted:       var(--text-muted);
 
+  /* Semantic */
+  --color-danger:           var(--danger);
+  --color-success:          var(--success);
+
+  /* Status */
+  --color-status-online:    var(--status-online);
+  --color-status-checking:  var(--status-checking);
+  --color-status-offline:   var(--status-offline);
+
   /* Fonts */
   --font-family-display: var(--font-display);
   --font-family-body:    var(--font-body);
+  --font-family-mono:    var(--font-mono);
   --font-family-serif:   var(--font-serif);
 }
 
@@ -270,6 +281,12 @@ body {
 
 .mantine-AppShell-main {
   background: var(--bg) !important;
+}
+
+/* SegmentedControl active label — text must use accent-text over the accent bg */
+.step-seg [data-active] {
+  color: var(--accent-text) !important;
+  font-weight: 700;
 }
 
 /* stylelint-enable selector-class-pattern */

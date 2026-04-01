@@ -46,26 +46,17 @@ function ResizableSplit({ left, right }: { readonly left: ReactNode; readonly ri
   }, []);
 
   return (
-    <div ref={containerRef} style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-      <div style={{ width: `${leftPct}%`, overflow: 'hidden', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>{left}</div>
+    <div ref={containerRef} className="flex h-full overflow-hidden">
+      <div style={{ width: `${leftPct}%` }} className="overflow-hidden shrink-0 flex flex-col">
+        {left}
+      </div>
       <button
         type="button"
         aria-label="Resize panels"
         onMouseDown={() => { dragging.current = true; }}
-        style={{
-          width: 2.5,
-          cursor: 'col-resize',
-          background: 'var(--border)',
-          flexShrink: 0,
-          transition: 'background 0.15s',
-          userSelect: 'none',
-          border: 'none',
-          padding: 0,
-        }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--accent)'; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--border)'; }}
+        className="w-[2.5px] cursor-col-resize bg-stroke shrink-0 transition-colors duration-150 border-0 p-0 hover:bg-accent"
       />
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>{right}</div>
+      <div className="flex-1 overflow-hidden flex flex-col">{right}</div>
     </div>
   );
 }
@@ -95,10 +86,8 @@ export function App() {
   const isInventors = workflowPhase === 'inventors';
   const isPreview = workflowPhase === 'preview';
 
-  // Loading state for initial mount
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    // wait 2.5 seconds before removing the loading for better UX
     const handle = setTimeout(() => setLoading(false), 2500);
     return () => clearTimeout(handle);
   }, []);
@@ -112,23 +101,11 @@ export function App() {
       aside={{ width: 300, breakpoint: 'lg' }}
       padding={0}
       styles={{
-        root: { background: 'var(--bg)', minHeight: '100vh' },
-        header: {
-          background: 'var(--surface-raised)',
-          borderBottom: '1px solid var(--border)',
-          zIndex: 200,
-        },
-        navbar: {
-          background: 'var(--surface)',
-          borderRight: '1px solid var(--border)',
-          zIndex: 100,
-        },
-        aside: {
-          background: 'var(--surface)',
-          borderLeft: '1px solid var(--border)',
-          zIndex: 100,
-        },
-        main: { background: 'var(--bg)' },
+        root:   { background: 'var(--bg)', minHeight: '100vh' },
+        header: { background: 'var(--surface-raised)', borderBottom: '1px solid var(--border)', zIndex: 200 },
+        navbar: { background: 'var(--surface)', borderRight: '1px solid var(--border)', zIndex: 100 },
+        aside:  { background: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 100 },
+        main:   { background: 'var(--bg)' },
       }}
     >
       {/* HEADER */}
@@ -136,19 +113,10 @@ export function App() {
         <Group h="100%" px={20} justify="space-between">
           <Group gap={12}>
             <IconGavel size={20} className="text-accent" />
-            <Text
-              fw={700}
-              size="sm"
-              className="font-display tracking-[0.08em] text-fg uppercase"
-            >
+            <Text fw={700} size="sm" className="font-display tracking-[0.08em] text-fg uppercase">
               Patent Workbench
             </Text>
-            <Text
-              size="xs"
-              c="var(--text-muted)"
-              ff="monospace"
-              className="pl-3 border-l border-stroke"
-            >
+            <Text size="xs" ff="monospace" className="pl-3 border-l border-stroke text-fg-muted">
               local-first · zero telemetry
             </Text>
           </Group>
@@ -159,95 +127,60 @@ export function App() {
         </Group>
       </AppShell.Header>
 
-      {/* LEFT NAV — step progress */}
+      {/* LEFT NAV */}
       <AppShell.Navbar>
-        <Box style={{ height: '100%', overflowY: 'auto' }}>
+        <Box className="h-full overflow-y-auto">
           <StepProgress />
         </Box>
       </AppShell.Navbar>
 
       {/* MAIN */}
       <AppShell.Main>
-        {/* Input phase */}
         {workflowPhase === 'input' && (
           <ScrollArea style={{ height: 'calc(100vh - 52px)' }}>
             <IdeaInputStep />
           </ScrollArea>
         )}
 
-        {/* Working phase: options (left) + live preview (right) */}
         {isWorking && (
           <Box style={{ height: 'calc(100vh - 52px)', overflow: 'hidden' }}>
-            <ResizableSplit
-              left={<OptionsPanel />}
-              right={<ArtifactPreview />}
-            />
+            <ResizableSplit left={<OptionsPanel />} right={<ArtifactPreview />} />
           </Box>
         )}
 
-        {/* Figures phase (step 08) */}
         {isFigures && (
-          <Box
-            style={{
-              height: 'calc(100vh - 52px)',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
+          <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 52px)' }}>
             <FiguresStep />
           </Box>
         )}
 
-        {/* Inventors phase (step 09) */}
         {isInventors && (
-          <Box
-            style={{
-              height: 'calc(100vh - 52px)',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
+          <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 52px)' }}>
             <InventorsStep />
           </Box>
         )}
 
-        {/* Preview phase (step 10) */}
         {isPreview && (
-          <Box
-            style={{
-              height: 'calc(100vh - 52px)',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
+          <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 52px)' }}>
             <PreviewPhase />
           </Box>
         )}
       </AppShell.Main>
 
-      {/* RIGHT ASIDE — sessions */}
+      {/* RIGHT ASIDE */}
       <AppShell.Aside>
-        <Box style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: 16 }}>
+        <Box className="h-full flex flex-col p-4">
           <Group gap={8} mb={6}>
             <IconHistory size={14} className="text-accent" />
-            <Text
-              size="xs"
-              fw={700}
-              tt="uppercase"
-              ff="monospace"
-              className="text-accent tracking-[2px]"
-            >
+            <Text size="xs" fw={700} tt="uppercase" ff="monospace" className="text-accent tracking-[2px]">
               Sessions
             </Text>
           </Group>
           <Text size="xs" c="var(--text-muted)" mb={12}>
             In-memory only · cleared on exit
           </Text>
-          <Divider mb={14} style={{ borderColor: 'var(--border)' }} />
-          <Box style={{ flex: 1, overflow: 'hidden' }}>
+          <Divider mb={14} className="border-stroke" />
+          <Box className="flex-1 overflow-hidden">
             <SessionsPanel />
           </Box>
         </Box>

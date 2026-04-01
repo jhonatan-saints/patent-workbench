@@ -22,6 +22,18 @@ import { WORKFLOW_ORDER, SECTION_LABELS } from '@/utils/workflowTemplates';
 import { ExportPanel } from '@/components/ExportPanel';
 import type { WorkflowModuleId } from '@/types';
 
+// Document-level styles intentionally use print/IDF brand colors (not theme tokens)
+// so the on-screen preview matches the PDF/DOCX output exactly.
+const DOC_FONT = 'Calibri, Arial, sans-serif';
+const DOC_BLUE = '#4472C4';
+const DOC_BLACK = '#111';
+
+// EditableSection UI chrome sits on the beige document background (#f4f0e8),
+// which is always light regardless of the app color scheme. Use fixed neutral
+// grays here instead of theme tokens so they're always legible on that surface.
+const DOC_UI_MUTED = '#888';
+const DOC_UI_LABEL = { borderColor: '#aaa', color: '#666' };
+
 interface EditableSectionProps {
   readonly moduleId: WorkflowModuleId;
   readonly content: string;
@@ -42,33 +54,27 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
     setEditing(false);
   };
 
-  const isTitle = false;
-
   return (
     <Box>
       <Group justify="space-between" align="flex-start" mb={8} wrap="nowrap">
         <Badge
           size="sm"
           variant="outline"
-          style={{
-            borderColor: '#888',
-            color: '#555',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 10,
-            letterSpacing: '0.08em',
-          }}
+          style={DOC_UI_LABEL}
+          className="font-mono text-[10px] tracking-[0.08em]"
         >
           {SECTION_LABELS[moduleId]}
         </Badge>
 
         {editing ? (
-          <Group gap={6} style={{ flexShrink: 0 }}>
+          <Group gap={6} className="shrink-0">
             <Button
               size="xs"
               variant="subtle"
               leftSection={<IconX size={11} />}
               onClick={handleCancel}
-              style={{ color: '#888', fontFamily: 'var(--font-mono)', fontSize: 10 }}
+              style={{ color: DOC_UI_MUTED }}
+              className="font-mono text-[10px]"
             >
               CANCEL
             </Button>
@@ -76,14 +82,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
               size="xs"
               leftSection={<IconCheck size={11} />}
               onClick={handleSave}
-              style={{
-                background: 'var(--accent)',
-                color: 'var(--accent-text)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 10,
-                fontWeight: 700,
-                border: 'none',
-              }}
+              className="font-mono text-[10px] font-bold border-none bg-accent text-accent-text"
             >
               SAVE
             </Button>
@@ -93,11 +92,9 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
             size="xs"
             variant="subtle"
             leftSection={<IconPencil size={11} />}
-            onClick={() => {
-              setDraft(content);
-              setEditing(true);
-            }}
-            style={{ color: '#888', fontFamily: 'var(--font-mono)', fontSize: 10 }}
+            onClick={() => { setDraft(content); setEditing(true); }}
+            style={{ color: DOC_UI_MUTED }}
+            className="font-mono text-[10px]"
           >
             EDIT
           </Button>
@@ -113,22 +110,22 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
           autosize
           styles={{
             input: {
-              background: '#fafafa',
+              background: 'var(--surface-raised)',
               border: '1px solid var(--accent)',
-              color: '#111',
-              fontFamily: isTitle ? 'var(--font-display)' : 'var(--font-serif)',
-              fontSize: isTitle ? 16 : 13,
+              color: 'var(--text-primary)',
+              fontFamily: 'var(--font-serif)',
+              fontSize: 13,
               lineHeight: 1.8,
             },
           }}
         />
       ) : (
+        // Document body — intentional print style, not theme tokens
         <Text
           style={{
-            color: '#111',
-            fontFamily: isTitle ? 'var(--font-display)' : 'var(--font-serif)',
-            fontSize: isTitle ? 20 : 14,
-            fontWeight: isTitle ? 700 : 400,
+            color: DOC_BLACK,
+            fontFamily: 'var(--font-serif)',
+            fontSize: 14,
             lineHeight: 1.8,
             whiteSpace: 'pre-wrap',
           }}
@@ -150,7 +147,6 @@ export function PreviewPhase() {
   const allDone = completedSections.length === WORKFLOW_ORDER.length;
 
   const handleBackToWork = () => {
-    // Go to last incomplete step, or last step if all done
     const lastIncompleteIdx = steps.findIndex((s) => s.status !== 'done');
     if (lastIncompleteIdx >= 0) {
       goToStep(lastIncompleteIdx);
@@ -162,24 +158,12 @@ export function PreviewPhase() {
   return (
     <Stack gap={0} style={{ height: '100%' }}>
       {/* Header */}
-      <Box
-        style={{
-          padding: '14px 20px',
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--surface-raised)',
-          flexShrink: 0,
-        }}
-      >
+      <Box className="px-5 py-3.5 border-b border-stroke bg-surface-raised shrink-0">
         <Group justify="space-between" wrap="nowrap">
           <Stack gap={2}>
             <Group gap={8}>
-              <IconCircleCheck size={14} style={{ color: 'var(--accent)' }} />
-              <Text
-                fw={700}
-                size="sm"
-                ff="monospace"
-                style={{ color: 'var(--text-primary)', letterSpacing: '0.06em' }}
-              >
+              <IconCircleCheck size={14} className="text-accent" />
+              <Text fw={700} size="sm" ff="monospace" className="text-fg tracking-[0.06em]">
                 {allDone ? 'PATENT DRAFT COMPLETE' : 'DRAFT IN PROGRESS'}
               </Text>
             </Group>
@@ -198,11 +182,7 @@ export function PreviewPhase() {
                 size="xs"
                 leftSection={<IconArrowLeft size={12} />}
                 onClick={handleBackToWork}
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
-                  color: 'var(--text-muted)',
-                }}
+                className="font-mono text-[11px] text-fg-muted"
               >
                 BACK TO STEPS
               </Button>
@@ -212,11 +192,7 @@ export function PreviewPhase() {
               size="xs"
               leftSection={<IconArrowLeft size={12} />}
               onClick={resetWorkflow}
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 11,
-                color: 'var(--text-muted)',
-              }}
+              className="font-mono text-[11px] text-fg-muted"
             >
               NEW INVENTION
             </Button>
@@ -224,8 +200,8 @@ export function PreviewPhase() {
         </Group>
       </Box>
 
-      {/* Document */}
-      <ScrollArea style={{ flex: 1, background: 'var(--bg)' }}>
+      {/* Document — intentional print/IDF brand colors, not theme tokens */}
+      <ScrollArea className="flex-1 bg-bg">
         <Box py={40} px={24}>
           <Box
             style={{
@@ -234,7 +210,7 @@ export function PreviewPhase() {
               background: '#f4f0e8',
               zoom: zoom,
               transformOrigin: 'top center',
-              color: '#111',
+              color: DOC_BLACK,
               padding: '72px 80px',
               boxShadow: '0 4px 32px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.10)',
               borderRadius: 2,
@@ -242,41 +218,33 @@ export function PreviewPhase() {
             }}
           >
             <Stack gap={28}>
-              {/* Inventors block — IDF format: blue labels, field-per-line */}
+              {/* Inventors block */}
               {artifact.inventors.length > 0 && (
                 <Box>
-                  <Text
-                    style={{
-                      color: '#4472C4',
-                      fontFamily: 'Calibri, Arial, sans-serif',
-                      fontSize: 18,
-                      fontWeight: 400,
-                      marginBottom: 6,
-                    }}
-                  >
+                  <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 18, fontWeight: 400, marginBottom: 6 }}>
                     Inventors
                   </Text>
                   {artifact.inventors.map((inv) => (
                     <Box key={inv.id} mb={8}>
-                      <Text style={{ color: '#4472C4', fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, marginTop: 10, marginBottom: 2 }}>Name:</Text>
-                      <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, fontWeight: 700, color: '#111' }}>{inv.name}</Text>
+                      <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 13, marginTop: 10, marginBottom: 2 }}>Name:</Text>
+                      <Text style={{ fontFamily: DOC_FONT, fontSize: 13, fontWeight: 700, color: DOC_BLACK }}>{inv.name}</Text>
                       {inv.address && (<>
-                        <Text style={{ color: '#4472C4', fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, marginTop: 10, marginBottom: 2 }}>Home Address:</Text>
-                        <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111' }}>{inv.address}</Text>
+                        <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 13, marginTop: 10, marginBottom: 2 }}>Home Address:</Text>
+                        <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>{inv.address}</Text>
                       </>)}
                       {inv.telephone && (<>
-                        <Text style={{ color: '#4472C4', fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, marginTop: 10, marginBottom: 2 }}>Home Telephone:</Text>
-                        <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111' }}>{inv.telephone}</Text>
+                        <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 13, marginTop: 10, marginBottom: 2 }}>Home Telephone:</Text>
+                        <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>{inv.telephone}</Text>
                       </>)}
-                      <Text style={{ color: '#4472C4', fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, marginTop: 10, marginBottom: 2 }}>Home Email:</Text>
-                      <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111' }}>{inv.email ?? ''}</Text>
+                      <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 13, marginTop: 10, marginBottom: 2 }}>Home Email:</Text>
+                      <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>{inv.email ?? ''}</Text>
                       {inv.citizenship && (<>
-                        <Text style={{ color: '#4472C4', fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, marginTop: 10, marginBottom: 2 }}>Citizenship:</Text>
-                        <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111' }}>{inv.citizenship}</Text>
+                        <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 13, marginTop: 10, marginBottom: 2 }}>Citizenship:</Text>
+                        <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>{inv.citizenship}</Text>
                       </>)}
                       {inv.employeeId && (<>
-                        <Text style={{ color: '#4472C4', fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, marginTop: 10, marginBottom: 2 }}>Employee ID:</Text>
-                        <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, fontWeight: 700, color: '#111' }}>{inv.employeeId}</Text>
+                        <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 13, marginTop: 10, marginBottom: 2 }}>Employee ID:</Text>
+                        <Text style={{ fontFamily: DOC_FONT, fontSize: 13, fontWeight: 700, color: DOC_BLACK }}>{inv.employeeId}</Text>
                       </>)}
                     </Box>
                   ))}
@@ -284,20 +252,20 @@ export function PreviewPhase() {
                 </Box>
               )}
 
-              {/* Invention Title + IDF metadata — bold black labels */}
+              {/* Invention Title + IDF metadata */}
               {(artifact.inventionTitle || artifact.idfNumber || artifact.businessGroup) && (
                 <Box>
-                  <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 2 }}>Invention Title</Text>
-                  <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111', marginBottom: 10 }}>
+                  <Text style={{ fontFamily: DOC_FONT, fontSize: 13, fontWeight: 700, color: DOC_BLACK, marginBottom: 2 }}>Invention Title</Text>
+                  <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK, marginBottom: 10 }}>
                     {artifact.inventionTitle ?? artifact.baseIdea}
                   </Text>
-                  <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 2 }}>IDF Number</Text>
+                  <Text style={{ fontFamily: DOC_FONT, fontSize: 13, fontWeight: 700, color: DOC_BLACK, marginBottom: 2 }}>IDF Number</Text>
                   {artifact.idfNumber && (
-                    <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111', marginBottom: 10 }}>{artifact.idfNumber}</Text>
+                    <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK, marginBottom: 10 }}>{artifact.idfNumber}</Text>
                   )}
                   {artifact.businessGroup && (<>
-                    <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, fontWeight: 700, color: '#111', marginBottom: 2 }}>Business Group</Text>
-                    <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 13, color: '#111' }}>{artifact.businessGroup}</Text>
+                    <Text style={{ fontFamily: DOC_FONT, fontSize: 13, fontWeight: 700, color: DOC_BLACK, marginBottom: 2 }}>Business Group</Text>
+                    <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>{artifact.businessGroup}</Text>
                   </>)}
                   <Divider mt={20} mb={0} style={{ borderColor: '#ddd' }} />
                 </Box>
@@ -307,7 +275,6 @@ export function PreviewPhase() {
               {WORKFLOW_ORDER.map((moduleId) => {
                 const section = artifact.sections[moduleId];
                 if (!section) return null;
-
                 return (
                   <Box key={moduleId}>
                     <EditableSection moduleId={moduleId} content={section.content} />
@@ -315,30 +282,22 @@ export function PreviewPhase() {
                 );
               })}
 
-              {/* Figures section */}
+              {/* Figures */}
               {artifact.figures?.length > 0 && (
                 <Box>
                   <Divider mb={24} style={{ borderColor: '#ddd' }} />
-                  <Text
-                    style={{
-                      color: '#4472C4',
-                      fontFamily: 'Calibri, Arial, sans-serif',
-                      fontSize: 18,
-                      fontWeight: 400,
-                      marginBottom: 16,
-                    }}
-                  >
+                  <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 18, fontWeight: 400, marginBottom: 16 }}>
                     Figures
                   </Text>
                   <Stack gap={20}>
                     {artifact.figures.map((fig) => (
-                      <Box key={fig.id} style={{ textAlign: 'center' }}>
+                      <Box key={fig.id} className="text-center">
                         <img
                           src={fig.dataUrl}
                           alt={fig.name}
                           style={{ maxWidth: '100%', border: '1px solid #ddd', borderRadius: 4 }}
                         />
-                        <Text style={{ fontFamily: 'Calibri, Arial, sans-serif', fontSize: 12, color: '#555', marginTop: 6, fontStyle: 'italic' }}>
+                        <Text style={{ fontFamily: DOC_FONT, fontSize: 12, color: '#555', marginTop: 6, fontStyle: 'italic' }}>
                           {fig.name}{fig.caption ? ` — ${fig.caption}` : ''}
                         </Text>
                       </Box>

@@ -12,27 +12,20 @@ export function ArtifactPreview() {
   return (
     <Stack gap={0} style={{ height: '100%' }}>
       {/* Header */}
-      <Box
-        style={{
-          padding: '14px 16px',
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--surface-raised)',
-          flexShrink: 0,
-        }}
-      >
+      <Box className="px-4 py-3.5 border-b border-stroke bg-surface-raised shrink-0">
         <Group gap={8} mb={3}>
-          <IconFileText size={13} style={{ color: 'var(--accent)' }} />
+          <IconFileText size={13} className="text-accent" />
           <Text
             size="xs"
             fw={700}
             tt="uppercase"
             ff="monospace"
-            style={{ color: 'var(--accent)', letterSpacing: '0.1em' }}
+            className="text-accent tracking-widest"
           >
             Live Preview
           </Text>
         </Group>
-          <Text style={{ fontSize: '11px' }} c="var(--text-muted)" ff="monospace">
+        <Text size="xs" c="var(--text-muted)" ff="monospace">
           {completedModules.length}/{WORKFLOW_ORDER.length} sections
           {totalTokens > 0 ? ` · ${totalTokens}t used` : ''}
         </Text>
@@ -42,14 +35,7 @@ export function ArtifactPreview() {
       <ScrollArea style={{ flex: 1 }}>
         <Box p={16}>
           {completedModules.length === 0 ? (
-            <Box
-              style={{
-                padding: '24px 16px',
-                border: '1px dashed var(--border)',
-                borderRadius: 6,
-                textAlign: 'center',
-              }}
-            >
+            <Box className="px-4 py-6 border border-dashed border-stroke rounded-md text-center">
               <Text size="xs" c="var(--text-muted)" ff="monospace" style={{ lineHeight: 1.7 }}>
                 The draft will appear here as you progress through each step.
               </Text>
@@ -60,31 +46,17 @@ export function ArtifactPreview() {
                 const section = artifact!.sections[moduleId]!;
                 return (
                   <Box key={moduleId}>
-                    {i > 0 && (
-                      <Divider mb={14} style={{ borderColor: 'var(--border-subtle)' }} />
-                    )}
+                    {i > 0 && <Divider mb={14} className="border-stroke-subtle" />}
                     <Badge
                       size="xs"
                       variant="outline"
                       mb={6}
-                      style={{
-                        borderColor: 'var(--accent)',
-                        color: 'var(--accent)',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: 11,
-                        letterSpacing: '0.06em',
-                      }}
+                      className="border-accent text-accent font-mono text-[11px] tracking-[0.06em]"
                     >
                       {SECTION_LABELS[moduleId]}
                     </Badge>
                     <Text
-                      style={{
-                        color: 'var(--text-primary)',
-                        fontFamily: 'var(--font-serif)',
-                        fontSize: 14,
-                        lineHeight: 1.7,
-                        whiteSpace: 'pre-wrap',
-                      }}
+                      className="text-fg font-serif text-[14px] leading-[1.7] whitespace-pre-wrap"
                     >
                       {section.content}
                     </Text>

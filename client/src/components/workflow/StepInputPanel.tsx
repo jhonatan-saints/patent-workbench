@@ -21,50 +21,12 @@ import {
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { WORKFLOW_MODULES, SECTION_LABELS, WORKFLOW_ORDER } from '@/utils/workflowTemplates';
+import { INPUT_STYLES, BTN_STOP, btnPrimary } from '@/theme/styles';
 import type { WorkflowModuleId, InputMode, PatentArtifact } from '@/types';
 import { generateId } from '@/utils/sanitize';
 
 const MAX_FILE_BYTES = 500_000;
 const ACCEPTED_TEXT_TYPES = '.txt,.md,.json,.csv,.xml,.yaml,.yml,.log';
-
-const LABEL_STYLES = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: '0.06em',
-  textTransform: 'uppercase' as const,
-  color: 'var(--text-secondary)',
-};
-
-const INPUT_STYLES = {
-  label: LABEL_STYLES,
-  description: { color: 'var(--text-muted)', fontSize: 12 },
-  input: {
-    background: 'var(--surface-raised)',
-    border: '1px solid var(--border)',
-    color: 'var(--text-primary)',
-  },
-};
-
-const GENERATE_BTN = {
-  background: 'var(--accent)',
-  color: 'var(--accent-text)',
-  fontFamily: 'var(--font-mono)',
-  fontWeight: 700,
-  fontSize: 12,
-  letterSpacing: '0.08em',
-  border: 'none',
-} as const;
-
-const STOP_BTN = {
-  background: '#c0392b',
-  color: '#fff',
-  fontFamily: 'var(--font-mono)',
-  fontWeight: 700,
-  fontSize: 12,
-  letterSpacing: '0.08em',
-  border: 'none',
-} as const;
 
 // Context summary shown in sections 02+ auto tab
 function ContextSummary({ artifact, moduleId }: { artifact: PatentArtifact; moduleId: WorkflowModuleId }) {
@@ -76,48 +38,26 @@ function ContextSummary({ artifact, moduleId }: { artifact: PatentArtifact; modu
     .slice(-3);
 
   return (
-    <Box
-      style={{
-        background: 'var(--surface-raised)',
-        border: '1px solid var(--border)',
-        borderRadius: 6,
-        padding: '12px 14px',
-      }}
-    >
-      <Text
-        size="xs"
-        ff="monospace"
-        fw={700}
-        style={{ color: 'var(--text-muted)', letterSpacing: '0.08em', marginBottom: 10 }}
-      >
+    <Box className="bg-surface-raised border border-stroke rounded-md px-3.5 py-3">
+      <Text size="xs" ff="monospace" fw={700} className="text-fg-muted tracking-[0.08em] mb-2.5">
         CONTEXT FOR GENERATION
       </Text>
       <Stack gap={10}>
         <Box>
-          <Text
-            size="xs"
-            ff="monospace"
-            fw={600}
-            style={{ color: 'var(--accent)', letterSpacing: '0.05em', marginBottom: 3 }}
-          >
+          <Text size="xs" ff="monospace" fw={600} className="text-accent tracking-[0.05em] mb-0.5">
             INVENTION CONCEPT
           </Text>
-          <Text size="xs" style={{ color: 'var(--text-primary)', lineHeight: 1.5 }}>
+          <Text size="xs" className="text-fg leading-normal">
             {tr(artifact.baseIdea, 200)}
           </Text>
         </Box>
 
         {artifact.baseDomain && (
           <Box>
-            <Text
-              size="xs"
-              ff="monospace"
-              fw={600}
-              style={{ color: 'var(--accent)', letterSpacing: '0.05em', marginBottom: 3 }}
-            >
+            <Text size="xs" ff="monospace" fw={600} className="text-accent tracking-[0.05em] mb-0.5">
               DOMAIN
             </Text>
-            <Text size="xs" style={{ color: 'var(--text-primary)' }}>
+            <Text size="xs" className="text-fg">
               {artifact.baseDomain}
             </Text>
           </Box>
@@ -125,15 +65,10 @@ function ContextSummary({ artifact, moduleId }: { artifact: PatentArtifact; modu
 
         {artifact.constraints && (
           <Box>
-            <Text
-              size="xs"
-              ff="monospace"
-              fw={600}
-              style={{ color: 'var(--accent)', letterSpacing: '0.05em', marginBottom: 3 }}
-            >
+            <Text size="xs" ff="monospace" fw={600} className="text-accent tracking-[0.05em] mb-0.5">
               NOTES
             </Text>
-            <Text size="xs" style={{ color: 'var(--text-primary)', lineHeight: 1.5 }}>
+            <Text size="xs" className="text-fg leading-normal">
               {tr(artifact.constraints, 120)}
             </Text>
           </Box>
@@ -141,25 +76,16 @@ function ContextSummary({ artifact, moduleId }: { artifact: PatentArtifact; modu
 
         {priorDone.length > 0 && (
           <Box>
-            <Text
-              size="xs"
-              ff="monospace"
-              fw={600}
-              style={{ color: 'var(--accent)', letterSpacing: '0.05em', marginBottom: 6 }}
-            >
+            <Text size="xs" ff="monospace" fw={600} className="text-accent tracking-[0.05em] mb-1.5">
               PRIOR SECTIONS
             </Text>
             <Stack gap={6}>
               {priorDone.map((m) => (
                 <Box key={m}>
-                  <Text
-                    size="xs"
-                    ff="monospace"
-                    style={{ color: 'var(--text-muted)', marginBottom: 2 }}
-                  >
+                  <Text size="xs" ff="monospace" className="text-fg-muted mb-0.5">
                     [{SECTION_LABELS[m]}]
                   </Text>
-                  <Text size="xs" style={{ color: 'var(--text-primary)', lineHeight: 1.4 }}>
+                  <Text size="xs" className="text-fg leading-[1.4]">
                     {tr(artifact.sections[m]!.content, 200)}
                   </Text>
                 </Box>
@@ -170,18 +96,13 @@ function ContextSummary({ artifact, moduleId }: { artifact: PatentArtifact; modu
 
         {artifact.contextFiles?.length ? (
           <Box>
-            <Text
-              size="xs"
-              ff="monospace"
-              fw={600}
-              style={{ color: 'var(--accent)', letterSpacing: '0.05em', marginBottom: 3 }}
-            >
+            <Text size="xs" ff="monospace" fw={600} className="text-accent tracking-[0.05em] mb-0.5">
               REFERENCE DOCUMENTS
             </Text>
-            <Text size="xs" ff="monospace" style={{ color: 'var(--text-primary)' }}>
+            <Text size="xs" ff="monospace" className="text-fg">
               {artifact.contextFiles.map((f) => f.name).join(', ')}
             </Text>
-            <Text size="xs" style={{ color: 'var(--text-muted)', marginTop: 3 }}>
+            <Text size="xs" className="text-fg-muted mt-0.5">
               Included as RAG context (token-optimized)
             </Text>
           </Box>
@@ -260,30 +181,18 @@ export function StepInputPanel({ moduleId }: Props) {
   };
 
   const generateBtn = isGenerating ? (
-    <Button
-      leftSection={<IconPlayerStop size={13} />}
-      onClick={cancelGeneration}
-      size="sm"
-      style={STOP_BTN}
-    >
+    <Button leftSection={<IconPlayerStop size={13} />} onClick={cancelGeneration} size="sm" style={BTN_STOP}>
       STOP GENERATION
     </Button>
   ) : (
-    <Button
-      leftSection={<IconWand size={13} />}
-      onClick={handleGenerate}
-      size="sm"
-      style={GENERATE_BTN}
-    >
+    <Button leftSection={<IconWand size={13} />} onClick={handleGenerate} size="sm" style={btnPrimary(true)}>
       GENERATE
     </Button>
   );
 
   return (
     <Box style={{ maxWidth: 540, margin: '0 auto', padding: '24px 0' }}>
-      <style>{`.step-seg [data-active] { color: var(--accent-text) !important; font-weight: 700; }`}</style>
-
-      {/* Mode selector */}
+      {/* Mode selector — active label color set via .step-seg CSS in styles.css */}
       <SegmentedControl
         classNames={{ root: 'step-seg' }}
         fullWidth
@@ -340,7 +249,6 @@ export function StepInputPanel({ moduleId }: Props) {
       {mode === 'auto' && (
         <Stack gap={12}>
           {isFirstStep ? (
-            /* Section 01: editable base fields + file management */
             artifact && (
               <Stack gap={14}>
                 <Textarea
@@ -388,14 +296,16 @@ export function StepInputPanel({ moduleId }: Props) {
                 {/* Context files */}
                 <Box>
                   <Group justify="space-between" align="center" mb={6}>
-                    <Text style={LABEL_STYLES}>Reference Documents</Text>
+                    <Text className="font-mono text-[11px] font-bold tracking-[0.06em] uppercase text-fg-secondary">
+                      Reference Documents
+                    </Text>
                     <Button
                       size="xs"
                       variant="subtle"
                       leftSection={<IconPaperclip size={12} />}
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isGenerating}
-                      style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent)' }}
+                      className="font-mono text-[11px] text-accent"
                     >
                       ATTACH
                     </Button>
@@ -404,7 +314,7 @@ export function StepInputPanel({ moduleId }: Props) {
                       type="file"
                       accept={ACCEPTED_TEXT_TYPES}
                       multiple
-                      style={{ display: 'none' }}
+                      className="hidden"
                       onChange={handleFileChange}
                     />
                   </Group>
@@ -416,32 +326,13 @@ export function StepInputPanel({ moduleId }: Props) {
                           key={f.id}
                           gap={8}
                           wrap="nowrap"
-                          style={{
-                            background: 'var(--surface-raised)',
-                            border: '1px solid var(--border)',
-                            borderRadius: 4,
-                            padding: '5px 10px',
-                          }}
+                          className="bg-surface-raised border border-stroke rounded py-1.25 px-2.5"
                         >
-                          <IconFile size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                          <Text
-                            size="xs"
-                            ff="monospace"
-                            style={{
-                              flex: 1,
-                              color: 'var(--text-primary)',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
+                          <IconFile size={12} className="text-fg-muted shrink-0" />
+                          <Text size="xs" ff="monospace" className="flex-1 text-fg truncate">
                             {f.name}
                           </Text>
-                          <Text
-                            size="xs"
-                            ff="monospace"
-                            style={{ color: 'var(--text-muted)', flexShrink: 0 }}
-                          >
+                          <Text size="xs" ff="monospace" className="text-fg-muted shrink-0">
                             {(f.size / 1024).toFixed(1)} KB
                           </Text>
                           <ActionIcon
@@ -466,7 +357,6 @@ export function StepInputPanel({ moduleId }: Props) {
               </Stack>
             )
           ) : (
-            /* Sections 02+: read-only context summary */
             artifact && <ContextSummary artifact={artifact} moduleId={moduleId} />
           )}
 
@@ -509,21 +399,11 @@ export function StepInputPanel({ moduleId }: Props) {
           )}
 
           {isGenerating ? (
-            <Button
-              leftSection={<IconPlayerStop size={13} />}
-              onClick={cancelGeneration}
-              size="sm"
-              style={STOP_BTN}
-            >
+            <Button leftSection={<IconPlayerStop size={13} />} onClick={cancelGeneration} size="sm" style={BTN_STOP}>
               STOP GENERATION
             </Button>
           ) : (
-            <Button
-              leftSection={<IconForms size={13} />}
-              onClick={handleGenerate}
-              size="sm"
-              style={GENERATE_BTN}
-            >
+            <Button leftSection={<IconForms size={13} />} onClick={handleGenerate} size="sm" style={btnPrimary(true)}>
               GENERATE
             </Button>
           )}
@@ -550,15 +430,7 @@ export function StepInputPanel({ moduleId }: Props) {
             onClick={handleManualConfirm}
             disabled={!manualText.trim()}
             size="sm"
-            style={{
-              background: manualText.trim() ? 'var(--accent)' : 'var(--surface-raised)',
-              color: manualText.trim() ? 'var(--accent-text)' : 'var(--text-muted)',
-              fontFamily: 'var(--font-mono)',
-              fontWeight: 700,
-              fontSize: 12,
-              letterSpacing: '0.08em',
-              border: 'none',
-            }}
+            style={btnPrimary(!!manualText.trim())}
           >
             CONFIRM MANUAL ENTRY
           </Button>

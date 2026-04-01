@@ -22,26 +22,11 @@ import {
   IconBraces,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { INPUT_STYLES, BTN_PRIMARY } from '@/theme/styles';
 import type { FigureItem } from '@/types';
 import { generateId } from '@/utils/sanitize';
 import { DiagramEditor } from './DiagramEditor';
 import { JsonViewer } from './JsonViewer';
-
-const INPUT_STYLES = {
-  label: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: 11,
-    fontWeight: 700,
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase' as const,
-    color: 'var(--text-secondary)',
-  },
-  input: {
-    background: 'var(--surface-raised)',
-    border: '1px solid var(--border)',
-    color: 'var(--text-primary)',
-  },
-};
 
 const FIGURE_TYPE_LABELS: Record<string, string> = { diagram: 'DIAGRAM', json: 'JSON' };
 function figureTypeLabel(type: FigureItem['type']): string {
@@ -122,33 +107,18 @@ export function FiguresStep() {
 
   const footerText =
     figures.length > 0
-      ? (() => {
-          const plural = figures.length > 1 ? 's' : '';
-          return `${figures.length} figure${plural} added`;
-        })()
+      ? `${figures.length} figure${figures.length > 1 ? 's' : ''} added`
       : 'No figures added yet';
 
   return (
     <Stack gap={0} style={{ height: '100%' }}>
       {/* Header */}
-      <Box
-        style={{
-          padding: '14px 20px',
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--surface-raised)',
-          flexShrink: 0,
-        }}
-      >
+      <Box className="px-5 py-3.5 border-b border-stroke bg-surface-raised shrink-0">
         <Group justify="space-between" wrap="nowrap">
           <Stack gap={2}>
             <Group gap={8}>
-              <IconPhoto size={14} style={{ color: 'var(--accent)' }} />
-              <Text
-                fw={700}
-                size="sm"
-                ff="monospace"
-                style={{ color: 'var(--text-primary)', letterSpacing: '0.06em' }}
-              >
+              <IconPhoto size={14} className="text-accent" />
+              <Text fw={700} size="sm" ff="monospace" className="text-fg tracking-[0.06em]">
                 FIGURES
               </Text>
             </Group>
@@ -161,7 +131,7 @@ export function FiguresStep() {
             size="xs"
             leftSection={<IconArrowLeft size={12} />}
             onClick={handleBack}
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}
+            className="font-mono text-[11px] text-fg-muted"
           >
             BACK TO STEPS
           </Button>
@@ -169,14 +139,7 @@ export function FiguresStep() {
       </Box>
 
       {/* Mode selector */}
-      <Box
-        p="10px 20px"
-        style={{
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--surface)',
-          flexShrink: 0,
-        }}
-      >
+      <Box className="px-5 py-2.5 border-b border-stroke bg-surface shrink-0">
         <SegmentedControl
           value={mode}
           onChange={(v) => setMode(v as 'upload' | 'diagram' | 'json')}
@@ -187,7 +150,7 @@ export function FiguresStep() {
               label: (
                 <Group gap={6} wrap="nowrap">
                   <IconUpload size={12} />
-                  <Text ff="monospace" size="xs" fw={600} style={{ letterSpacing: '0.05em' }}>
+                  <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em]">
                     UPLOAD IMAGE
                   </Text>
                 </Group>
@@ -198,7 +161,7 @@ export function FiguresStep() {
               label: (
                 <Group gap={6} wrap="nowrap">
                   <IconVectorTriangle size={12} />
-                  <Text ff="monospace" size="xs" fw={600} style={{ letterSpacing: '0.05em' }}>
+                  <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em]">
                     CREATE DIAGRAM
                   </Text>
                 </Group>
@@ -209,7 +172,7 @@ export function FiguresStep() {
               label: (
                 <Group gap={6} wrap="nowrap">
                   <IconBraces size={12} />
-                  <Text ff="monospace" size="xs" fw={600} style={{ letterSpacing: '0.05em' }}>
+                  <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em]">
                     JSON OBJECT
                   </Text>
                 </Group>
@@ -229,34 +192,18 @@ export function FiguresStep() {
             <Stack gap={20}>
               <Box
                 onClick={() => fileInputRef.current?.click()}
-                style={{
-                  border: '2px dashed var(--border)',
-                  borderRadius: 8,
-                  padding: '32px 24px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'border-color 0.15s, background 0.15s',
-                  background: 'var(--surface)',
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)';
-                  (e.currentTarget as HTMLElement).style.background = 'var(--surface-raised)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
-                  (e.currentTarget as HTMLElement).style.background = 'var(--surface)';
-                }}
+                className="border-2 border-dashed border-stroke rounded-lg px-6 py-8 text-center cursor-pointer transition-colors duration-150 bg-surface hover:border-accent hover:bg-surface-raised"
               >
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   multiple
-                  style={{ display: 'none' }}
+                  className="hidden"
                   onChange={handleFileChange}
                 />
-                <IconUpload size={24} style={{ color: 'var(--text-muted)', marginBottom: 8 }} />
-                <Text size="sm" fw={600} style={{ color: 'var(--text-primary)' }}>
+                <IconUpload size={24} className="text-fg-muted mb-2" />
+                <Text size="sm" fw={600} className="text-fg">
                   Click to upload images
                 </Text>
                 <Text size="xs" c="var(--text-muted)" mt={4}>
@@ -265,44 +212,20 @@ export function FiguresStep() {
               </Box>
 
               {figures.map((fig, idx) => (
-                <Box
-                  key={fig.id}
-                  style={{
-                    border: '1px solid var(--border)',
-                    borderRadius: 6,
-                    overflow: 'hidden',
-                    background: 'var(--surface)',
-                  }}
-                >
+                <Box key={fig.id} className="border border-stroke rounded-md overflow-hidden bg-surface">
                   <Group
                     justify="space-between"
-                    p="10px 14px"
-                    style={{
-                      background: 'var(--surface-raised)',
-                      borderBottom: '1px solid var(--border)',
-                    }}
+                    className="px-3.5 py-2.5 bg-surface-raised border-b border-stroke"
                   >
                     <Group gap={8}>
-                      <Text
-                        size="xs"
-                        ff="monospace"
-                        fw={700}
-                        style={{ color: 'var(--text-muted)', letterSpacing: '0.06em' }}
-                      >
+                      <Text size="xs" ff="monospace" fw={700} className="text-fg-muted tracking-[0.06em]">
                         {figureTypeLabel(fig.type)} {idx + 1}
                       </Text>
                       {fig.type !== 'image' && fig.type != null && (
                         <Text
                           size="xs"
                           ff="monospace"
-                          style={{
-                            color: 'var(--accent)',
-                            fontSize: 10,
-                            background: 'var(--surface-active)',
-                            padding: '1px 6px',
-                            borderRadius: 3,
-                            border: '1px solid var(--accent)',
-                          }}
+                          className="text-accent text-[10px] bg-surface-active px-1.5 py-px rounded border border-accent"
                         >
                           {figureTypeLabel(fig.type)}
                         </Text>
@@ -320,27 +243,14 @@ export function FiguresStep() {
                   </Group>
                   <Box p={14}>
                     <Group align="flex-start" gap={16} wrap="nowrap">
-                      <Box
-                        style={{
-                          width: 180,
-                          height: 130,
-                          flexShrink: 0,
-                          border: '1px solid var(--border)',
-                          borderRadius: 4,
-                          overflow: 'hidden',
-                          background: '#fff',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
+                      <Box className="w-45 h-32.5 shrink-0 border border-stroke rounded flex items-center justify-center overflow-hidden bg-white">
                         <img
                           src={fig.dataUrl}
                           alt={fig.name}
-                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                          className="max-w-full max-h-full object-contain"
                         />
                       </Box>
-                      <Stack gap={10} style={{ flex: 1 }}>
+                      <Stack gap={10} className="flex-1">
                         <TextInput
                           label="Figure Label"
                           value={fig.name}
@@ -405,31 +315,16 @@ export function FiguresStep() {
       )}
 
       {/* Footer */}
-      <Box
-        style={{
-          padding: '12px 28px',
-          borderTop: '1px solid var(--border)',
-          background: 'var(--surface-raised)',
-          flexShrink: 0,
-        }}
-      >
+      <Box className="px-7 py-3 border-t border-stroke bg-surface-raised shrink-0">
         <Group justify="space-between">
           <Text size="xs" c="var(--text-muted)" ff="monospace">
-              {footerText}
+            {footerText}
           </Text>
           <Button
             leftSection={<IconArrowRight size={13} />}
             onClick={handleConfirm}
             size="sm"
-            style={{
-              background: 'var(--accent)',
-              color: 'var(--accent-text)',
-              fontFamily: 'var(--font-mono)',
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: '0.08em',
-              border: 'none',
-            }}
+            style={BTN_PRIMARY}
           >
             CONTINUE TO INVENTORS
           </Button>

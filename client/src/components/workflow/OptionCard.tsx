@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Box, Text, Button, Badge, Textarea, Group } from '@mantine/core';
 import { IconCheck, IconPencil, IconX } from '@tabler/icons-react';
+import { BTN_PRIMARY, BTN_PRIMARY_DISABLED, INPUT_STYLES } from '@/theme/styles';
 import type { GeneratedOption } from '@/types';
 
 interface OptionCardProps {
@@ -28,45 +29,12 @@ export function OptionCard({ option, onSelect, disabled }: OptionCardProps) {
   };
 
   return (
-    <Box
-      style={{
-        border: '1px solid var(--border)',
-        borderRadius: 6,
-        background: 'var(--surface)',
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        transition: 'border-color 0.15s ease',
-      }}
-      onMouseEnter={(e) => {
-        if (!disabled)
-          (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)';
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
-      }}
-    >
+    <Box className={`border rounded-md bg-surface flex flex-col h-full transition-colors duration-150 ${disabled ? 'border-stroke' : 'border-stroke hover:border-accent'}`}>
       {/* Header */}
-      <Box
-        style={{
-          padding: '10px 14px',
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--surface-raised)',
-          borderRadius: '6px 6px 0 0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
+      <Box className="px-3.5 py-2.5 border-b border-stroke bg-surface-raised rounded-t-md flex items-center justify-between">
         <Badge
           variant="outline"
-          style={{
-            borderColor: editing ? 'var(--accent)' : 'var(--border)',
-            color: editing ? 'var(--accent)' : 'var(--text-muted)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            letterSpacing: '0.06em',
-          }}
+          className={`font-mono text-[11px] tracking-[0.06em] ${editing ? 'border-accent text-accent' : 'border-stroke text-fg-muted'}`}
         >
           OPTION {option.index + 1}
           {editing && ' · EDITING'}
@@ -78,13 +46,7 @@ export function OptionCard({ option, onSelect, disabled }: OptionCardProps) {
             size="xs"
             leftSection={<IconX size={11} />}
             onClick={handleCancelEdit}
-            style={{
-              color: 'var(--text-muted)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 10,
-              height: 24,
-              padding: '0 6px',
-            }}
+            className="text-fg-muted font-mono text-[10px] h-6 px-1.5"
           >
             CANCEL
           </Button>
@@ -95,13 +57,7 @@ export function OptionCard({ option, onSelect, disabled }: OptionCardProps) {
             leftSection={<IconPencil size={11} />}
             onClick={handleEdit}
             disabled={disabled}
-            style={{
-              color: 'var(--text-muted)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: 10,
-              height: 24,
-              padding: '0 6px',
-            }}
+            className="text-fg-muted font-mono text-[10px] h-6 px-1.5"
           >
             EDIT
           </Button>
@@ -120,16 +76,15 @@ export function OptionCard({ option, onSelect, disabled }: OptionCardProps) {
       >
         {editing ? (
           <Textarea
-            aria-label='Edit option content'
+            aria-label="Edit option content"
             value={editedContent}
             onChange={(e) => setEditedContent(e.currentTarget.value)}
             minRows={6}
             autosize
             styles={{
               input: {
-                background: 'var(--surface)',
+                ...INPUT_STYLES.input,
                 border: '1px solid var(--accent)',
-                color: 'var(--text-primary)',
                 fontFamily: 'var(--font-serif)',
                 fontSize: 13,
                 lineHeight: 1.75,
@@ -137,22 +92,14 @@ export function OptionCard({ option, onSelect, disabled }: OptionCardProps) {
             }}
           />
         ) : (
-          <Text
-            size="sm"
-            style={{
-              color: 'var(--text-primary)',
-              fontFamily: 'var(--font-serif)',
-              lineHeight: 1.75,
-              whiteSpace: 'pre-wrap',
-            }}
-          >
+          <Text className="text-fg font-serif text-sm leading-[1.75] whitespace-pre-wrap">
             {option.content}
           </Text>
         )}
       </Box>
 
       {/* Footer */}
-      <Box style={{ padding: '12px 14px', borderTop: '1px solid var(--border)' }}>
+      <Box className="px-3.5 py-3 border-t border-stroke">
         {editing ? (
           <Group gap={8}>
             <Button
@@ -161,15 +108,7 @@ export function OptionCard({ option, onSelect, disabled }: OptionCardProps) {
               onClick={handleSelect}
               disabled={!editedContent.trim() || disabled}
               leftSection={<IconCheck size={12} />}
-              style={{
-                background: editedContent.trim() ? 'var(--accent)' : 'var(--surface-raised)',
-                color: editedContent.trim() ? 'var(--accent-text)' : 'var(--text-muted)',
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 700,
-                fontSize: 11,
-                letterSpacing: '0.08em',
-                border: 'none',
-              }}
+              style={editedContent.trim() ? BTN_PRIMARY : BTN_PRIMARY_DISABLED}
             >
               SELECT EDITED
             </Button>
@@ -181,15 +120,7 @@ export function OptionCard({ option, onSelect, disabled }: OptionCardProps) {
             onClick={handleSelect}
             disabled={disabled}
             leftSection={<IconCheck size={12} />}
-            style={{
-              background: 'var(--accent)',
-              color: 'var(--accent-text)',
-              fontFamily: 'var(--font-mono)',
-              fontWeight: 700,
-              fontSize: 11,
-              letterSpacing: '0.08em',
-              border: 'none',
-            }}
+            style={BTN_PRIMARY}
           >
             SELECT THIS OPTION
           </Button>

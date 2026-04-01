@@ -40,7 +40,6 @@ function buildMarkdown(artifact: PatentArtifact): string {
 
   let out = `---\ntitle: ${titleContent.slice(0, 120)}\ninventors: ${inventorNames}\ndomain: ${artifact.baseDomain}\nmodel: ${artifact.model}\ndate: ${date}\n---\n\n`;
 
-  // Filing info + inventor block
   if (artifact.idfNumber || artifact.businessGroup || artifact.inventors.length > 0) {
     out += `## Filing Details\n\n`;
     if (artifact.inventionTitle) out += `**Invention Title:** ${artifact.inventionTitle}  \n`;
@@ -113,7 +112,6 @@ function buildText(artifact: PatentArtifact): string {
 function buildPDFHTML(artifact: PatentArtifact): string {
   const titleContent = artifact.inventionTitle ?? artifact.baseIdea;
 
-  // Inventor fields — blue labels, field-per-line layout matching IDF format
   const inventorsHtml = artifact.inventors
     .map(
       (inv) => `
@@ -195,13 +193,9 @@ function buildPDFHTML(artifact: PatentArtifact): string {
 </head>
 <body>
   ${inventorsSection}
-
   ${inventionTitleBlock}
-
   ${idfMetaBlock}
-
   ${sections}
-
   ${figuresHtml}
 </body>
 </html>`;
@@ -214,7 +208,6 @@ async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
 
   const children: Paragraph[] = [];
 
-  // Inventors section — blue labels, field-per-line layout matching IDF format
   if (artifact.inventors.length > 0) {
     children.push(
       new Paragraph({
@@ -258,7 +251,6 @@ async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
     });
   }
 
-  // Invention title + IDF metadata — bold black labels
   children.push(
     new Paragraph({ children: [new TextRun({ text: 'Invention Title', bold: true, size: fieldSize, font: 'Calibri' })], spacing: { before: 240, after: 40 } }),
     new Paragraph({ children: [new TextRun({ text: titleContent, size: fieldSize, font: 'Calibri' })], spacing: { after: 0 } }),
@@ -274,7 +266,6 @@ async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
     );
   }
 
-  // Content sections — bold black headings
   for (const moduleId of WORKFLOW_ORDER) {
     const section = artifact.sections[moduleId];
     if (!section) continue;
@@ -298,7 +289,6 @@ async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
     }
   }
 
-  // Figures section — captions only (images are embedded in PDF export)
   if (artifact.figures?.length) {
     children.push(
       new Paragraph({
@@ -310,12 +300,7 @@ async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
       const captionSuffix = fig.caption ? ` — ${fig.caption}` : '';
       children.push(
         new Paragraph({
-          children: [new TextRun({
-            text: `${fig.name}${captionSuffix}`,
-            size: fieldSize,
-            font: 'Calibri',
-            italics: true,
-          })],
+          children: [new TextRun({ text: `${fig.name}${captionSuffix}`, size: fieldSize, font: 'Calibri', italics: true })],
           spacing: { after: 80 },
         })
       );
@@ -362,7 +347,6 @@ export function ExportPanel({
   const [format, setFormat] = useState<ExportFormat>('docx');
   const [exporting, setExporting] = useState(false);
 
-  // Available from any phase as long as artifact exists and has at least one section
   const hasSections = artifact && Object.keys(artifact.sections).length > 0;
   if (!hasSections) return null;
 
@@ -406,33 +390,26 @@ export function ExportPanel({
   };
 
   return (
-    <Box
-      style={{
-        padding: '10px 16px',
-        borderTop: '1px solid var(--border)',
-        background: 'var(--surface-raised)',
-        flexShrink: 0,
-      }}
-    >
+    <Box className="px-4 py-2.5 border-t border-stroke bg-surface-raised shrink-0">
       <Group gap={8} justify="flex-end">
         {typeof zoom === 'number' && setZoom && (
-          <Group gap={4} style={{ flexShrink: 0, marginRight: 16 }}>
+          <Group gap={4} className="shrink-0 mr-4">
             <Button
               variant="subtle"
               size="xs"
               onClick={() => setZoom((z) => Math.max(0.5, Number.parseFloat((z - 0.1).toFixed(1))))}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', minWidth: 28, padding: '0 6px' }}
+              className="font-mono text-[11px] text-fg-muted min-w-7 px-1.5"
             >
               −
             </Button>
-            <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)', minWidth: 36, textAlign: 'center' }}>
+            <Text size="xs" ff="monospace" className="text-fg-muted min-w-9 text-center">
               {Math.round(zoom * 100)}%
             </Text>
             <Button
               variant="subtle"
               size="xs"
               onClick={() => setZoom((z) => Math.min(1.5, Number.parseFloat((z + 0.1).toFixed(1))))}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', minWidth: 28, padding: '0 6px' }}
+              className="font-mono text-[11px] text-fg-muted min-w-7 px-1.5"
             >
               +
             </Button>
@@ -448,7 +425,7 @@ export function ExportPanel({
           data={[
             { value: 'docx', label: '.docx' },
             { value: 'pdf', label: '.pdf' },
-            { value: 'txt', label: '.txt' }
+            { value: 'txt', label: '.txt' },
           ]}
           style={{ width: 90 }}
           styles={{
@@ -459,11 +436,11 @@ export function ExportPanel({
               border: '1px solid var(--border)',
               color: 'var(--text-primary)',
               height: 28,
-              minHeight: 28
+              minHeight: 28,
             },
             dropdown: {
               background: 'var(--surface)',
-              border: '1px solid var(--border)'
+              border: '1px solid var(--border)',
             },
           }}
         />
@@ -473,15 +450,7 @@ export function ExportPanel({
           leftSection={formatIcon(format)}
           onClick={() => void handleExport()}
           loading={exporting}
-          style={{
-            borderColor: 'var(--accent)',
-            color: 'var(--accent)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.05em',
-            height: 28
-          }}
+          className="border-accent text-accent font-mono text-[11px] font-bold tracking-[0.05em] h-7"
         >
           DOWNLOAD
         </Button>

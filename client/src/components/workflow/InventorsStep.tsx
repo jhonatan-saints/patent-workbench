@@ -18,24 +18,9 @@ import {
   IconArrowLeft,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { INPUT_STYLES, btnPrimary } from '@/theme/styles';
 import type { InventorInfo } from '@/types';
 import { generateId } from '@/utils/sanitize';
-
-const INPUT_STYLES = {
-  label: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: 11,
-    fontWeight: 700,
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase' as const,
-    color: 'var(--text-secondary)',
-  },
-  input: {
-    background: 'var(--surface-raised)',
-    border: '1px solid var(--border)',
-    color: 'var(--text-primary)',
-  },
-};
 
 function emptyInventor(): InventorInfo {
   return {
@@ -99,24 +84,12 @@ export function InventorsStep() {
   return (
     <Stack gap={0} style={{ height: '100%' }}>
       {/* Header */}
-      <Box
-        style={{
-          padding: '14px 20px',
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--surface-raised)',
-          flexShrink: 0,
-        }}
-      >
+      <Box className="px-5 py-3.5 border-b border-stroke bg-surface-raised shrink-0">
         <Group justify="space-between" wrap="nowrap">
           <Stack gap={2}>
             <Group gap={8}>
-              <IconFileDescription size={14} style={{ color: 'var(--accent)' }} />
-              <Text
-                fw={700}
-                size="sm"
-                ff="monospace"
-                style={{ color: 'var(--text-primary)', letterSpacing: '0.06em' }}
-              >
+              <IconFileDescription size={14} className="text-accent" />
+              <Text fw={700} size="sm" ff="monospace" className="text-fg tracking-[0.06em]">
                 PATENT FILING DETAILS
               </Text>
             </Group>
@@ -129,7 +102,7 @@ export function InventorsStep() {
             size="xs"
             leftSection={<IconArrowLeft size={12} />}
             onClick={handleBack}
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}
+            className="font-mono text-[11px] text-fg-muted"
           >
             BACK TO FIGURES
           </Button>
@@ -142,24 +115,12 @@ export function InventorsStep() {
           <Stack gap={20}>
 
             {/* Filing metadata block (optional) */}
-            <Box
-              style={{
-                border: '1px solid var(--border)',
-                borderRadius: 6,
-                padding: '16px 18px',
-                background: 'var(--surface)',
-              }}
-            >
+            <Box className="border border-stroke rounded-md px-4.5 py-4 bg-surface">
               <Group gap={6} mb={12}>
-                <IconFileDescription size={12} style={{ color: 'var(--text-muted)' }} />
-                <Text
-                  size="xs"
-                  ff="monospace"
-                  fw={700}
-                  style={{ color: 'var(--text-muted)', letterSpacing: '0.06em' }}
-                >
+                <IconFileDescription size={12} className="text-fg-muted" />
+                <Text size="xs" ff="monospace" fw={700} className="text-fg-muted tracking-[0.06em]">
                   FILING INFO
-                  <Text span size="xs" fw={400} style={{ marginLeft: 6, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                  <Text span size="xs" fw={400} className="ml-1.5 text-fg-muted italic">
                     — optional
                   </Text>
                 </Text>
@@ -194,22 +155,12 @@ export function InventorsStep() {
             {inventors.map((inv, idx) => (
               <Box
                 key={inv.id}
-                style={{
-                  border: '1px solid var(--border)',
-                  borderRadius: 6,
-                  padding: '16px 18px',
-                  background: 'var(--surface)',
-                }}
+                className="border border-stroke rounded-md px-4.5 py-4 bg-surface"
               >
                 <Group justify="space-between" mb={12}>
                   <Group gap={6}>
-                    <IconUser size={12} style={{ color: 'var(--text-muted)' }} />
-                    <Text
-                      size="xs"
-                      ff="monospace"
-                      fw={700}
-                      style={{ color: 'var(--text-muted)', letterSpacing: '0.06em' }}
-                    >
+                    <IconUser size={12} className="text-fg-muted" />
+                    <Text size="xs" ff="monospace" fw={700} className="text-fg-muted tracking-[0.06em]">
                       INVENTOR {idx + 1}
                     </Text>
                   </Group>
@@ -220,7 +171,7 @@ export function InventorsStep() {
                       color="red"
                       leftSection={<IconTrash size={11} />}
                       onClick={() => removeInventor(inv.id)}
-                      style={{ fontFamily: 'var(--font-mono)', fontSize: 10 }}
+                      className="font-mono text-[10px]"
                     >
                       REMOVE
                     </Button>
@@ -279,7 +230,7 @@ export function InventorsStep() {
               </Box>
             ))}
 
-            <Divider style={{ borderColor: 'var(--border)' }} />
+            <Divider className="border-stroke" />
 
             <Group justify="space-between">
               <Button
@@ -287,13 +238,7 @@ export function InventorsStep() {
                 size="xs"
                 leftSection={<IconPlus size={12} />}
                 onClick={addInventor}
-                style={{
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-secondary)',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
-                  letterSpacing: '0.06em',
-                }}
+                className="border-stroke text-fg-secondary font-mono text-[11px] tracking-[0.06em]"
               >
                 ADD INVENTOR
               </Button>
@@ -303,15 +248,7 @@ export function InventorsStep() {
                 onClick={handleConfirm}
                 disabled={!hasAtLeastOne}
                 size="sm"
-                style={{
-                  background: hasAtLeastOne ? 'var(--accent)' : 'var(--surface-raised)',
-                  color: hasAtLeastOne ? 'var(--accent-text)' : 'var(--text-muted)',
-                  fontFamily: 'var(--font-mono)',
-                  fontWeight: 700,
-                  fontSize: 11,
-                  letterSpacing: '0.08em',
-                  border: 'none',
-                }}
+                style={btnPrimary(hasAtLeastOne)}
               >
                 CONFIRM & GO TO PREVIEW
               </Button>

@@ -32,46 +32,23 @@ function SessionItem({
   return (
     <Box
       onClick={onLoad}
-      style={{
-        padding: '10px 12px',
-        borderRadius: 4,
-        border: '1px solid var(--border)',
-        background: 'var(--surface)',
-        cursor: 'pointer',
-        transition: 'border-color 0.15s ease',
-      }}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; }}
+      className="p-[10px_12px] rounded border border-stroke bg-surface cursor-pointer transition-colors duration-150 hover:border-accent"
     >
       <Group justify="space-between" wrap="nowrap" gap={8}>
-        <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+        <Stack gap={4} className="flex-1 min-w-0">
           <Group gap={6} wrap="nowrap">
             <Badge
               size="xs"
               variant="outline"
-              style={{
-                borderColor: 'var(--accent)',
-                color: 'var(--accent)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 9,
-                flexShrink: 0,
-              }}
+              className="border-accent text-accent font-mono text-[9px] shrink-0"
             >
               {completedCount}/{WORKFLOW_ORDER.length}
             </Badge>
-            <Text size="xs" c="var(--text-muted)" ff="monospace" style={{ flexShrink: 0 }}>
+            <Text size="xs" c="var(--text-muted)" ff="monospace" className="shrink-0">
               {formatTime(session.startedAt)}
             </Text>
           </Group>
-          <Text
-            size="xs"
-            style={{
-              color: 'var(--text-primary)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
+          <Text size="xs" className="text-fg truncate">
             {session.baseIdea.slice(0, 70)}
             {session.baseIdea.length > 70 ? '...' : ''}
           </Text>
@@ -85,7 +62,7 @@ function SessionItem({
             variant="subtle"
             size="xs"
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            style={{ color: 'var(--text-muted)', flexShrink: 0 }}
+            className="text-fg-muted shrink-0"
           >
             <IconX size={12} />
           </ActionIcon>
@@ -100,15 +77,8 @@ export function SessionsPanel() {
 
   if (sessions.length === 0) {
     return (
-      <Box
-        style={{
-          padding: '24px 16px',
-          border: '1px dashed var(--border)',
-          borderRadius: 6,
-          textAlign: 'center',
-        }}
-      >
-        <IconClock size={25} style={{ color: 'var(--text-muted)', marginBottom: 4 }} />
+      <Box className="px-4 py-6 border border-dashed border-stroke rounded-md text-center">
+        <IconClock size={25} className="text-fg-muted mb-1" />
         <Text size="xs" c="var(--text-muted)" ff="monospace" style={{ lineHeight: 1.7 }}>
           No sessions yet.
           <br />
@@ -127,7 +97,7 @@ export function SessionsPanel() {
           tt="uppercase"
           c="var(--text-muted)"
           ff="monospace"
-          style={{ letterSpacing: '0.1em' }}
+          className="tracking-widest"
         >
           Sessions ({sessions.length})
         </Text>
@@ -137,7 +107,7 @@ export function SessionsPanel() {
           color="red"
           leftSection={<IconTrash size={12} />}
           onClick={clearSessions}
-          style={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}
+          className="text-[11px] font-mono"
         >
           Clear
         </Button>

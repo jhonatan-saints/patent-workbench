@@ -13,21 +13,8 @@ import { StepInputPanel } from '@/components/workflow/StepInputPanel';
 
 function CardSkeleton() {
   return (
-    <Box
-      style={{
-        border: '1px solid var(--border)',
-        borderRadius: 6,
-        overflow: 'hidden',
-        background: 'var(--surface)',
-      }}
-    >
-      <Box
-        style={{
-          padding: '10px 14px',
-          background: 'var(--surface-raised)',
-          borderBottom: '1px solid var(--border)',
-        }}
-      >
+    <Box className="border border-stroke rounded-md overflow-hidden bg-surface">
+      <Box className="px-3.5 py-2.5 bg-surface-raised border-b border-stroke">
         <Skeleton height={14} width={72} radius="sm" />
       </Box>
       <Box style={{ padding: 14 }}>
@@ -74,24 +61,13 @@ export function OptionsPanel() {
   return (
     <Stack gap={0} style={{ height: '100%' }}>
       {/* Header */}
-      <Box
-        style={{
-          padding: '14px 20px',
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--surface-raised)',
-          flexShrink: 0,
-        }}
-      >
+      <Box className="px-5 py-3.5 border-b border-stroke bg-surface-raised shrink-0">
         <Group justify="space-between" align="center" wrap="nowrap">
-          <Stack gap={2} style={{ minWidth: 0 }}>
-            <Text
-              size="xs"
-              ff="monospace"
-              style={{ color: 'var(--text-muted)', letterSpacing: '0.1em' }}
-            >
+          <Stack gap={2} className="min-w-0">
+            <Text size="xs" ff="monospace" className="text-fg-muted tracking-widest">
               STEP {currentStepIndex + 1} OF {steps.length}
             </Text>
-            <Text fw={700} size="md" style={{ color: 'var(--text-primary)' }}>
+            <Text fw={700} size="md" className="text-fg">
               {module.label}
             </Text>
             <Text size="xs" c="var(--text-muted)">
@@ -100,18 +76,14 @@ export function OptionsPanel() {
             </Text>
           </Stack>
 
-          <Group gap={8} wrap="nowrap" style={{ flexShrink: 0 }}>
+          <Group gap={8} wrap="nowrap" className="shrink-0">
             <Button
               variant="subtle"
               size="xs"
               leftSection={isFirstStep ? <IconHome size={12} /> : <IconArrowLeft size={12} />}
               onClick={handleBack}
               disabled={isGenerating}
-              style={{
-                color: 'var(--text-muted)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 11,
-              }}
+              className="text-fg-muted font-mono text-[11px]"
             >
               {isFirstStep ? 'START OVER' : 'BACK'}
             </Button>
@@ -123,7 +95,7 @@ export function OptionsPanel() {
                 size="xs"
                 leftSection={<IconPlayerStop size={12} />}
                 onClick={cancelGeneration}
-                style={{ fontFamily: 'var(--font-mono)', fontSize: 11 }}
+                className="font-mono text-[11px]"
               >
                 STOP
               </Button>
@@ -135,13 +107,7 @@ export function OptionsPanel() {
                 size="xs"
                 leftSection={<IconRefresh size={12} />}
                 onClick={regenerateOptions}
-                style={{
-                  borderColor: 'var(--border)',
-                  color: 'var(--text-secondary)',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
-                  letterSpacing: '0.06em',
-                }}
+                className="border-stroke text-fg-secondary font-mono text-[11px] tracking-[0.06em]"
               >
                 REGENERATE
               </Button>

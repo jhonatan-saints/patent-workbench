@@ -3,6 +3,12 @@ import { Group, Badge, Text, Tooltip, ActionIcon } from '@mantine/core';
 import { IconRefresh, IconCircleFilled } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 
+const STATUS_MAP = {
+  ok:          { color: 'var(--status-online)',   label: 'LLM ONLINE'  },
+  unavailable: { color: 'var(--status-offline)',  label: 'LLM OFFLINE' },
+  checking:    { color: 'var(--status-checking)', label: 'CHECKING...' },
+} satisfies Record<string, { color: string; label: string }>;
+
 export function StatusIndicator() {
   const { llmStatus, llmLatency, checkStatus } = useWorkbenchStore();
 
@@ -12,19 +18,7 @@ export function StatusIndicator() {
     return () => clearInterval(interval);
   }, [checkStatus]);
 
-  let label;
-  let color;
-
-  if (llmStatus === 'ok') {
-    color = 'var(--status-online)';
-    label = 'LLM ONLINE';
-  } else if (llmStatus === 'unavailable') {
-    color = 'var(--status-offline)';
-    label = 'LLM OFFLINE';
-  } else {
-    color = 'var(--status-checking)';
-    label = 'CHECKING...';
-  }
+  const { color, label } = STATUS_MAP[llmStatus] ?? STATUS_MAP.checking;
 
   return (
     <Group gap={8}>
@@ -38,26 +32,19 @@ export function StatusIndicator() {
           leftSection={
             <IconCircleFilled
               size={8}
-              style={{
-                color: color,
-                animation: llmStatus === 'checking' ? 'pulse 1s infinite' : undefined,
-              }}
+              style={{ color }}
+              className={llmStatus === 'checking' ? 'animate-[pulse_1s_infinite]' : undefined}
             />
           }
-          style={{
-            borderColor: color,
-            color: color,
-            fontFamily: 'var(--font-mono)',
-            fontSize: '11px',
-            letterSpacing: '0.08em',
-          }}
+          className="font-mono text-[11px] tracking-[0.08em]"
+          style={{ borderColor: color, color }}
         >
           {label}
         </Badge>
       </Tooltip>
 
       {llmLatency != null && llmStatus === 'ok' && (
-        <Text style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+        <Text className="text-[11px] text-fg-muted font-mono">
           {llmLatency}ms
         </Text>
       )}
@@ -67,7 +54,7 @@ export function StatusIndicator() {
         size="xs"
         onClick={checkStatus}
         title="Refresh status"
-        style={{ color: 'var(--text-muted)' }}
+        className="text-fg-muted"
       >
         <IconRefresh size={14} />
       </ActionIcon>
