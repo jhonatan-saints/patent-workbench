@@ -1,3 +1,15 @@
+// HTML Escape
+// Escapes user-controlled strings before interpolation into HTML template strings.
+// Used by ExportPanel when building the PDF srcdoc.
+export function escapeHtml(str: string): string {
+  return str
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 // Output Sanitizer
 // Prevent XSS when rendering LLM output in the DOM.
 // We use a plain text approach — no innerHTML, no dangerouslySetInnerHTML.

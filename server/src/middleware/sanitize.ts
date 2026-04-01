@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express'
+import logger from '../logger'
 
 const DEFAULT_PROMPT_MAX = Number(process.env.PROMPT_MAX_LENGTH) || 16000
 
@@ -23,6 +24,10 @@ export const sanitizePrompt = (maxLen = DEFAULT_PROMPT_MAX) => (
     let prompt = req.body.prompt.trim().replaceAll(/ {2,}/g, ' ')
 
     if (prompt.length > maxLen) {
+      logger.warn(
+        { originalLength: prompt.length, maxLen, requestId: req.headers['x-request-id'] },
+        'Prompt truncated to max length'
+      )
       prompt = prompt.slice(0, maxLen)
     }
 
