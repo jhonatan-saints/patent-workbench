@@ -1,13 +1,17 @@
 import { Box, Stack, Text, Group, ScrollArea, Badge, Divider } from '@mantine/core';
+import { useI18n } from '@/i18n/useI18n';
 import { IconFileText } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
-import { WORKFLOW_ORDER, SECTION_LABELS } from '@/utils/workflowTemplates';
+import { WORKFLOW_ORDER, MODULE_RESOURCE_KEYS } from '@/utils/workflowTemplates';
+import type { WorkflowModuleId } from '@/types';
 
 export function ArtifactPreview() {
   const { artifact, steps } = useWorkbenchStore();
 
   const completedModules = WORKFLOW_ORDER.filter((m) => artifact?.sections[m]);
   const totalTokens = steps.reduce((acc, s) => acc + s.promptTokens + s.completionTokens, 0);
+
+  const { t } = useI18n();
 
   return (
     <Stack gap={0} style={{ height: '100%' }}>
@@ -22,12 +26,12 @@ export function ArtifactPreview() {
             ff="monospace"
             className="text-accent tracking-widest"
           >
-            Live Preview
+            {t('res_ArtifactLivePreview')}
           </Text>
         </Group>
         <Text size="xs" c="var(--text-muted)" ff="monospace">
-          {completedModules.length}/{WORKFLOW_ORDER.length} sections
-          {totalTokens > 0 ? ` · ${totalTokens}t used` : ''}
+          {completedModules.length}/{WORKFLOW_ORDER.length} {t('res_Sections')}
+          {totalTokens > 0 ? ` · ${t('res_ArtifactTokensUsed', { tokens: totalTokens })}` : ''}
         </Text>
       </Box>
 
@@ -37,7 +41,7 @@ export function ArtifactPreview() {
           {completedModules.length === 0 ? (
             <Box className="px-4 py-6 border border-dashed border-stroke rounded-md text-center">
               <Text size="xs" c="var(--text-muted)" ff="monospace" style={{ lineHeight: 1.7 }}>
-                The draft will appear here as you progress through each step.
+                {t('res_ArtifactEmptyHint')}
               </Text>
             </Box>
           ) : (
@@ -53,11 +57,9 @@ export function ArtifactPreview() {
                       mb={6}
                       className="border-accent text-accent font-mono text-[11px] tracking-[0.06em]"
                     >
-                      {SECTION_LABELS[moduleId]}
+                      {t(MODULE_RESOURCE_KEYS[moduleId as WorkflowModuleId])}
                     </Badge>
-                    <Text
-                      className="text-fg font-serif text-[14px] leading-[1.7] whitespace-pre-wrap"
-                    >
+                    <Text className="text-fg font-serif text-[14px] leading-[1.7] whitespace-pre-wrap">
                       {section.content}
                     </Text>
                   </Box>

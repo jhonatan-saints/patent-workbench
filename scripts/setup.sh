@@ -5,7 +5,7 @@ REQUIRED_MAJOR=24
 
 echo "# Checking Node version..."
 
-if ! command -v node >/dev/null 2>&1; then
+if ! command -v node > /dev/null 2>&1; then
   echo "Error: node is not installed or not in PATH"
   exit 1
 fi

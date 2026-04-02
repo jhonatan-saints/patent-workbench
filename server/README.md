@@ -26,6 +26,7 @@ npm run dev
 | `build` | Compile TypeScript to `dist/` |
 | `start` | Run the compiled server (`dist/server.js`) |
 | `lint` | Run ESLint |
+| `format` | Format source files with Prettier |
 
 ---
 
@@ -226,7 +227,7 @@ Copy `.env.example` to `.env`:
 | `RATE_MAX` | `100` | Max requests per window (global) |
 | `GENERATE_RATE_WINDOW_MS` | `60000` | Rate-limit window for `/generate` (1 min) |
 | `GENERATE_RATE_MAX` | `20` | Max `/generate` requests per window |
-| `PROMPT_MAX_LENGTH` | `64000` | Max prompt length in characters |
+| `PROMPT_MAX_LENGTH` | `16000` | Max prompt length in characters |
 | `LLM_TIMEOUT_MS` | `120000` | Ollama request timeout in ms (2 min) |
 | `LOG_LEVEL` | `info` | Pino log level |
 | `SHUTDOWN_TIMEOUT_MS` | `30000` | Graceful shutdown timeout in ms |

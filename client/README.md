@@ -11,11 +11,11 @@ React + Vite frontend for Patent Workbench. Provides a structured, five-phase in
 | Vite | 5.3.4 | Dev server and bundler |
 | Tailwind CSS | v4 (via `@tailwindcss/vite`) | Utility-first styling |
 | Mantine | v7.11.0 | Component library (forms, modals, layout) |
-| Zustand | — | Lightweight global state management |
-| Tabler Icons | — | Icon set |
-| `@xyflow/react` | — | In-app flowchart / diagram editor |
-| `docx` | — | Word document export |
-| `html-to-image` | — | PNG export from diagram editor |
+| Zustand | 4.5.4 | Lightweight global state management |
+| Tabler Icons | 3.11.0 | Icon set |
+| `@xyflow/react` | 12.10.2 | In-app flowchart / diagram editor |
+| `docx` | 9.6.1 | Word document export |
+| `html-to-image` | 1.11.13 | PNG export from diagram editor |
 
 ---
 
@@ -72,6 +72,7 @@ src/
 | Component | Description |
 | --- | --- |
 | `StatusIndicator` | Header badge — LLM connection status and round-trip latency |
+| `LanguageSwitcher` | Button that allows you to change the app's language |
 | `ExportPanel` | Export the artifact as `.md` (with YAML frontmatter) or `.docx` |
 | `AppLoader` | Splash screen shown while the app initialises |
 

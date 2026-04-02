@@ -11,6 +11,7 @@ import {
 } from '@mantine/core';
 import { IconTrash, IconClock, IconX } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useI18n } from '@/i18n/useI18n';
 import { WORKFLOW_ORDER } from '@/utils/workflowTemplates';
 import type { WorkflowSession } from '@/types';
 
@@ -27,6 +28,7 @@ function SessionItem({
   onDelete: () => void;
   onLoad: () => void;
 }>) {
+  const { t } = useI18n();
   const completedCount = WORKFLOW_ORDER.filter((m) => session.artifact.sections[m]).length;
 
   return (
@@ -56,12 +58,15 @@ function SessionItem({
             {session.model.split(':')[0]} · {session.totalTokens}t
           </Text>
         </Stack>
-        <Tooltip label="Remove session">
+        <Tooltip label={t('res_RemoveSession')}>
           <ActionIcon
-            aria-label="Remove session"
+            aria-label={t('res_RemoveSession')}
             variant="subtle"
             size="xs"
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
             className="text-fg-muted shrink-0"
           >
             <IconX size={12} />
@@ -74,15 +79,16 @@ function SessionItem({
 
 export function SessionsPanel() {
   const { sessions, loadSession, deleteSession, clearSessions } = useWorkbenchStore();
+  const { t } = useI18n();
 
   if (sessions.length === 0) {
     return (
       <Box className="px-4 py-6 border border-dashed border-stroke rounded-md text-center">
         <IconClock size={25} className="text-fg-muted mb-1" />
         <Text size="xs" c="var(--text-muted)" ff="monospace" style={{ lineHeight: 1.7 }}>
-          No sessions yet.
+          {t('res_NoSessionsYet')}
           <br />
-          Completed workflows appear here.
+          {t('res_CompletedWorkflowsHere')}
         </Text>
       </Box>
     );
@@ -99,7 +105,7 @@ export function SessionsPanel() {
           ff="monospace"
           className="tracking-widest"
         >
-          Sessions ({sessions.length})
+          {`${t('res_Sessions')} (${sessions.length})`}
         </Text>
         <Button
           variant="subtle"
@@ -109,7 +115,7 @@ export function SessionsPanel() {
           onClick={clearSessions}
           className="text-[11px] font-mono"
         >
-          Clear
+          {t('res_Clear')}
         </Button>
       </Group>
 

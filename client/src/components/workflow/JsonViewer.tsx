@@ -13,6 +13,7 @@ import { IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import { toPng } from 'html-to-image';
 import { generateId } from '@/utils/sanitize';
 import type { FigureItem } from '@/types';
+import { useI18n } from '@/i18n/useI18n';
 
 const DEFAULT_W = 900;
 const DEFAULT_H = 500;
@@ -83,12 +84,18 @@ function JsonPrimitive({ value, c }: Readonly<{ value: unknown; c: ColorScheme }
     return <span style={{ color: c.null }}>{value === null ? 'null' : 'undefined'}</span>;
 
   switch (typeof value) {
-    case 'boolean': return <span style={{ color: c.boolean }}>{value ? 'true' : 'false'}</span>;
-    case 'number':  return <span style={{ color: c.number }}>{value}</span>;
-    case 'string':  return <JsonString value={value} c={c} />;
-    case 'bigint':  return <span style={{ color: c.number }}>{value.toString()}</span>;
-    case 'symbol':  return <span style={{ color: c.string }}>{value.toString()}</span>;
-    default:        return <span style={{ color: c.text }}>[complex]</span>;
+    case 'boolean':
+      return <span style={{ color: c.boolean }}>{value ? 'true' : 'false'}</span>;
+    case 'number':
+      return <span style={{ color: c.number }}>{value}</span>;
+    case 'string':
+      return <JsonString value={value} c={c} />;
+    case 'bigint':
+      return <span style={{ color: c.number }}>{value.toString()}</span>;
+    case 'symbol':
+      return <span style={{ color: c.string }}>{value.toString()}</span>;
+    default:
+      return <span style={{ color: c.text }}>[complex]</span>;
   }
 }
 
@@ -97,8 +104,7 @@ function JsonNode({
   depth = 0,
   c,
 }: Readonly<{ value: unknown; depth?: number; c: ColorScheme }>) {
-  if (value === null || typeof value !== 'object')
-    return <JsonPrimitive value={value} c={c} />;
+  if (value === null || typeof value !== 'object') return <JsonPrimitive value={value} c={c} />;
 
   if (Array.isArray(value)) {
     if (value.length === 0) return <span style={{ color: c.punct }}>[]</span>;
@@ -114,9 +120,7 @@ function JsonNode({
           return (
             <div key={k} style={{ paddingLeft: 20 }}>
               <JsonNode value={item} depth={depth + 1} c={c} />
-              {i < value.length - 1 && (
-                <span style={{ color: c.punct }}>,</span>
-              )}
+              {i < value.length - 1 && <span style={{ color: c.punct }}>,</span>}
             </div>
           );
         })}
@@ -126,8 +130,7 @@ function JsonNode({
   }
 
   const entries = Object.entries(value as Record<string, unknown>);
-  if (entries.length === 0)
-    return <span style={{ color: c.punct }}>{'{}'}</span>;
+  if (entries.length === 0) return <span style={{ color: c.punct }}>{'{}'}</span>;
 
   return (
     <>
@@ -137,9 +140,7 @@ function JsonNode({
           <span style={{ color: c.key }}>"{key}"</span>
           <span style={{ color: c.punct }}>: </span>
           <JsonNode value={val} depth={depth + 1} c={c} />
-          {i < entries.length - 1 && (
-            <span style={{ color: c.punct }}>,</span>
-          )}
+          {i < entries.length - 1 && <span style={{ color: c.punct }}>,</span>}
         </div>
       ))}
       <span style={{ color: c.punct }}>{'}'}</span>
@@ -162,6 +163,7 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
   const [error, setError] = useState<string | null>(null);
   const [parsed, setParsed] = useState<unknown>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   const handleJsonChange = (text: string) => {
     setJsonText(text);
@@ -223,7 +225,7 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
         }}
       >
         <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)' }}>
-          Export size:
+          {t('res_ExportSize')}
         </Text>
         <NumberInput
           size="xs"
@@ -258,8 +260,13 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
           checked={transparentBg}
           onChange={(e) => setTransparentBg(e.currentTarget.checked)}
           label={
-            <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)' }}>
-              TRANSPARENT BG
+            <Text
+              size="xs"
+              ff="monospace"
+              style={{ color: 'var(--text-muted)' }}
+              className="uppercase"
+            >
+              {t('res_TransparentBg')}
             </Text>
           }
         />
@@ -276,7 +283,7 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
             border: 'none',
           }}
         >
-          ADD TO FIGURES
+          {t('res_AddToFigures')}
         </Button>
       </Group>
 
@@ -299,8 +306,9 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
             ff="monospace"
             fw={700}
             style={{ color: 'var(--text-muted)', letterSpacing: '0.08em' }}
+            className="uppercase"
           >
-            JSON INPUT
+            {t('res_JSONInput')}
           </Text>
           <Textarea
             value={jsonText}
@@ -348,8 +356,9 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
             ff="monospace"
             fw={700}
             style={{ color: 'var(--text-muted)', letterSpacing: '0.08em' }}
+            className="uppercase"
           >
-            PREVIEW · {exportW} × {exportH} px
+            {t('res_Preview')} · {exportW} × {exportH} px
           </Text>
           <Box
             ref={previewRef}
@@ -367,12 +376,8 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
             }}
           >
             {parsed === null ? (
-              <Text
-                size="xs"
-                ff="monospace"
-                style={{ color: colors.placeholder }}
-              >
-                {jsonText.trim() ? 'Invalid JSON…' : 'Enter valid JSON on the left to preview…'}
+              <Text size="xs" ff="monospace" style={{ color: colors.placeholder }}>
+                {jsonText.trim() ? t('res_InvalidJSON') : t('res_EnterValidJSON')}
               </Text>
             ) : (
               <JsonNode value={parsed} c={colors} />
@@ -391,7 +396,7 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
         }}
       >
         <Text size="xs" c="var(--text-muted)" ff="monospace">
-          Paste or type any valid JSON · adjust export dimensions · click ADD TO FIGURES to render as image
+          {t('res_JsonViewer_Hint')}
         </Text>
       </Box>
     </Box>

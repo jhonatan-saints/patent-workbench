@@ -27,6 +27,7 @@ import type { FigureItem } from '@/types';
 import { generateId } from '@/utils/sanitize';
 import { DiagramEditor } from './DiagramEditor';
 import { JsonViewer } from './JsonViewer';
+import { useI18n } from '@/i18n/useI18n';
 
 const FIGURE_TYPE_LABELS: Record<string, string> = { diagram: 'DIAGRAM', json: 'JSON' };
 function figureTypeLabel(type: FigureItem['type']): string {
@@ -46,6 +47,7 @@ function makeImageFigure(dataUrl: string, img: HTMLImageElement, figureNumber: n
 }
 
 export function FiguresStep() {
+  const { t } = useI18n();
   const { artifact, updateFigures, goToInventors, goToStep, steps } = useWorkbenchStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,10 +110,10 @@ export function FiguresStep() {
     goToStep(steps.length - 1);
   };
 
+  const figuresCountLabel =
+    figures.length > 1 ? t('res_FiguresAdded_Plural') : t('res_FiguresAdded_Singular');
   const footerText =
-    figures.length > 0
-      ? `${figures.length} figure${figures.length > 1 ? 's' : ''} added`
-      : 'No figures added yet';
+    figures.length === 0 ? t('res_NoFiguresAdded') : `${figures.length} ${figuresCountLabel}`;
 
   return (
     <Stack gap={0} style={{ height: '100%' }}>
@@ -121,12 +123,17 @@ export function FiguresStep() {
           <Stack gap={2}>
             <Group gap={8}>
               <IconPhoto size={14} className="text-accent" />
-              <Text fw={700} size="sm" ff="monospace" className="text-fg tracking-[0.06em]">
-                FIGURES
+              <Text
+                fw={700}
+                size="sm"
+                ff="monospace"
+                className="text-fg tracking-[0.06em] uppercase"
+              >
+                {t('res_Figures')}
               </Text>
             </Group>
             <Text size="xs" c="var(--text-muted)" ff="monospace">
-              Upload images or create flowcharts · optional
+              {t('res_UploadImagesHint')}
             </Text>
           </Stack>
           <Button
@@ -136,7 +143,7 @@ export function FiguresStep() {
             onClick={handleBack}
             className="font-mono text-[11px] text-fg-muted"
           >
-            BACK TO STEPS
+            {t('res_BackToSteps')}
           </Button>
         </Group>
       </Box>
@@ -153,8 +160,8 @@ export function FiguresStep() {
               label: (
                 <Group gap={6} wrap="nowrap">
                   <IconUpload size={12} />
-                  <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em]">
-                    UPLOAD IMAGE
+                  <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em] uppercase">
+                    {t('res_Image')}
                   </Text>
                 </Group>
               ),
@@ -164,8 +171,8 @@ export function FiguresStep() {
               label: (
                 <Group gap={6} wrap="nowrap">
                   <IconVectorTriangle size={12} />
-                  <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em]">
-                    CREATE DIAGRAM
+                  <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em] uppercase">
+                    {t('res_Diagram')}
                   </Text>
                 </Group>
               ),
@@ -175,8 +182,8 @@ export function FiguresStep() {
               label: (
                 <Group gap={6} wrap="nowrap">
                   <IconBraces size={12} />
-                  <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em]">
-                    JSON OBJECT
+                  <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em] uppercase">
+                    {t('res_Json')}
                   </Text>
                 </Group>
               ),
@@ -207,21 +214,29 @@ export function FiguresStep() {
                 />
                 <IconUpload size={24} className="text-fg-muted mb-2" />
                 <Text size="sm" fw={600} className="text-fg">
-                  Click to upload images
+                  {t('res_ClickToUploadImages')}
                 </Text>
                 <Text size="xs" c="var(--text-muted)" mt={4}>
-                  PNG, JPG, GIF, SVG · multiple files supported
+                  {t('res_SupportedImageTypesHint')}
                 </Text>
               </Box>
 
               {figures.map((fig, idx) => (
-                <Box key={fig.id} className="border border-stroke rounded-md overflow-hidden bg-surface">
+                <Box
+                  key={fig.id}
+                  className="border border-stroke rounded-md overflow-hidden bg-surface"
+                >
                   <Group
                     justify="space-between"
                     className="px-3.5 py-2.5 bg-surface-raised border-b border-stroke"
                   >
                     <Group gap={8}>
-                      <Text size="xs" ff="monospace" fw={700} className="text-fg-muted tracking-[0.06em]">
+                      <Text
+                        size="xs"
+                        ff="monospace"
+                        fw={700}
+                        className="text-fg-muted tracking-[0.06em]"
+                      >
                         {figureTypeLabel(fig.type)} {idx + 1}
                       </Text>
                       {fig.type !== 'image' && fig.type != null && (
@@ -239,7 +254,7 @@ export function FiguresStep() {
                       size="sm"
                       color="red"
                       onClick={() => removeFigure(fig.id)}
-                      aria-label="Remove figure"
+                      aria-label={t('res_RemoveFigure')}
                     >
                       <IconTrash size={13} />
                     </ActionIcon>
@@ -255,14 +270,14 @@ export function FiguresStep() {
                       </Box>
                       <Stack gap={10} className="flex-1">
                         <TextInput
-                          label="Figure Label"
+                          label={t('res_FigureLabel')}
                           value={fig.name}
                           onChange={(e) => updateFigure(fig.id, 'name', e.currentTarget.value)}
                           styles={INPUT_STYLES}
                         />
                         <Group gap={10} grow>
                           <NumberInput
-                            label="Width (px)"
+                            label={t('res_WidthPx')}
                             value={fig.width ?? ''}
                             onChange={(val) => updateFigureDimension(fig.id, 'width', val)}
                             min={1}
@@ -270,7 +285,7 @@ export function FiguresStep() {
                             styles={INPUT_STYLES}
                           />
                           <NumberInput
-                            label="Height (px)"
+                            label={t('res_HeightPx')}
                             value={fig.height ?? ''}
                             onChange={(val) => updateFigureDimension(fig.id, 'height', val)}
                             min={1}
@@ -279,8 +294,8 @@ export function FiguresStep() {
                           />
                         </Group>
                         <Textarea
-                          label="Caption"
-                          placeholder="Brief description of what this figure shows..."
+                          label={t('res_Caption')}
+                          placeholder={t('res_Caption_Placeholder')}
                           value={fig.caption}
                           onChange={(e) => updateFigure(fig.id, 'caption', e.currentTarget.value)}
                           minRows={2}
@@ -310,10 +325,7 @@ export function FiguresStep() {
       {/* Body — JSON viewer */}
       {mode === 'json' && (
         <Box style={{ flex: 1, overflow: 'hidden' }}>
-          <JsonViewer
-            onAddFigure={handleAddFigureFromEditor}
-            figureNumber={figures.length + 1}
-          />
+          <JsonViewer onAddFigure={handleAddFigureFromEditor} figureNumber={figures.length + 1} />
         </Box>
       )}
 
@@ -329,7 +341,7 @@ export function FiguresStep() {
             size="sm"
             style={BTN_PRIMARY}
           >
-            CONTINUE TO INVENTORS
+            {t('res_ContinueToInventors')}
           </Button>
         </Group>
       </Box>

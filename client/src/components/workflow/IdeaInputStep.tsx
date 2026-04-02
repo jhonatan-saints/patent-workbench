@@ -16,6 +16,7 @@ import { useWorkbenchStore } from '@/store/workbench';
 import { generateId } from '@/utils/sanitize';
 import { INPUT_STYLES, btnPrimary } from '@/theme/styles';
 import type { ContextFile } from '@/types';
+import { useI18n } from '@/i18n/useI18n';
 
 const ACCEPTED_TEXT_TYPES = '.txt,.md,.json,.csv,.xml,.yaml,.yml,.log';
 const MAX_FILE_BYTES = 500_000; // 500 KB per file
@@ -36,6 +37,8 @@ function formatModelLabel(name: string): string {
 export function IdeaInputStep() {
   const { startWorkflow, llmStatus, selectedModel, availableModels, modelContextLength, setModel } =
     useWorkbenchStore();
+
+  const { t } = useI18n();
 
   const [idea, setIdea] = useState('');
   const [domain, setDomain] = useState('');
@@ -70,7 +73,12 @@ export function IdeaInputStep() {
     setContextFiles((prev) => prev.filter((f) => f.id !== id));
 
   const handleStart = () => {
-    startWorkflow(idea, domain, constraints || undefined, contextFiles.length ? contextFiles : undefined);
+    startWorkflow(
+      idea,
+      domain,
+      constraints || undefined,
+      contextFiles.length ? contextFiles : undefined
+    );
   };
 
   return (
@@ -79,26 +87,20 @@ export function IdeaInputStep() {
       <Stack gap={6} mb={32}>
         <Group gap={10}>
           <IconBrain size={35} className="text-accent" />
-          <Text
-            component="h2"
-            fw={700}
-            size="xl"
-            className="font-display tracking-wide text-fg"
-          >
-            Describe Your Invention
+          <Text component="h2" fw={700} size="xl" className="font-display tracking-wide text-fg">
+            {t('res_DescribeYourInvention')}
           </Text>
         </Group>
         <Text size="sm" c="var(--text-muted)" style={{ lineHeight: 1.6 }}>
-          The guided workflow will analyze your idea and generate 3 distinct options at each
-          patent section — you pick the best one at every step.
+          {t('res_GuidedWorkflowIntro')}
         </Text>
       </Stack>
 
       <Stack gap={18}>
         <Textarea
-          label="Invention Concept"
-          description="What does your invention do? What problem does it solve?"
-          placeholder="Describe the core idea, mechanism, or technical approach of your invention..."
+          label={t('res_InventionConcept')}
+          description={t('res_InventionConcept_Description')}
+          placeholder={t('res_InventionConcept_Placeholder')}
           value={idea}
           onChange={(e) => setIdea(e.currentTarget.value)}
           minRows={5}
@@ -108,18 +110,18 @@ export function IdeaInputStep() {
         />
 
         <TextInput
-          label="Technology Domain"
-          description="e.g., Telecommunications, Medical Devices, Software, Mechanical Systems"
-          placeholder="e.g., Artificial Intelligence / Natural Language Processing"
+          label={t('res_TechnologyDomain')}
+          description={t('res_TechnologyDomain_Description')}
+          placeholder={t('res_TechnologyDomain_Placeholder')}
           value={domain}
           onChange={(e) => setDomain(e.currentTarget.value)}
           styles={INPUT_STYLES}
         />
 
         <Textarea
-          label="Constraints & Notes"
-          description="Optional. Key prior art, technical scope constraints, or inventor notes."
-          placeholder="e.g., Must work offline, targets embedded devices, prior art includes..."
+          label={t('res_ConstraintsNotes')}
+          description={t('res_ConstraintsNotes_Description')}
+          placeholder={t('res_ConstraintsNotes_Placeholder')}
           value={constraints}
           onChange={(e) => setConstraints(e.currentTarget.value)}
           minRows={3}
@@ -139,8 +141,8 @@ export function IdeaInputStep() {
             }}
             label={
               <Text size="xs" ff="monospace" className="text-fg-muted">
-                Reference Documents{' '}
-                <span className="font-normal text-fg-muted">(16k+ context length required)</span>
+                {t('res_ReferenceDocuments')}{' '}
+                <span className="font-normal text-fg-muted">{t('res_ContextLengthHint')}</span>
               </Text>
             }
           />
@@ -151,16 +153,16 @@ export function IdeaInputStep() {
           <Box>
             <Group justify="space-between" align="center" mb={6}>
               <Text className="font-mono text-[11px] font-bold tracking-[0.06em] uppercase text-fg-secondary">
-                Reference Documents
+                {t('res_ReferenceDocuments')}
               </Text>
               <Button
                 size="xs"
                 variant="subtle"
                 leftSection={<IconPaperclip size={12} />}
                 onClick={() => fileInputRef.current?.click()}
-                className="font-mono text-[11px] text-accent"
+                className="uppercase font-mono text-[11px] text-accent"
               >
-                ATTACH FILE
+                {t('res_Attach')}
               </Button>
               <input
                 ref={fileInputRef}
@@ -172,7 +174,7 @@ export function IdeaInputStep() {
               />
             </Group>
             <Text size="xs" c="var(--text-muted)" mb={contextFiles.length ? 8 : 0}>
-              Attach text files (TXT, MD, JSON, CSV…) to include as context. Max 500 KB per file.
+              {t('res_AttachFiles_Hint')}
             </Text>
             {contextFiles.length > 0 && (
               <Stack gap={4}>
@@ -195,7 +197,7 @@ export function IdeaInputStep() {
                       variant="subtle"
                       color="red"
                       onClick={() => removeContextFile(f.id)}
-                      aria-label={`Remove ${f.name}`}
+                      aria-label={`${t('res_Remove')} ${f.name}`}
                     >
                       <IconX size={11} />
                     </ActionIcon>
@@ -209,7 +211,7 @@ export function IdeaInputStep() {
         {/* Model + Start */}
         <Group justify="space-between" align="flex-end" mt={4}>
           <Select
-            label="Model"
+            label={t('res_Model')}
             value={selectedModel}
             onChange={(v) => v && setModel(v)}
             data={availableModels.map((m) => ({ value: m, label: formatModelLabel(m) }))}
@@ -235,20 +237,15 @@ export function IdeaInputStep() {
             disabled={!canStart}
             size="md"
             style={btnPrimary(canStart)}
+            className="uppercase"
           >
-            START WORKFLOW
+            {t('res_StartWorkflow')}
           </Button>
         </Group>
 
         {llmStatus !== 'ok' && (
-          <Text
-            size="xs"
-            c={llmStatus === 'checking' ? 'var(--text-muted)' : 'red'}
-            ff="monospace"
-          >
-            {llmStatus === 'checking'
-              ? 'Checking LLM status...'
-              : 'LLM is offline. Start Ollama before beginning.'}
+          <Text size="xs" c={llmStatus === 'checking' ? 'var(--text-muted)' : 'red'} ff="monospace">
+            {llmStatus === 'checking' ? t('res_CheckingLLM') : t('res_LLMOffline')}
           </Text>
         )}
       </Stack>

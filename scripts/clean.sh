@@ -38,7 +38,7 @@ remove_group "Removing lock files" "package-lock.json"
 
 log ""
 log "Cleaning npm cache..."
-npm cache clean --force >/dev/null 2>&1
+npm cache clean --force > /dev/null 2>&1
 
 log ""
 log "Clean completed successfully."

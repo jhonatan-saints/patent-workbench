@@ -193,13 +193,16 @@ Open [http://localhost:3003/patent-workbench](http://localhost:3003/patent-workb
 
 | Script | Description |
 | --- | --- |
-| `npm run setup` | Install deps for both workspaces |
-| `npm start` | Run client and server concurrently |
+| `npm run setup` | Install all dependencies for both workspaces |
+| `npm start` | Generate i18n files, then run client and server concurrently |
 | `npm run server:dev` | Server in watch mode on `:3001` |
 | `npm run client` | Vite dev server on `:3003` |
 | `npm run client:build` | Build client to `client/dist/` |
 | `npm run lint` | ESLint + Markdown + StyleLint |
 | `npm run audit:check` | Run `npm audit` at moderate severity level |
+| `npm run clean` | Remove build artifacts and caches |
+| `npm run generate:favicons` | Regenerate favicon assets from source SVG |
+| `npm run i18n:generate` | Regenerate i18n translation files |
 
 For server-specific configuration (env vars, endpoints, rate limits) see [server/README.md](server/README.md).
 For client architecture and component details see [client/README.md](client/README.md).

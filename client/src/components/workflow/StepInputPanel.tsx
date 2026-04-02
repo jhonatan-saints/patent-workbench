@@ -20,17 +20,30 @@ import {
   IconFile,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
-import { WORKFLOW_MODULES, SECTION_LABELS, WORKFLOW_ORDER } from '@/utils/workflowTemplates';
+import {
+  WORKFLOW_MODULES,
+  SECTION_LABELS,
+  WORKFLOW_ORDER,
+  MODULE_RESOURCE_KEYS,
+} from '@/utils/workflowTemplates';
 import { INPUT_STYLES, BTN_STOP, btnPrimary } from '@/theme/styles';
 import type { WorkflowModuleId, InputMode, PatentArtifact } from '@/types';
 import { generateId } from '@/utils/sanitize';
+import { useI18n } from '@/i18n/useI18n';
 
 const MAX_FILE_BYTES = 500_000;
 const ACCEPTED_TEXT_TYPES = '.txt,.md,.json,.csv,.xml,.yaml,.yml,.log';
 
 // Context summary shown in sections 02+ auto tab
-function ContextSummary({ artifact, moduleId }: { artifact: PatentArtifact; moduleId: WorkflowModuleId }) {
+function ContextSummary({
+  artifact,
+  moduleId,
+}: {
+  artifact: PatentArtifact;
+  moduleId: WorkflowModuleId;
+}) {
   const tr = (s: string, max: number) => (s.length > max ? `${s.slice(0, max)}…` : s);
+  const { t } = useI18n();
 
   const stopIdx = WORKFLOW_ORDER.indexOf(moduleId);
   const priorDone = WORKFLOW_ORDER.slice(0, stopIdx)
@@ -39,13 +52,23 @@ function ContextSummary({ artifact, moduleId }: { artifact: PatentArtifact; modu
 
   return (
     <Box className="bg-surface-raised border border-stroke rounded-md px-3.5 py-3">
-      <Text size="xs" ff="monospace" fw={700} className="text-fg-muted tracking-[0.08em] mb-2.5">
-        CONTEXT FOR GENERATION
+      <Text
+        size="xs"
+        ff="monospace"
+        fw={700}
+        className="text-fg-muted tracking-[0.08em] mb-2.5 uppercase"
+      >
+        {t('res_ContextForGeneration')}
       </Text>
       <Stack gap={10}>
         <Box>
-          <Text size="xs" ff="monospace" fw={600} className="text-accent tracking-[0.05em] mb-0.5">
-            INVENTION CONCEPT
+          <Text
+            size="xs"
+            ff="monospace"
+            fw={600}
+            className="text-accent tracking-[0.05em] mb-0.5 uppercase"
+          >
+            {t('res_InventionConcept')}
           </Text>
           <Text size="xs" className="text-fg leading-normal">
             {tr(artifact.baseIdea, 200)}
@@ -54,8 +77,13 @@ function ContextSummary({ artifact, moduleId }: { artifact: PatentArtifact; modu
 
         {artifact.baseDomain && (
           <Box>
-            <Text size="xs" ff="monospace" fw={600} className="text-accent tracking-[0.05em] mb-0.5">
-              DOMAIN
+            <Text
+              size="xs"
+              ff="monospace"
+              fw={600}
+              className="text-accent tracking-[0.05em] mb-0.5 uppercase"
+            >
+              {t('res_Domain')}
             </Text>
             <Text size="xs" className="text-fg">
               {artifact.baseDomain}
@@ -65,8 +93,13 @@ function ContextSummary({ artifact, moduleId }: { artifact: PatentArtifact; modu
 
         {artifact.constraints && (
           <Box>
-            <Text size="xs" ff="monospace" fw={600} className="text-accent tracking-[0.05em] mb-0.5">
-              NOTES
+            <Text
+              size="xs"
+              ff="monospace"
+              fw={600}
+              className="text-accent tracking-[0.05em] mb-0.5 uppercase"
+            >
+              {t('res_Notes')}
             </Text>
             <Text size="xs" className="text-fg leading-normal">
               {tr(artifact.constraints, 120)}
@@ -76,14 +109,19 @@ function ContextSummary({ artifact, moduleId }: { artifact: PatentArtifact; modu
 
         {priorDone.length > 0 && (
           <Box>
-            <Text size="xs" ff="monospace" fw={600} className="text-accent tracking-[0.05em] mb-1.5">
-              PRIOR SECTIONS
+            <Text
+              size="xs"
+              ff="monospace"
+              fw={600}
+              className="text-accent tracking-[0.05em] mb-1.5 uppercase"
+            >
+              {t('res_PriorSections')}
             </Text>
             <Stack gap={6}>
               {priorDone.map((m) => (
                 <Box key={m}>
                   <Text size="xs" ff="monospace" className="text-fg-muted mb-0.5">
-                    [{SECTION_LABELS[m]}]
+                    [{t(SECTION_LABELS[m])}]
                   </Text>
                   <Text size="xs" className="text-fg leading-[1.4]">
                     {tr(artifact.sections[m]!.content, 200)}
@@ -96,14 +134,19 @@ function ContextSummary({ artifact, moduleId }: { artifact: PatentArtifact; modu
 
         {artifact.contextFiles?.length ? (
           <Box>
-            <Text size="xs" ff="monospace" fw={600} className="text-accent tracking-[0.05em] mb-0.5">
-              REFERENCE DOCUMENTS
+            <Text
+              size="xs"
+              ff="monospace"
+              fw={600}
+              className="text-accent tracking-[0.05em] mb-0.5 uppercase"
+            >
+              {t('res_ReferenceDocuments')}
             </Text>
             <Text size="xs" ff="monospace" className="text-fg">
               {artifact.contextFiles.map((f) => f.name).join(', ')}
             </Text>
             <Text size="xs" className="text-fg-muted mt-0.5">
-              Included as RAG context (token-optimized)
+              {t('res_IncludedAsRagContext')}
             </Text>
           </Box>
         ) : null}
@@ -134,6 +177,7 @@ export function StepInputPanel({ moduleId }: Props) {
   const module = WORKFLOW_MODULES[moduleId];
   const isGenerating = generationStatus === 'loading';
   const isFirstStep = currentStepIndex === 0;
+  const { t } = useI18n();
 
   const step = steps[currentStepIndex];
   const mode: InputMode = step?.inputMode ?? 'auto';
@@ -181,11 +225,21 @@ export function StepInputPanel({ moduleId }: Props) {
   };
 
   const generateBtn = isGenerating ? (
-    <Button leftSection={<IconPlayerStop size={13} />} onClick={cancelGeneration} size="sm" style={BTN_STOP}>
+    <Button
+      leftSection={<IconPlayerStop size={13} />}
+      onClick={cancelGeneration}
+      size="sm"
+      style={BTN_STOP}
+    >
       STOP GENERATION
     </Button>
   ) : (
-    <Button leftSection={<IconWand size={13} />} onClick={handleGenerate} size="sm" style={btnPrimary(true)}>
+    <Button
+      leftSection={<IconWand size={13} />}
+      onClick={handleGenerate}
+      size="sm"
+      style={btnPrimary(true)}
+    >
       GENERATE
     </Button>
   );
@@ -206,7 +260,7 @@ export function StepInputPanel({ moduleId }: Props) {
             label: (
               <Group gap={5} justify="center">
                 <IconWand size={12} />
-                <span>Auto</span>
+                <span>{t('res_Mode_Auto')}</span>
               </Group>
             ),
           },
@@ -215,7 +269,7 @@ export function StepInputPanel({ moduleId }: Props) {
             label: (
               <Group gap={5} justify="center">
                 <IconForms size={12} />
-                <span>Guided</span>
+                <span>{t('res_Mode_Guided')}</span>
               </Group>
             ),
           },
@@ -224,7 +278,7 @@ export function StepInputPanel({ moduleId }: Props) {
             label: (
               <Group gap={5} justify="center">
                 <IconPencil size={12} />
-                <span>Manual</span>
+                <span>{t('res_Mode_Manual')}</span>
               </Group>
             ),
           },
@@ -248,117 +302,123 @@ export function StepInputPanel({ moduleId }: Props) {
       {/* AUTO mode */}
       {mode === 'auto' && (
         <Stack gap={12}>
-          {isFirstStep ? (
-            artifact && (
-              <Stack gap={14}>
-                <Textarea
-                  label="Invention Concept"
-                  description="What does your invention do? What problem does it solve?"
-                  placeholder="Describe the core idea, mechanism, or technical approach of your invention..."
-                  value={artifact.baseIdea}
-                  onChange={(e) =>
-                    updateArtifactBase(e.currentTarget.value, artifact.baseDomain, artifact.constraints)
-                  }
-                  minRows={5}
-                  maxRows={10}
-                  disabled={isGenerating}
-                  styles={INPUT_STYLES}
-                />
-                <TextInput
-                  label="Technology Domain"
-                  description="e.g., Telecommunications, Medical Devices, Software, Mechanical Systems"
-                  placeholder="e.g., Artificial Intelligence / Natural Language Processing"
-                  value={artifact.baseDomain}
-                  onChange={(e) =>
-                    updateArtifactBase(artifact.baseIdea, e.currentTarget.value, artifact.constraints)
-                  }
-                  disabled={isGenerating}
-                  styles={INPUT_STYLES}
-                />
-                <Textarea
-                  label="Constraints & Notes"
-                  description="Optional. Key prior art, technical scope constraints, or inventor notes."
-                  placeholder="e.g., Must work offline, targets embedded devices, prior art includes..."
-                  value={artifact.constraints ?? ''}
-                  onChange={(e) =>
-                    updateArtifactBase(
-                      artifact.baseIdea,
-                      artifact.baseDomain,
-                      e.currentTarget.value || undefined
-                    )
-                  }
-                  minRows={3}
-                  maxRows={6}
-                  disabled={isGenerating}
-                  styles={INPUT_STYLES}
-                />
+          {isFirstStep
+            ? artifact && (
+                <Stack gap={14}>
+                  <Textarea
+                    label={t('res_InventionConcept')}
+                    description={t('res_InventionConcept_Description')}
+                    placeholder={t('res_InventionConcept_Placeholder')}
+                    value={artifact.baseIdea}
+                    onChange={(e) =>
+                      updateArtifactBase(
+                        e.currentTarget.value,
+                        artifact.baseDomain,
+                        artifact.constraints
+                      )
+                    }
+                    minRows={5}
+                    maxRows={10}
+                    disabled={isGenerating}
+                    styles={INPUT_STYLES}
+                  />
+                  <TextInput
+                    label={t('res_TechnologyDomain')}
+                    description={t('res_TechnologyDomain_Description')}
+                    placeholder={t('res_TechnologyDomain_Placeholder')}
+                    value={artifact.baseDomain}
+                    onChange={(e) =>
+                      updateArtifactBase(
+                        artifact.baseIdea,
+                        e.currentTarget.value,
+                        artifact.constraints
+                      )
+                    }
+                    disabled={isGenerating}
+                    styles={INPUT_STYLES}
+                  />
+                  <Textarea
+                    label={t('res_ConstraintsNotes')}
+                    description={t('res_ConstraintsNotes_Description')}
+                    placeholder={t('res_ConstraintsNotes_Placeholder')}
+                    value={artifact.constraints ?? ''}
+                    onChange={(e) =>
+                      updateArtifactBase(
+                        artifact.baseIdea,
+                        artifact.baseDomain,
+                        e.currentTarget.value || undefined
+                      )
+                    }
+                    minRows={3}
+                    maxRows={6}
+                    disabled={isGenerating}
+                    styles={INPUT_STYLES}
+                  />
 
-                {/* Context files */}
-                <Box>
-                  <Group justify="space-between" align="center" mb={6}>
-                    <Text className="font-mono text-[11px] font-bold tracking-[0.06em] uppercase text-fg-secondary">
-                      Reference Documents
-                    </Text>
-                    <Button
-                      size="xs"
-                      variant="subtle"
-                      leftSection={<IconPaperclip size={12} />}
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isGenerating}
-                      className="font-mono text-[11px] text-accent"
-                    >
-                      ATTACH
-                    </Button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept={ACCEPTED_TEXT_TYPES}
-                      multiple
-                      className="hidden"
-                      onChange={handleFileChange}
-                    />
-                  </Group>
+                  {/* Context files */}
+                  <Box>
+                    <Group justify="space-between" align="center" mb={6}>
+                      <Text className="font-mono text-[11px] font-bold tracking-[0.06em] uppercase text-fg-secondary">
+                        {t('res_ReferenceDocuments')}
+                      </Text>
+                      <Button
+                        size="xs"
+                        variant="subtle"
+                        leftSection={<IconPaperclip size={12} />}
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isGenerating}
+                        className="font-mono text-[11px] text-accent uppercase"
+                      >
+                        {t('res_Attach')}
+                      </Button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept={ACCEPTED_TEXT_TYPES}
+                        multiple
+                        className="hidden"
+                        onChange={handleFileChange}
+                      />
+                    </Group>
 
-                  {artifact.contextFiles?.length ? (
-                    <Stack gap={4}>
-                      {artifact.contextFiles.map((f) => (
-                        <Group
-                          key={f.id}
-                          gap={8}
-                          wrap="nowrap"
-                          className="bg-surface-raised border border-stroke rounded py-1.25 px-2.5"
-                        >
-                          <IconFile size={12} className="text-fg-muted shrink-0" />
-                          <Text size="xs" ff="monospace" className="flex-1 text-fg truncate">
-                            {f.name}
-                          </Text>
-                          <Text size="xs" ff="monospace" className="text-fg-muted shrink-0">
-                            {(f.size / 1024).toFixed(1)} KB
-                          </Text>
-                          <ActionIcon
-                            size="xs"
-                            variant="subtle"
-                            color="red"
-                            onClick={() => removeContextFile(f.id)}
-                            disabled={isGenerating}
-                            aria-label={`Remove ${f.name}`}
+                    {artifact.contextFiles?.length ? (
+                      <Stack gap={4}>
+                        {artifact.contextFiles.map((f) => (
+                          <Group
+                            key={f.id}
+                            gap={8}
+                            wrap="nowrap"
+                            className="bg-surface-raised border border-stroke rounded py-1.25 px-2.5"
                           >
-                            <IconX size={11} />
-                          </ActionIcon>
-                        </Group>
-                      ))}
-                    </Stack>
-                  ) : (
-                    <Text size="xs" c="var(--text-muted)">
-                      Attach text files (TXT, MD, JSON…) to include as RAG context.
-                    </Text>
-                  )}
-                </Box>
-              </Stack>
-            )
-          ) : (
-            artifact && <ContextSummary artifact={artifact} moduleId={moduleId} />
-          )}
+                            <IconFile size={12} className="text-fg-muted shrink-0" />
+                            <Text size="xs" ff="monospace" className="flex-1 text-fg truncate">
+                              {f.name}
+                            </Text>
+                            <Text size="xs" ff="monospace" className="text-fg-muted shrink-0">
+                              {(f.size / 1024).toFixed(1)} KB
+                            </Text>
+                            <ActionIcon
+                              size="xs"
+                              variant="subtle"
+                              color="red"
+                              onClick={() => removeContextFile(f.id)}
+                              disabled={isGenerating}
+                              aria-label={`${t('res_Remove')} ${f.name}`}
+                            >
+                              <IconX size={11} />
+                            </ActionIcon>
+                          </Group>
+                        ))}
+                      </Stack>
+                    ) : (
+                      <Text size="xs" c="var(--text-muted)">
+                        {t('res_AttachFiles_Hint')}
+                      </Text>
+                    )}
+                  </Box>
+                </Stack>
+              )
+            : artifact && <ContextSummary artifact={artifact} moduleId={moduleId} />}
 
           {generateBtn}
         </Stack>
@@ -368,16 +428,16 @@ export function StepInputPanel({ moduleId }: Props) {
       {mode === 'guided' && (
         <Stack gap={14}>
           <Text size="sm" c="var(--text-muted)" style={{ lineHeight: 1.6 }}>
-            Fill in specific details to guide the generation for this section.
+            {t('res_Guided_Instructions')}
           </Text>
 
           {module.guidedFields.map((field) =>
             field.type === 'textarea' ? (
               <Textarea
-                aria-label={field.label}
+                aria-label={t(field.labelKey)}
                 key={field.key}
-                label={field.label}
-                placeholder={field.placeholder}
+                label={t(field.labelKey)}
+                placeholder={t(field.placeholderKey)}
                 value={guidedFields[field.key] ?? ''}
                 onChange={(e) => setField(field.key, e.currentTarget.value)}
                 minRows={3}
@@ -388,8 +448,8 @@ export function StepInputPanel({ moduleId }: Props) {
             ) : (
               <TextInput
                 key={field.key}
-                label={field.label}
-                placeholder={field.placeholder}
+                label={t(field.labelKey)}
+                placeholder={t(field.placeholderKey)}
                 value={guidedFields[field.key] ?? ''}
                 onChange={(e) => setField(field.key, e.currentTarget.value)}
                 disabled={isGenerating}
@@ -399,12 +459,22 @@ export function StepInputPanel({ moduleId }: Props) {
           )}
 
           {isGenerating ? (
-            <Button leftSection={<IconPlayerStop size={13} />} onClick={cancelGeneration} size="sm" style={BTN_STOP}>
-              STOP GENERATION
+            <Button
+              leftSection={<IconPlayerStop size={13} />}
+              onClick={cancelGeneration}
+              size="sm"
+              style={BTN_STOP}
+            >
+              <span className="uppercase">{t('res_StopGeneration')}</span>
             </Button>
           ) : (
-            <Button leftSection={<IconForms size={13} />} onClick={handleGenerate} size="sm" style={btnPrimary(true)}>
-              GENERATE
+            <Button
+              leftSection={<IconForms size={13} />}
+              onClick={handleGenerate}
+              size="sm"
+              style={btnPrimary(true)}
+            >
+              <span className="uppercase">{t('res_Generate')}</span>
             </Button>
           )}
         </Stack>
@@ -414,11 +484,13 @@ export function StepInputPanel({ moduleId }: Props) {
       {mode === 'manual' && (
         <Stack gap={14}>
           <Text size="sm" c="var(--text-muted)" style={{ lineHeight: 1.6 }}>
-            Write or paste the content directly. This will be used as-is for this section.
+            {t('res_Manual_Instructions')}
           </Text>
           <Textarea
-            label={`${module.label} — Manual Entry`}
-            placeholder={`Write the ${module.label.toLowerCase()} content directly...`}
+            label={`${t(MODULE_RESOURCE_KEYS[moduleId])} — ${t('res_ManualEntry')}`}
+            placeholder={t('res_Manual_Placeholder', {
+              section: t(MODULE_RESOURCE_KEYS[moduleId]).toLowerCase(),
+            })}
             value={manualText}
             onChange={(e) => setManualText(e.currentTarget.value)}
             minRows={8}
@@ -432,7 +504,7 @@ export function StepInputPanel({ moduleId }: Props) {
             size="sm"
             style={btnPrimary(!!manualText.trim())}
           >
-            CONFIRM MANUAL ENTRY
+            <span className="uppercase">{t('res_ConfirmManualEntry')}</span>
           </Button>
         </Stack>
       )}

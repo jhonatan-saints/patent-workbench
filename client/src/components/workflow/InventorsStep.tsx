@@ -1,14 +1,5 @@
 import { useState } from 'react';
-import {
-  Stack,
-  TextInput,
-  Button,
-  Text,
-  Group,
-  Box,
-  Divider,
-  ScrollArea,
-} from '@mantine/core';
+import { Stack, TextInput, Button, Text, Group, Box, Divider, ScrollArea } from '@mantine/core';
 import {
   IconFileDescription,
   IconUser,
@@ -21,6 +12,7 @@ import { useWorkbenchStore } from '@/store/workbench';
 import { INPUT_STYLES, btnPrimary } from '@/theme/styles';
 import type { InventorInfo } from '@/types';
 import { generateId } from '@/utils/sanitize';
+import { useI18n } from '@/i18n/useI18n';
 
 function emptyInventor(): InventorInfo {
   return {
@@ -35,8 +27,15 @@ function emptyInventor(): InventorInfo {
 }
 
 export function InventorsStep() {
-  const { artifact, updateInventors, updatePatentMeta, updateInventionTitle, goToPreview, goToFigures } =
-    useWorkbenchStore();
+  const { t } = useI18n();
+  const {
+    artifact,
+    updateInventors,
+    updatePatentMeta,
+    updateInventionTitle,
+    goToPreview,
+    goToFigures,
+  } = useWorkbenchStore();
 
   const [inventionTitle, setInventionTitle] = useState(artifact?.inventionTitle ?? '');
   const [idfNumber, setIdfNumber] = useState(artifact?.idfNumber ?? '');
@@ -49,9 +48,7 @@ export function InventorsStep() {
   const hasAtLeastOne = inventors.some((inv) => inv.name.trim().length > 0);
 
   const updateInventor = (id: string, field: keyof InventorInfo, value: string) => {
-    setInventors((prev) =>
-      prev.map((inv) => (inv.id === id ? { ...inv, [field]: value } : inv))
-    );
+    setInventors((prev) => prev.map((inv) => (inv.id === id ? { ...inv, [field]: value } : inv)));
   };
 
   const addInventor = () => setInventors((prev) => [...prev, emptyInventor()]);
@@ -89,12 +86,17 @@ export function InventorsStep() {
           <Stack gap={2}>
             <Group gap={8}>
               <IconFileDescription size={14} className="text-accent" />
-              <Text fw={700} size="sm" ff="monospace" className="text-fg tracking-[0.06em]">
-                PATENT FILING DETAILS
+              <Text
+                fw={700}
+                size="sm"
+                ff="monospace"
+                className="text-fg tracking-[0.06em] uppercase"
+              >
+                {t('res_PatentFilingDetails')}
               </Text>
             </Group>
             <Text size="xs" c="var(--text-muted)" ff="monospace">
-              Filing metadata and inventor information for the IDF
+              {t('res_FilingMetadataHint')}
             </Text>
           </Stack>
           <Button
@@ -102,9 +104,9 @@ export function InventorsStep() {
             size="xs"
             leftSection={<IconArrowLeft size={12} />}
             onClick={handleBack}
-            className="font-mono text-[11px] text-fg-muted"
+            className="uppercase font-mono text-[11px] text-fg-muted"
           >
-            BACK TO FIGURES
+            {t('res_BackToFigures')}
           </Button>
         </Group>
       </Box>
@@ -113,21 +115,20 @@ export function InventorsStep() {
       <ScrollArea style={{ flex: 1 }}>
         <Box p={28} style={{ maxWidth: 700, margin: '0 auto' }}>
           <Stack gap={20}>
-
             {/* Filing metadata block (optional) */}
             <Box className="border border-stroke rounded-md px-4.5 py-4 bg-surface">
               <Group gap={6} mb={12}>
                 <IconFileDescription size={12} className="text-fg-muted" />
                 <Text size="xs" ff="monospace" fw={700} className="text-fg-muted tracking-[0.06em]">
-                  FILING INFO
+                  {t('res_FilingInfo')}
                   <Text span size="xs" fw={400} className="ml-1.5 text-fg-muted italic">
-                    — optional
+                    — {t('res_Optional')}
                   </Text>
                 </Text>
               </Group>
               <TextInput
-                label="Invention Title"
-                placeholder="e.g., Facial Expression Driven Call Routing"
+                label={t('res_InventionTitle')}
+                placeholder={t('res_InventionTitle_Placeholder')}
                 value={inventionTitle}
                 onChange={(e) => setInventionTitle(e.currentTarget.value)}
                 styles={INPUT_STYLES}
@@ -135,15 +136,15 @@ export function InventorsStep() {
               />
               <Group grow gap={10}>
                 <TextInput
-                  label="IDF Number"
-                  placeholder="e.g., IDF-2024-0042"
+                  label={t('res_IDFNumber')}
+                  placeholder={t('res_IDFNumber_Placeholder')}
                   value={idfNumber}
                   onChange={(e) => setIdfNumber(e.currentTarget.value)}
                   styles={INPUT_STYLES}
                 />
                 <TextInput
-                  label="Business Group"
-                  placeholder="e.g., AI Platform, Cloud Infrastructure"
+                  label={t('res_BusinessGroup')}
+                  placeholder={t('res_BusinessGroup_Placeholder')}
                   value={businessGroup}
                   onChange={(e) => setBusinessGroup(e.currentTarget.value)}
                   styles={INPUT_STYLES}
@@ -153,15 +154,17 @@ export function InventorsStep() {
 
             {/* Inventor blocks */}
             {inventors.map((inv, idx) => (
-              <Box
-                key={inv.id}
-                className="border border-stroke rounded-md px-4.5 py-4 bg-surface"
-              >
+              <Box key={inv.id} className="border border-stroke rounded-md px-4.5 py-4 bg-surface">
                 <Group justify="space-between" mb={12}>
                   <Group gap={6}>
                     <IconUser size={12} className="text-fg-muted" />
-                    <Text size="xs" ff="monospace" fw={700} className="text-fg-muted tracking-[0.06em]">
-                      INVENTOR {idx + 1}
+                    <Text
+                      size="xs"
+                      ff="monospace"
+                      fw={700}
+                      className="text-fg-muted tracking-[0.06em] uppercase"
+                    >
+                      {t('res_Inventor')} {idx + 1}
                     </Text>
                   </Group>
                   {inventors.length > 1 && (
@@ -171,40 +174,40 @@ export function InventorsStep() {
                       color="red"
                       leftSection={<IconTrash size={11} />}
                       onClick={() => removeInventor(inv.id)}
-                      className="font-mono text-[10px]"
+                      className="uppercase font-mono text-[10px]"
                     >
-                      REMOVE
+                      {t('res_Remove')}
                     </Button>
                   )}
                 </Group>
 
                 <Stack gap={10}>
                   <TextInput
-                    label="Full Name"
-                    placeholder="e.g., Jane Smith"
+                    label={t('res_FullName')}
+                    placeholder={t('res_FullName_Placeholder')}
                     value={inv.name}
                     onChange={(e) => updateInventor(inv.id, 'name', e.currentTarget.value)}
                     required
                     styles={INPUT_STYLES}
                   />
                   <TextInput
-                    label="Address"
-                    placeholder="e.g., 123 Main St, City, State, ZIP"
+                    label={t('res_HomeAddress')}
+                    placeholder={t('res_Address_Placeholder')}
                     value={inv.address ?? ''}
                     onChange={(e) => updateInventor(inv.id, 'address', e.currentTarget.value)}
                     styles={INPUT_STYLES}
                   />
                   <Group grow gap={10}>
                     <TextInput
-                      label="Telephone"
-                      placeholder="e.g., +1 (555) 000-0000"
+                      label={t('res_HomeTelephone')}
+                      placeholder={t('res_Telephone_Placeholder')}
                       value={inv.telephone ?? ''}
                       onChange={(e) => updateInventor(inv.id, 'telephone', e.currentTarget.value)}
                       styles={INPUT_STYLES}
                     />
                     <TextInput
-                      label="Email"
-                      placeholder="jane@example.com"
+                      label={t('res_HomeEmail')}
+                      placeholder={t('res_Email_Placeholder')}
                       value={inv.email ?? ''}
                       onChange={(e) => updateInventor(inv.id, 'email', e.currentTarget.value)}
                       styles={INPUT_STYLES}
@@ -212,15 +215,15 @@ export function InventorsStep() {
                   </Group>
                   <Group grow gap={10}>
                     <TextInput
-                      label="Citizenship"
-                      placeholder="e.g., American, Canadian"
+                      label={t('res_Citizenship')}
+                      placeholder={t('res_Citizenship_Placeholder')}
                       value={inv.citizenship ?? ''}
                       onChange={(e) => updateInventor(inv.id, 'citizenship', e.currentTarget.value)}
                       styles={INPUT_STYLES}
                     />
                     <TextInput
-                      label="Employee ID"
-                      placeholder="Optional"
+                      label={t('res_EmployeeId')}
+                      placeholder={t('res_EmployeeId_Placeholder')}
                       value={inv.employeeId ?? ''}
                       onChange={(e) => updateInventor(inv.id, 'employeeId', e.currentTarget.value)}
                       styles={INPUT_STYLES}
@@ -238,9 +241,9 @@ export function InventorsStep() {
                 size="xs"
                 leftSection={<IconPlus size={12} />}
                 onClick={addInventor}
-                className="border-stroke text-fg-secondary font-mono text-[11px] tracking-[0.06em]"
+                className="uppercase border-stroke text-fg-secondary font-mono text-[11px] tracking-[0.06em]"
               >
-                ADD INVENTOR
+                {t('res_AddInventor')}
               </Button>
 
               <Button
@@ -249,11 +252,11 @@ export function InventorsStep() {
                 disabled={!hasAtLeastOne}
                 size="sm"
                 style={btnPrimary(hasAtLeastOne)}
+                className="uppercase"
               >
-                CONFIRM & GO TO PREVIEW
+                {t('res_ConfirmAndGoToPreview')}
               </Button>
             </Group>
-
           </Stack>
         </Box>
       </ScrollArea>
