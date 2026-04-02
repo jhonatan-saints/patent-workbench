@@ -277,6 +277,8 @@ npm run dev    # Vite dev server on localhost:3003/patent-workbench
 
 API requests are proxied to `localhost:3001` during development (configured in `vite.config.ts`). The server must be running separately (`npm run server:dev` from the repo root).
 
+The model is selected directly in the UI from the list of models available in the local Ollama instance. See [server/README.md](../server/README.md#recommended-models) for recommended models and setup instructions.
+
 ## Build
 
 ```bash

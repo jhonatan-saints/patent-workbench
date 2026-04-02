@@ -7,6 +7,21 @@ Express + TypeScript backend that validates, sanitizes, and proxies generation r
 - Node.js 20+
 - [Ollama](https://ollama.com) running locally (default: `http://localhost:11434`)
 
+## Recommended models
+
+Pull any model with `ollama pull <model>` before use. The active model is selected in the client UI; `DEFAULT_MODEL` in `.env` is the fallback when none is specified.
+
+| Model | Size | Speed | Quality | Notes |
+| --- | --- | --- | --- | --- |
+| `qwen2.5:7b` | ~4.7 GB | Medium | Very good | **Recommended** — best reasoning and structured text for patent generation |
+| `mistral` | ~4 GB | Medium | Good | Good baseline; default in older setups |
+| `phi3:mini` | ~2.3 GB | Fast | Good | Best option for low-end or older hardware |
+| `phi4` | ~9 GB | Slow | Excellent | Highest quality; requires 16 GB+ RAM |
+
+```bash
+ollama pull qwen2.5:7b
+```
+
 ## Getting started
 
 ```bash
@@ -220,7 +235,7 @@ Copy `.env.example` to `.env`:
 | `PORT` | `3001` | Server port |
 | `NODE_ENV` | `development` | Node environment |
 | `OLLAMA_URL` | `http://localhost:11434` | Ollama base URL |
-| `DEFAULT_MODEL` | `mistral` | Fallback model when none is specified in the request |
+| `DEFAULT_MODEL` | `qwen2.5:7b` | Fallback model when none is specified in the request. See [Recommended models](#recommended-models) |
 | `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
 | `BODY_LIMIT` | `512kb` | Max JSON body size |
 | `RATE_WINDOW_MS` | `900000` | Global rate-limit window in ms (15 min) |
