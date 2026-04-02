@@ -25,11 +25,32 @@ const defaultModel = process.env.DEFAULT_MODEL || 'mistral'
 const generateRateWindowMs = Number(process.env.GENERATE_RATE_WINDOW_MS) || 60_000
 const generateRateMax = Number(process.env.GENERATE_RATE_MAX) || 20
 
+// M-1: Fail fast in production if CORS origin is not explicitly configured
+if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
+  throw new Error('CORS_ORIGIN must be set explicitly in production')
+}
 
-// Security headers
+
+// H-3: trust reverse-proxy X-Forwarded-For only when explicitly configured
+if (process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', 1)
+}
+
+// M-3: explicit CSP directives instead of Helmet defaults
 app.use(
   helmet({
-    contentSecurityPolicy: true,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"], // required by Mantine
+        imgSrc: ["'self'", 'data:'],             // figures are data URLs
+        connectSrc: ["'self'"],                  // API calls via same-origin proxy
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+      },
+    },
     crossOriginEmbedderPolicy: true,
     hsts: { maxAge: 31536000 },
     noSniff: true,
@@ -66,16 +87,28 @@ app.use(
   })
 )
 
-// Logging (without body — sensitive data)
+// M-4: optional API key — only enforced when API_KEY env var is set
+if (process.env.API_KEY) {
+  app.use((req, res, next) => {
+    if (req.headers['x-api-key'] !== process.env.API_KEY) {
+      return res.status(401).json({ success: false, error: 'Unauthorized' })
+    }
+    return next()
+  })
+}
+
+// Logging (without body or query params — sensitive data)
 app.use(
   pinoHttp({
     logger,
     serializers: {
       req(req) {
+        // L-3: strip query string to avoid logging future token/key params
+        const urlWithoutQuery = req.url?.split('?')[0] ?? req.url
         return {
           id: req.headers['x-request-id'],
           method: req.method,
-          url: req.url,
+          url: urlWithoutQuery,
         }
       },
       res(res) {
