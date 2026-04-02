@@ -3,10 +3,10 @@ CI Workflows
 This folder contains GitHub Actions workflows that run automated checks for the repository.
 
 Current workflow
-- `.github/workflows/ci.yml` — runs on push and pull requests to main/master and performs:
-  - install dependencies
-  - run repository linters (`npm run lint`)
-  - build the server package
+- `.github/workflows/commit-check.yml` — runs on pull requests to `develop` and `master` (and manual triggers) and performs:
+  - install dependencies (with npm cache)
+  - run repository linters (`npm run lint`) — JavaScript, Markdown, SCSS, HTML
+  - build the server package (separate job, depends on lint passing)
 
 How to edit or extend
 - Update or add workflows in `.github/workflows/`. Workflows use YAML and are executed by GitHub Actions.
@@ -22,4 +22,4 @@ Best practices
 - When adding a new workflow, include a short README entry here describing purpose and triggers.
 
 Where to find details
-- Workflow definition: .github/workflows/ci.yml
+- Workflow definition: .github/workflows/commit-check.yml

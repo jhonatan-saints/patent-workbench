@@ -1,53 +1,53 @@
 /*
  * We import only theme (design tokens) and utilities — skipping preflight/base reset
- * so Mantine's own reset is not overridden.
+ * so Mantine"s own reset is not overridden.
 */
-@import 'tailwindcss/theme.css';
-@import 'tailwindcss/utilities.css';
+@import "tailwindcss/theme.css";
+@import "tailwindcss/utilities.css";
 
 @font-face {
-  font-family: 'IBM Plex Sans';
-  src: url('./assets/fonts/ibm-plex/IBMPlexSans-Variable.woff2') format('woff2');
+  font-family: "IBM Plex Sans";
+  src: url("./assets/fonts/ibm-plex/IBMPlexSans-Variable.woff2") format("woff2");
   font-weight: 300 700;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'IBM Plex Sans';
-  src: url('./assets/fonts/ibm-plex/IBMPlexSans-Variable-Italic.woff2') format('woff2');
+  font-family: "IBM Plex Sans";
+  src: url("./assets/fonts/ibm-plex/IBMPlexSans-Variable-Italic.woff2") format("woff2");
   font-weight: 300 700;
   font-style: italic;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'IBM Plex Mono';
-  src: url('./assets/fonts/ibm-plex/IBMPlexMono-Regular.woff2') format('woff2');
+  font-family: "IBM Plex Mono";
+  src: url("./assets/fonts/ibm-plex/IBMPlexMono-Regular.woff2") format("woff2");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'IBM Plex Serif';
-  src: url('./assets/fonts/ibm-plex/IBMPlexSerif-Variable.woff2') format('woff2');
+  font-family: "IBM Plex Serif";
+  src: url("./assets/fonts/ibm-plex/IBMPlexSerif-Variable.woff2") format("woff2");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'IBM Plex Serif';
-  src: url('./assets/fonts/ibm-plex/IBMPlexSerif-Variable-Italic.woff2') format('woff2');
+  font-family: "IBM Plex Serif";
+  src: url("./assets/fonts/ibm-plex/IBMPlexSerif-Variable-Italic.woff2") format("woff2");
   font-weight: 400 700;
   font-style: italic;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'IBM Plex Sans Condensed';
-  src: url('./assets/fonts/ibm-plex/IBMPlexSansCondensed-Bold.woff2') format('woff2');
+  font-family: "IBM Plex Sans Condensed";
+  src: url("./assets/fonts/ibm-plex/IBMPlexSansCondensed-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -101,15 +101,15 @@
 
 /* Design Tokens - Font stacks — shared between schemes */
 :root {
-  --font-display: 'IBM Plex Sans Condensed', sans-serif;
-  --font-body: 'IBM Plex Sans', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
-  --font-serif: 'IBM Plex Serif', serif;
+  --font-display: "IBM Plex Sans Condensed", sans-serif;
+  --font-body: "IBM Plex Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --font-serif: "IBM Plex Serif", serif;
 }
 
 /* Dark scheme (default) */
 :root,
-[data-mantine-color-scheme='dark'] {
+[data-mantine-color-scheme="dark"] {
   --bg: #0e0e0e;
   --danger: #ff9f9f;
   --primary: #005fb8;
@@ -132,7 +132,7 @@
 }
 
 /* Light scheme */
-[data-mantine-color-scheme='light'] {
+[data-mantine-color-scheme="light"] {
   --bg: #f5f5f4;
   --danger: #dd0100;
   --primary: #60b5ff;
