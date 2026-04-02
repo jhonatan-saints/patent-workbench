@@ -164,8 +164,8 @@ The `sanitizePrompt` middleware:
 
 1. Trims leading/trailing whitespace.
 2. Collapses runs of spaces/tabs to a single space (newlines are preserved so structured prompt formats stay intact).
-3. Truncates to `PROMPT_MAX_LENGTH` characters.
-4. Scans for prompt injection patterns and returns HTTP `400` if any match:
+3. Rejects with HTTP `400` if the prompt exceeds `PROMPT_MAX_LENGTH` characters (silent truncation is intentionally avoided — it can hide injections placed near the limit).
+4. Normalises Unicode (NFKC) and lowercases before scanning for injection patterns; returns HTTP `400` if any match:
 
 | Pattern | Regex |
 | --- | --- |
@@ -177,6 +177,19 @@ The `sanitizePrompt` middleware:
 | Forget instructions | `/forget (all\|previous\|your )?instructions/i` |
 | Persona swap | `/new persona/i` |
 | Bypass safeguards | `/bypass (your\|all )?/i` |
+| Override instructions | `/override (all\|your\|previous )?instructions/i` |
+| Pretend to be | `/pretend (you are\|to be)/i` |
+| Roleplay | `/roleplay as/i` |
+| Instruction reset | `/from now on (you are\|ignore\|disregard\|forget)/i` |
+| Instruction replacement | `/your (new\|updated )?instructions (are\|is)/i` |
+| Stop being | `/stop being a/i` |
+| System prompt | `/system prompt/i` |
+| System tag | `/\[system\]/i` |
+| DAN jailbreak | `/\bdan\b/i` |
+| Developer mode | `/developer mode/i` |
+| Unrestricted mode | `/unrestricted mode/i` |
+| Without restrictions | `/without restrictions/i` |
+| No restrictions | `/no restrictions/i` |
 
 ### 9. LLM service
 
@@ -217,6 +230,8 @@ Copy `.env.example` to `.env`:
 | `LLM_TIMEOUT_MS` | `120000` | Ollama request timeout in ms (2 min) |
 | `LOG_LEVEL` | `info` | Pino log level |
 | `SHUTDOWN_TIMEOUT_MS` | `30000` | Graceful shutdown timeout in ms |
+| `API_KEY` | _(unset)_ | When set, all requests must supply a matching `x-api-key` header; requests without it receive HTTP `401` |
+| `TRUST_PROXY` | _(unset)_ | Set to `true` when running behind a reverse proxy to trust `X-Forwarded-For` for rate limiting |
 
 ---
 

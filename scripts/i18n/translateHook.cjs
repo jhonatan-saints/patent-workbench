@@ -30,7 +30,7 @@ function generateLanguage() {
     }
     const dest = path.join(srcLocalesDir, `${locale}.json`);
     fs.writeFileSync(dest, JSON.stringify(out, null, 2) + '\n', 'utf-8');
-    console.log(`  ✔ Generated ${locale}.json (${Object.keys(out).length} keys)`);
+    console.log(`  - Generated ${locale}.json (${Object.keys(out).length} keys)`);
   }
 
   console.log(`\nLocale files written to: ${srcLocalesDir}\n`);
@@ -46,7 +46,7 @@ function copyLanguages() {
     const src = path.join(srcLocalesDir, file);
     const dst = path.join(publicLocalesDir, file);
     fs.copyFileSync(src, dst);
-    console.log(`  ✔ Copied ${file} → public/locales/`);
+    console.log(`  - Copied ${file} → public/locales/`);
   }
 
   console.log(`\nPublic locale files at: ${publicLocalesDir}\n`);
