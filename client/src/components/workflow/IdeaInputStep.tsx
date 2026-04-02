@@ -19,6 +19,15 @@ import type { ContextFile } from '@/types';
 
 const ACCEPTED_TEXT_TYPES = '.txt,.md,.json,.csv,.xml,.yaml,.yml,.log';
 const MAX_FILE_BYTES = 500_000; // 500 KB per file
+const ALLOWED_MIME_TYPES = new Set([
+  'text/plain',
+  'text/markdown',
+  'text/csv',
+  'text/xml',
+  'application/json',
+  'application/xml',
+  'application/yaml',
+]);
 
 function formatModelLabel(name: string): string {
   return name.split(':')[0];
@@ -43,6 +52,10 @@ export function IdeaInputStep() {
     const files = Array.from(e.target.files ?? []);
     for (const file of files) {
       if (file.size > MAX_FILE_BYTES) continue;
+      // Reject non-text MIME types — defense-in-depth against renamed binary uploads
+      const mime = file.type.toLowerCase();
+      const isText = mime.startsWith('text/') || ALLOWED_MIME_TYPES.has(mime) || mime === '';
+      if (!isText) continue;
       void file.text().then((content) => {
         setContextFiles((prev) => [
           ...prev,

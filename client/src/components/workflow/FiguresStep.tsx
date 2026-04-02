@@ -65,6 +65,9 @@ export function FiguresStep() {
     if (files.length === 0) return;
 
     files.forEach((file) => {
+      // SVG files can contain <script> tags and event handlers — reject them entirely
+      if (file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')) return;
+
       const reader = new FileReader();
       reader.onload = (ev) => {
         const dataUrl = ev.target?.result as string;

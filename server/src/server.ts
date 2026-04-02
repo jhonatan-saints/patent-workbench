@@ -5,9 +5,17 @@ import logger from './logger';
 dotenv.config();
 
 const PORT = Number(process.env.PORT) || 3001;
+const HOST = process.env.HOST || '127.0.0.1';
 
-const server = app.listen(PORT, () => {
-  logger.info({ port: PORT }, `Server running on http://localhost:${PORT}`);
+// L-2: warn loudly if exposed beyond localhost in production
+if (process.env.NODE_ENV === 'production' && HOST === '0.0.0.0') {
+  logger.warn(
+    'Server is listening on 0.0.0.0 — ensure a firewall or reverse proxy restricts external access'
+  );
+}
+
+const server = app.listen(PORT, HOST, () => {
+  logger.info({ port: PORT, host: HOST }, `Server running on http://${HOST}:${PORT}`);
 });
 
 // Graceful shutdown
