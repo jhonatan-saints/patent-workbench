@@ -17,6 +17,8 @@ export interface GuidedField {
   key: string;
   label: string;
   placeholder: string;
+  labelKey: string;
+  placeholderKey: string;
   type: 'text' | 'textarea';
 }
 
@@ -60,7 +62,7 @@ export function buildArtifactContext(
     lines.push('', 'Prior sections:');
     for (const m of priorModules) {
       const section = artifact.sections[m]!;
-      const label = SECTION_LABELS[m];
+      const label = SECTION_LABELS_EN[m];
       lines.push(`[${label}] ${truncate(section.content)}`);
     }
   }
@@ -79,7 +81,7 @@ export function buildArtifactContext(
   return lines.join('\n');
 }
 
-export const SECTION_LABELS: Record<WorkflowModuleId, string> = {
+const SECTION_LABELS_EN: Record<WorkflowModuleId, string> = {
   problem: 'Problem Description',
   previous_solutions: 'Previous Solutions',
   differences: 'Key Differences',
@@ -87,6 +89,38 @@ export const SECTION_LABELS: Record<WorkflowModuleId, string> = {
   variations: 'Possible Variations',
   other_applications: 'Other Applications',
   full_description: 'Full Description',
+};
+
+export const SECTION_LABELS: Record<WorkflowModuleId, string> = {
+  problem: 'res_StepProblemDescription',
+  previous_solutions: 'res_StepPreviousSolutions',
+  differences: 'res_StepKeyDifferences',
+  invention_summary: 'res_StepInventionSummary',
+  variations: 'res_StepPossibleVariations',
+  other_applications: 'res_StepOtherApplications',
+  full_description: 'res_StepFullDescription',
+};
+
+/** Maps each module ID to its i18n resource key for UI display. */
+export const MODULE_RESOURCE_KEYS: Record<WorkflowModuleId, string> = {
+  problem: 'res_StepProblemDescription',
+  previous_solutions: 'res_StepPreviousSolutions',
+  differences: 'res_StepKeyDifferences',
+  invention_summary: 'res_StepInventionSummary',
+  variations: 'res_StepPossibleVariations',
+  other_applications: 'res_StepOtherApplications',
+  full_description: 'res_StepFullDescription',
+};
+
+/** Maps each module ID to its i18n resource key for the subtitle description. */
+export const MODULE_DESCRIPTION_RESOURCE_KEYS: Record<WorkflowModuleId, string> = {
+  problem: 'res_StepProblemDescription_Desc',
+  previous_solutions: 'res_StepPreviousSolutions_Desc',
+  differences: 'res_StepKeyDifferences_Desc',
+  invention_summary: 'res_StepInventionSummary_Desc',
+  variations: 'res_StepPossibleVariations_Desc',
+  other_applications: 'res_StepOtherApplications_Desc',
+  full_description: 'res_StepFullDescription_Desc',
 };
 
 export interface WorkflowModule {
@@ -116,13 +150,17 @@ Generate 3 Problem Description options for this invention.`,
       {
         key: 'pain_point',
         label: 'Core Pain Point',
+        labelKey: 'res_GuidedField_PainPoint',
         placeholder: 'e.g., Agents cannot determine customer emotional state before a call...',
+        placeholderKey: 'res_GuidedField_PainPoint_Placeholder',
         type: 'textarea',
       },
       {
         key: 'impact',
         label: 'Business / User Impact',
+        labelKey: 'res_GuidedField_Impact',
         placeholder: 'e.g., Leads to suboptimal call routing and poor customer satisfaction...',
+        placeholderKey: 'res_GuidedField_Impact_Placeholder',
         type: 'textarea',
       },
     ],
@@ -151,13 +189,17 @@ Generate 3 Previous Solutions options describing existing approaches and their l
       {
         key: 'existing_methods',
         label: 'Existing Methods / Technologies',
+        labelKey: 'res_GuidedField_ExistingMethods',
         placeholder: 'e.g., IVR systems, caller-ID, customer forms, sentiment analysis...',
+        placeholderKey: 'res_GuidedField_ExistingMethods_Placeholder',
         type: 'textarea',
       },
       {
         key: 'limitations',
         label: 'Key Limitations',
+        labelKey: 'res_GuidedField_Limitations',
         placeholder: 'e.g., Relies on self-reporting, reactive not proactive, indirect detection...',
+        placeholderKey: 'res_GuidedField_Limitations_Placeholder',
         type: 'textarea',
       },
     ],
@@ -186,13 +228,17 @@ Generate 3 options explaining how this invention differs from previous solutions
       {
         key: 'novel_elements',
         label: 'Novel Technical Elements',
+        labelKey: 'res_GuidedField_NovelElements',
         placeholder: 'e.g., Real-time facial expression recognition using ONNX models...',
+        placeholderKey: 'res_GuidedField_NovelElements_Placeholder',
         type: 'textarea',
       },
       {
         key: 'advantage',
         label: 'Key Advantage Over Prior Art',
+        labelKey: 'res_GuidedField_Advantage',
         placeholder: 'e.g., Proactive emotional state detection before call connection...',
+        placeholderKey: 'res_GuidedField_Advantage_Placeholder',
         type: 'textarea',
       },
     ],
@@ -221,13 +267,17 @@ Generate 3 Invention Summary options.`,
       {
         key: 'core_method',
         label: 'Core Method / Technology',
+        labelKey: 'res_GuidedField_CoreMethod',
         placeholder: 'e.g., Facial Expression Recognition via ONNX deep learning models...',
+        placeholderKey: 'res_GuidedField_CoreMethod_Placeholder',
         type: 'textarea',
       },
       {
         key: 'market_context',
         label: 'Market Context (optional)',
+        labelKey: 'res_GuidedField_MarketContext',
         placeholder: 'e.g., Emotion recognition market projected at $91B by 2024...',
+        placeholderKey: 'res_GuidedField_MarketContext_Placeholder',
         type: 'text',
       },
     ],
@@ -256,13 +306,17 @@ Generate 3 Possible Variations options for this invention.`,
       {
         key: 'alt_implementations',
         label: 'Alternative Implementations',
+        labelKey: 'res_GuidedField_AltImplementations',
         placeholder: 'e.g., Wearable devices, smart watch integration, server-side processing...',
+        placeholderKey: 'res_GuidedField_AltImplementations_Placeholder',
         type: 'textarea',
       },
       {
         key: 'embodiments',
         label: 'Embodiment Variations',
+        labelKey: 'res_GuidedField_Embodiments',
         placeholder: 'e.g., Real-time vs batch processing, single-user vs multi-user...',
+        placeholderKey: 'res_GuidedField_Embodiments_Placeholder',
         type: 'text',
       },
     ],
@@ -290,13 +344,17 @@ Generate 3 Other Applications options for this invention.`,
       {
         key: 'industries',
         label: 'Target Industries / Domains',
+        labelKey: 'res_GuidedField_Industries',
         placeholder: 'e.g., Healthcare diagnostics, autonomous vehicles, retail analytics...',
+        placeholderKey: 'res_GuidedField_Industries_Placeholder',
         type: 'textarea',
       },
       {
         key: 'use_cases',
         label: 'Specific Use Cases',
+        labelKey: 'res_GuidedField_UseCases',
         placeholder: 'e.g., Detecting driver fatigue, measuring crowd mood in retail...',
+        placeholderKey: 'res_GuidedField_UseCases_Placeholder',
         type: 'textarea',
       },
     ],
@@ -325,13 +383,17 @@ Generate 3 Full Description options with complete technical detail.`,
       {
         key: 'components',
         label: 'Key Technical Components',
+        labelKey: 'res_GuidedField_Components',
         placeholder: 'e.g., Camera module, ONNX inference engine, FER classification layer, call router...',
+        placeholderKey: 'res_GuidedField_Components_Placeholder',
         type: 'textarea',
       },
       {
         key: 'process_flow',
         label: 'Process / Data Flow',
+        labelKey: 'res_GuidedField_ProcessFlow',
         placeholder: 'e.g., Capture → Pre-process → Keypoint detection → FER → Classification → Route...',
+        placeholderKey: 'res_GuidedField_ProcessFlow_Placeholder',
         type: 'textarea',
       },
     ],

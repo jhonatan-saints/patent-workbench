@@ -9,7 +9,8 @@ import {
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n/useI18n';
-import type { StepStatus } from '@/types';
+import { MODULE_RESOURCE_KEYS } from '@/utils/workflowTemplates';
+import type { StepStatus, WorkflowModuleId } from '@/types';
 
 function StepIcon({ status }: Readonly<{ status: StepStatus }>) {
   if (status === 'done') return <IconCircleCheck size={14} className="text-accent shrink-0" />;
@@ -70,6 +71,7 @@ function WorkflowStepItem({
   canNavigate,
   onNavigate,
 }: Readonly<WorkflowStepItemProps>) {
+  const { t } = useI18n();
   return (
     <Box
       key={step.moduleId}
@@ -85,7 +87,7 @@ function WorkflowStepItem({
             ff="monospace"
             className={`text-[11px] tracking-[0.04em] truncate ${stepTextClass(isActive, isDone)}`}
           >
-            {String(index + 1).padStart(2, '0')} · {step.label.toUpperCase()}
+            {String(index + 1).padStart(2, '0')} · {t(MODULE_RESOURCE_KEYS[step.moduleId as WorkflowModuleId]).toUpperCase()}
           </Text>
           {step.status === 'done' && step.promptTokens + step.completionTokens > 0 && (
             <Text size="xs" ff="monospace" className="text-fg-muted text-[10px] mt-px">

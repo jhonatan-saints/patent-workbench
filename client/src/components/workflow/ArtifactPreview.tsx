@@ -2,7 +2,8 @@ import { Box, Stack, Text, Group, ScrollArea, Badge, Divider } from '@mantine/co
 import { useI18n } from '@/i18n/useI18n';
 import { IconFileText } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
-import { WORKFLOW_ORDER, SECTION_LABELS } from '@/utils/workflowTemplates';
+import { WORKFLOW_ORDER, MODULE_RESOURCE_KEYS } from '@/utils/workflowTemplates';
+import type { WorkflowModuleId } from '@/types';
 
 export function ArtifactPreview() {
   const { artifact, steps } = useWorkbenchStore();
@@ -56,7 +57,7 @@ export function ArtifactPreview() {
                       mb={6}
                       className="border-accent text-accent font-mono text-[11px] tracking-[0.06em]"
                     >
-                      {SECTION_LABELS[moduleId]}
+                      {t(MODULE_RESOURCE_KEYS[moduleId as WorkflowModuleId])}
                     </Badge>
                     <Text className="text-fg font-serif text-[14px] leading-[1.7] whitespace-pre-wrap">
                       {section.content}

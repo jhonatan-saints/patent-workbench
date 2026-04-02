@@ -110,10 +110,12 @@ export function FiguresStep() {
     goToStep(steps.length - 1);
   };
 
+  const figuresCountLabel =
+    figures.length > 1 ? t('res_FiguresAdded_Plural') : t('res_FiguresAdded_Singular');
   const footerText =
-    figures.length > 0
-      ? `${figures.length} figure${figures.length > 1 ? 's' : ''} added`
-      : 'No figures added yet';
+    figures.length === 0
+      ? t('res_NoFiguresAdded')
+      : `${figures.length} ${figuresCountLabel}`;
 
   return (
     <Stack gap={0} style={{ height: '100%' }}>
@@ -133,7 +135,7 @@ export function FiguresStep() {
               </Text>
             </Group>
             <Text size="xs" c="var(--text-muted)" ff="monospace">
-              {t('res_UploadImagesHint') || 'Upload images or create flowcharts · optional'}
+              {t('res_UploadImagesHint')}
             </Text>
           </Stack>
           <Button
@@ -143,7 +145,7 @@ export function FiguresStep() {
             onClick={handleBack}
             className="font-mono text-[11px] text-fg-muted"
           >
-            {t('res_BackToSteps') || 'BACK TO STEPS'}
+            {t('res_BackToSteps')}
           </Button>
         </Group>
       </Box>
@@ -161,7 +163,7 @@ export function FiguresStep() {
                 <Group gap={6} wrap="nowrap">
                   <IconUpload size={12} />
                   <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em] uppercase">
-                    {t('res_UploadImage')}
+                    {t('res_Image')}
                   </Text>
                 </Group>
               ),
@@ -172,7 +174,7 @@ export function FiguresStep() {
                 <Group gap={6} wrap="nowrap">
                   <IconVectorTriangle size={12} />
                   <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em] uppercase">
-                    {t('res_CreateDiagram')}
+                    {t('res_Diagram')}
                   </Text>
                 </Group>
               ),
@@ -183,7 +185,7 @@ export function FiguresStep() {
                 <Group gap={6} wrap="nowrap">
                   <IconBraces size={12} />
                   <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em] uppercase">
-                    {t('res_JsonObject')}
+                    {t('res_Json')}
                   </Text>
                 </Group>
               ),
@@ -294,7 +296,7 @@ export function FiguresStep() {
                           />
                         </Group>
                         <Textarea
-                          label={t('res_Caption') || 'Caption'}
+                          label={t('res_Caption')}
                           placeholder={t('res_Caption_Placeholder')}
                           value={fig.caption}
                           onChange={(e) => updateFigure(fig.id, 'caption', e.currentTarget.value)}
@@ -341,7 +343,7 @@ export function FiguresStep() {
             size="sm"
             style={BTN_PRIMARY}
           >
-            {t('res_ContinueToInventors') || 'CONTINUE TO INVENTORS'}
+            {t('res_ContinueToInventors')}
           </Button>
         </Group>
       </Box>

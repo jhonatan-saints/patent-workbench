@@ -59,7 +59,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
           style={DOC_UI_LABEL}
           className="font-mono text-[10px] tracking-[0.08em]"
         >
-          {SECTION_LABELS[moduleId]}
+          {t(SECTION_LABELS[moduleId])}
         </Badge>
 
         {editing ? (
@@ -102,7 +102,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
 
       {editing ? (
         <Textarea
-          aria-label={`Edit content for ${SECTION_LABELS[moduleId]}`}
+          aria-label={`Edit content for ${t(SECTION_LABELS[moduleId])}`}
           value={draft}
           onChange={(e) => setDraft(e.currentTarget.value)}
           minRows={4}

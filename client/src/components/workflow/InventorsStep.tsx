@@ -128,10 +128,7 @@ export function InventorsStep() {
               </Group>
               <TextInput
                 label={t('res_InventionTitle')}
-                placeholder={
-                  t('res_InventionTitle_Placeholder') ||
-                  'e.g., Facial Expression Driven Call Routing'
-                }
+                placeholder={t('res_InventionTitle_Placeholder')}
                 value={inventionTitle}
                 onChange={(e) => setInventionTitle(e.currentTarget.value)}
                 styles={INPUT_STYLES}
@@ -140,16 +137,14 @@ export function InventorsStep() {
               <Group grow gap={10}>
                 <TextInput
                   label={t('res_IDFNumber')}
-                  placeholder={t('res_IDFNumber_Placeholder') || 'e.g., IDF-2024-0042'}
+                  placeholder={t('res_IDFNumber_Placeholder')}
                   value={idfNumber}
                   onChange={(e) => setIdfNumber(e.currentTarget.value)}
                   styles={INPUT_STYLES}
                 />
                 <TextInput
                   label={t('res_BusinessGroup')}
-                  placeholder={
-                    t('res_BusinessGroup_Placeholder') || 'e.g., AI Platform, Cloud Infrastructure'
-                  }
+                  placeholder={t('res_BusinessGroup_Placeholder')}
                   value={businessGroup}
                   onChange={(e) => setBusinessGroup(e.currentTarget.value)}
                   styles={INPUT_STYLES}

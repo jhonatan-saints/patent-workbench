@@ -20,7 +20,7 @@ import {
   IconFile,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
-import { WORKFLOW_MODULES, SECTION_LABELS, WORKFLOW_ORDER } from '@/utils/workflowTemplates';
+import { WORKFLOW_MODULES, SECTION_LABELS, WORKFLOW_ORDER, MODULE_RESOURCE_KEYS } from '@/utils/workflowTemplates';
 import { INPUT_STYLES, BTN_STOP, btnPrimary } from '@/theme/styles';
 import type { WorkflowModuleId, InputMode, PatentArtifact } from '@/types';
 import { generateId } from '@/utils/sanitize';
@@ -116,7 +116,7 @@ function ContextSummary({
               {priorDone.map((m) => (
                 <Box key={m}>
                   <Text size="xs" ff="monospace" className="text-fg-muted mb-0.5">
-                    [{SECTION_LABELS[m]}]
+                    [{t(SECTION_LABELS[m])}]
                   </Text>
                   <Text size="xs" className="text-fg leading-[1.4]">
                     {tr(artifact.sections[m]!.content, 200)}
@@ -429,10 +429,10 @@ export function StepInputPanel({ moduleId }: Props) {
           {module.guidedFields.map((field) =>
             field.type === 'textarea' ? (
               <Textarea
-                aria-label={field.label}
+                aria-label={t(field.labelKey)}
                 key={field.key}
-                label={field.label}
-                placeholder={field.placeholder}
+                label={t(field.labelKey)}
+                placeholder={t(field.placeholderKey)}
                 value={guidedFields[field.key] ?? ''}
                 onChange={(e) => setField(field.key, e.currentTarget.value)}
                 minRows={3}
@@ -443,8 +443,8 @@ export function StepInputPanel({ moduleId }: Props) {
             ) : (
               <TextInput
                 key={field.key}
-                label={field.label}
-                placeholder={field.placeholder}
+                label={t(field.labelKey)}
+                placeholder={t(field.placeholderKey)}
                 value={guidedFields[field.key] ?? ''}
                 onChange={(e) => setField(field.key, e.currentTarget.value)}
                 disabled={isGenerating}
@@ -482,8 +482,8 @@ export function StepInputPanel({ moduleId }: Props) {
             {t('res_Manual_Instructions')}
           </Text>
           <Textarea
-            label={`${module.label} — ${t('res_ManualEntry')}`}
-            placeholder={t('res_Manual_Placeholder', { section: module.label.toLowerCase() })}
+            label={`${t(MODULE_RESOURCE_KEYS[moduleId])} — ${t('res_ManualEntry')}`}
+            placeholder={t('res_Manual_Placeholder', { section: t(MODULE_RESOURCE_KEYS[moduleId]).toLowerCase() })}
             value={manualText}
             onChange={(e) => setManualText(e.currentTarget.value)}
             minRows={8}

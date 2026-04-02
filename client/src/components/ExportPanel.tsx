@@ -4,7 +4,7 @@ import { IconFileText, IconFileTypePdf, IconFileWord, IconMarkdown } from '@tabl
 import { useState } from 'react';
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
 import { useWorkbenchStore } from '@/store/workbench';
-import { WORKFLOW_ORDER, SECTION_LABELS } from '@/utils/workflowTemplates';
+import { WORKFLOW_ORDER, MODULE_RESOURCE_KEYS } from '@/utils/workflowTemplates';
 import { escapeHtml } from '@/utils/sanitize';
 import { useI18n } from '@/i18n';
 import type { PatentArtifact } from '@/types';
@@ -28,7 +28,7 @@ function inventorBlock(artifact: PatentArtifact): string {
   return lines.join('\n');
 }
 
-function buildMarkdown(artifact: PatentArtifact): string {
+function buildMarkdown(artifact: PatentArtifact, labels: Record<string, string>): string {
   const date = new Date().toISOString().split('T')[0];
   const inventorNames = artifact.inventors.map((i) => i.name).join('; ');
   const titleContent = artifact.inventionTitle ?? artifact.baseIdea;
@@ -55,7 +55,7 @@ function buildMarkdown(artifact: PatentArtifact): string {
   for (const moduleId of WORKFLOW_ORDER) {
     const section = artifact.sections[moduleId];
     if (section) {
-      out += `## ${SECTION_LABELS[moduleId]}\n\n${section.content}\n\n`;
+      out += `## ${labels[moduleId]}\n\n${section.content}\n\n`;
     }
   }
 
@@ -70,7 +70,7 @@ function buildMarkdown(artifact: PatentArtifact): string {
   return out;
 }
 
-function buildText(artifact: PatentArtifact): string {
+function buildText(artifact: PatentArtifact, labels: Record<string, string>): string {
   const sep = '─'.repeat(60);
   const date = new Date().toISOString().split('T')[0];
 
@@ -89,7 +89,7 @@ function buildText(artifact: PatentArtifact): string {
   for (const moduleId of WORKFLOW_ORDER) {
     const section = artifact.sections[moduleId];
     if (section) {
-      out += `\n\n${SECTION_LABELS[moduleId].toUpperCase()}\n${sep}\n\n${section.content}\n`;
+      out += `\n\n${labels[moduleId].toUpperCase()}\n${sep}\n\n${section.content}\n`;
     }
   }
 
@@ -104,7 +104,7 @@ function buildText(artifact: PatentArtifact): string {
   return out;
 }
 
-function buildPDFHTML(artifact: PatentArtifact): string {
+function buildPDFHTML(artifact: PatentArtifact, labels: Record<string, string>): string {
   const titleContent = artifact.inventionTitle ?? artifact.baseIdea;
 
   const inventorsHtml = artifact.inventors
@@ -144,7 +144,7 @@ function buildPDFHTML(artifact: PatentArtifact): string {
   const sections = WORKFLOW_ORDER.filter((m) => artifact.sections[m])
     .map((moduleId) => {
       const content = artifact.sections[moduleId]!.content;
-      const label = SECTION_LABELS[moduleId];
+      const label = labels[moduleId];
       const paragraphs = content
         .split(/\n{2,}/)
         .map((p) => `<p>${escapeHtml(p.trim()).replaceAll('\n', '<br/>')}</p>`)
@@ -202,7 +202,7 @@ function buildPDFHTML(artifact: PatentArtifact): string {
 </html>`;
 }
 
-async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
+async function buildDocx(artifact: PatentArtifact, labels: Record<string, string>): Promise<Blob> {
   const titleContent = artifact.inventionTitle ?? artifact.baseIdea;
   const BLUE = '4472C4';
   const fieldSize = 22; // 11pt
@@ -348,7 +348,7 @@ async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
     const section = artifact.sections[moduleId];
     if (!section) continue;
 
-    const label = SECTION_LABELS[moduleId];
+    const label = labels[moduleId];
     children.push(
       new Paragraph({
         children: [new TextRun({ text: label, bold: true, size: fieldSize, font: 'Calibri' })],
@@ -438,6 +438,9 @@ export function ExportPanel({
 
   const handleExport = async () => {
     if (!artifact) return;
+    const sectionLabels = Object.fromEntries(
+      WORKFLOW_ORDER.map((m) => [m, t(MODULE_RESOURCE_KEYS[m])])
+    );
     setExporting(true);
     saveCurrentSession();
     const date = new Date().toISOString().split('T')[0];
@@ -445,11 +448,11 @@ export function ExportPanel({
 
     try {
       if (format === 'md') {
-        downloadFile(buildMarkdown(artifact), `${stem}.md`, 'text/markdown');
+        downloadFile(buildMarkdown(artifact, sectionLabels), `${stem}.md`, 'text/markdown');
       } else if (format === 'txt') {
-        downloadFile(buildText(artifact), `${stem}.txt`, 'text/plain');
+        downloadFile(buildText(artifact, sectionLabels), `${stem}.txt`, 'text/plain');
       } else if (format === 'pdf') {
-        const html = buildPDFHTML(artifact);
+        const html = buildPDFHTML(artifact, sectionLabels);
         const iframe = document.createElement('iframe');
         iframe.setAttribute('title', 'Patent IDF Print');
         iframe.setAttribute('sandbox', 'allow-modals allow-same-origin');
@@ -464,7 +467,7 @@ export function ExportPanel({
           }, 300);
         };
       } else if (format === 'docx') {
-        const blob = await buildDocx(artifact);
+        const blob = await buildDocx(artifact, sectionLabels);
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
