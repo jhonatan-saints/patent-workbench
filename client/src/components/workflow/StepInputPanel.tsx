@@ -20,7 +20,12 @@ import {
   IconFile,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
-import { WORKFLOW_MODULES, SECTION_LABELS, WORKFLOW_ORDER, MODULE_RESOURCE_KEYS } from '@/utils/workflowTemplates';
+import {
+  WORKFLOW_MODULES,
+  SECTION_LABELS,
+  WORKFLOW_ORDER,
+  MODULE_RESOURCE_KEYS,
+} from '@/utils/workflowTemplates';
 import { INPUT_STYLES, BTN_STOP, btnPrimary } from '@/theme/styles';
 import type { WorkflowModuleId, InputMode, PatentArtifact } from '@/types';
 import { generateId } from '@/utils/sanitize';
@@ -483,7 +488,9 @@ export function StepInputPanel({ moduleId }: Props) {
           </Text>
           <Textarea
             label={`${t(MODULE_RESOURCE_KEYS[moduleId])} — ${t('res_ManualEntry')}`}
-            placeholder={t('res_Manual_Placeholder', { section: t(MODULE_RESOURCE_KEYS[moduleId]).toLowerCase() })}
+            placeholder={t('res_Manual_Placeholder', {
+              section: t(MODULE_RESOURCE_KEYS[moduleId]).toLowerCase(),
+            })}
             value={manualText}
             onChange={(e) => setManualText(e.currentTarget.value)}
             minRows={8}

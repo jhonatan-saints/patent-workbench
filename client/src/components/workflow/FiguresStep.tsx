@@ -113,9 +113,7 @@ export function FiguresStep() {
   const figuresCountLabel =
     figures.length > 1 ? t('res_FiguresAdded_Plural') : t('res_FiguresAdded_Singular');
   const footerText =
-    figures.length === 0
-      ? t('res_NoFiguresAdded')
-      : `${figures.length} ${figuresCountLabel}`;
+    figures.length === 0 ? t('res_NoFiguresAdded') : `${figures.length} ${figuresCountLabel}`;
 
   return (
     <Stack gap={0} style={{ height: '100%' }}>

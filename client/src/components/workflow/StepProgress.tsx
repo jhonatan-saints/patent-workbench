@@ -87,7 +87,8 @@ function WorkflowStepItem({
             ff="monospace"
             className={`text-[11px] tracking-[0.04em] truncate ${stepTextClass(isActive, isDone)}`}
           >
-            {String(index + 1).padStart(2, '0')} · {t(MODULE_RESOURCE_KEYS[step.moduleId as WorkflowModuleId]).toUpperCase()}
+            {String(index + 1).padStart(2, '0')} ·{' '}
+            {t(MODULE_RESOURCE_KEYS[step.moduleId as WorkflowModuleId]).toUpperCase()}
           </Text>
           {step.status === 'done' && step.promptTokens + step.completionTokens > 0 && (
             <Text size="xs" ff="monospace" className="text-fg-muted text-[10px] mt-px">
