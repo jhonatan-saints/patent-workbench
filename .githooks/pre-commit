@@ -5,14 +5,14 @@ set -e
 echo "Running pre-commit checks: lint..."
 
 # Block commits on protected branches
-branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+branch=$(git rev-parse --abbrev-ref HEAD 2> /dev/null || true)
 if [ "$branch" = "develop" ]; then
   echo "ERROR: Direct commits to 'develop' are blocked. Create a feature branch and open a PR." >&2
   exit 1
 fi
 
 # Prefer npm run lint at root
-if command -v npm >/dev/null 2>&1; then
+if command -v npm > /dev/null 2>&1; then
   npm run lint
 else
   echo "npm not found; skipping lint"

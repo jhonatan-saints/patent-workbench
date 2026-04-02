@@ -72,6 +72,7 @@ src/
 | Component | Description |
 | --- | --- |
 | `StatusIndicator` | Header badge — LLM connection status and round-trip latency |
+| `LanguageSwitcher` | Button that allows you to change the app's language |
 | `ExportPanel` | Export the artifact as `.md` (with YAML frontmatter) or `.docx` |
 | `AppLoader` | Splash screen shown while the app initialises |
 

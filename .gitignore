@@ -50,4 +50,3 @@ server/package-lock.json
 # i18n — generated locale packages (source of truth is resource-locale_master.json)
 client/src/i18n/locales/
 client/public/locales/
-

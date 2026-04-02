@@ -22,6 +22,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Button, Group, Text, Box, TextInput, Switch, ColorInput, Select } from '@mantine/core';
+import { useI18n } from '@/i18n/useI18n';
 import {
   IconTrash,
   IconCheck,
@@ -210,10 +211,7 @@ const EDGE_TYPE_OPTIONS = [
   { value: 'smoothstep', label: 'Smooth Step' },
 ];
 
-const NODE_DEFAULTS: Record<
-  string,
-  { label: string; bgColor: string; borderColor: string }
-> = {
+const NODE_DEFAULTS: Record<string, { label: string; bgColor: string; borderColor: string }> = {
   process: { label: 'Process', bgColor: '#ffffff', borderColor: '#aaaaaa' },
   decision: { label: 'Decision?', bgColor: '#ffffff', borderColor: '#aaaaaa' },
   start: { label: 'Start', bgColor: '#d1fae5', borderColor: '#10b981' },
@@ -245,6 +243,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
   const [transparentBg, setTransparentBg] = useState(false);
   const { getNodes, getNodesBounds } = useReactFlow();
   const canvasRef = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   const onConnect = useCallback(
     (connection: Connection) =>
@@ -291,7 +290,9 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
   const applyLabel = useCallback(() => {
     if (!selectedNodeId) return;
     setNodes((nds: Node[]) =>
-      nds.map((n: Node) => (n.id === selectedNodeId ? { ...n, data: { ...n.data, label: labelInput } } : n))
+      nds.map((n: Node) =>
+        n.id === selectedNodeId ? { ...n, data: { ...n.data, label: labelInput } } : n
+      )
     );
   }, [selectedNodeId, labelInput, setNodes]);
 
@@ -300,7 +301,9 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
       if (!selectedNodeId) return;
       setNodes((nds: Node[]) =>
         nds.map((n: Node) =>
-          n.id === selectedNodeId ? { ...n, data: { ...n.data, bgColor: bg, borderColor: border } } : n
+          n.id === selectedNodeId
+            ? { ...n, data: { ...n.data, bgColor: bg, borderColor: border } }
+            : n
         )
       );
     },
@@ -401,7 +404,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
 
   return (
     <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* ── Toolbar ── */}
+      {/* Toolbar */}
       <Box
         p="6px 10px"
         style={{
@@ -413,23 +416,69 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
       >
         {/* Row 1: node type buttons */}
         <Group gap={4} wrap="nowrap" mb={4}>
-          <Text size="xs" ff="monospace" c="dimmed" style={{ flexShrink: 0, fontSize: 10 }}>
-            ADD:
+          <Text
+            size="xs"
+            ff="monospace"
+            c="dimmed"
+            style={{ flexShrink: 0, fontSize: 10 }}
+            className="uppercase"
+          >
+            {t('res_DiagramAddLabel')}
           </Text>
-          <Button size="xs" variant="light" color="teal" leftSection={<IconPlayerPlay size={11} />} onClick={() => addNode('start')} style={BTN}>
-            START
+          <Button
+            size="xs"
+            variant="light"
+            color="teal"
+            leftSection={<IconPlayerPlay size={11} />}
+            onClick={() => addNode('start')}
+            style={BTN}
+            className="uppercase"
+          >
+            {t('res_DiagramStart')}
           </Button>
-          <Button size="xs" variant="light" color="indigo" leftSection={<IconSquare size={11} />} onClick={() => addNode('process')} style={BTN}>
-            PROCESS
+          <Button
+            size="xs"
+            variant="light"
+            color="indigo"
+            leftSection={<IconSquare size={11} />}
+            onClick={() => addNode('process')}
+            style={BTN}
+            className="uppercase"
+          >
+            {t('res_DiagramProcess')}
           </Button>
-          <Button size="xs" variant="light" color="orange" leftSection={<IconDiamond size={11} />} onClick={() => addNode('decision')} style={BTN}>
-            DECISION
+          <Button
+            size="xs"
+            variant="light"
+            color="orange"
+            leftSection={<IconDiamond size={11} />}
+            onClick={() => addNode('decision')}
+            style={BTN}
+            className="uppercase"
+          >
+            {t('res_DiagramDecision')}
           </Button>
-          <Button size="xs" variant="light" color="blue" leftSection={<IconArrowsRightLeft size={11} />} onClick={() => addNode('io')} style={BTN}>
-            I/O
+          <Button
+            size="xs"
+            variant="light"
+            color="blue"
+            leftSection={<IconArrowsRightLeft size={11} />}
+            onClick={() => addNode('io')}
+            style={BTN}
+            className="uppercase"
+          >
+            {t('res_DiagramIO')}
           </Button>
-          <Button size="xs" variant="light" color="red" leftSection={<IconPlayerStop size={11} />} onClick={() => addNode('end')} style={BTN}>
-            END
+          <Button
+            size="xs"
+            variant="light"
+            color="red"
+            leftSection={<IconPlayerStop size={11} />}
+            onClick={() => addNode('end')}
+            style={BTN}
+            className="uppercase"
+          >
+            {t('res_DiagramEnd')}
           </Button>
 
           <Box style={{ flex: 1 }} />
@@ -439,18 +488,26 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
               size="xs"
               checked={transparentBg}
               onChange={(e) => setTransparentBg(e.currentTarget.checked)}
-              label={<Text size="xs" ff="monospace" c="dimmed">TRANSPARENT BG</Text>}
+              label={
+                <Text size="xs" ff="monospace" c="dimmed" className="uppercase">
+                  {t('res_DiagramTransparentBg')}
+                </Text>
+              }
             />
             <Button
               size="xs"
               variant="outline"
               color="red"
               leftSection={<IconTrash size={11} />}
-              onClick={() => { setNodes([]); setEdges([]); }}
+              onClick={() => {
+                setNodes([]);
+                setEdges([]);
+              }}
               disabled={nodes.length === 0}
               style={BTN}
+              className="uppercase"
             >
-              CLEAR ALL
+              {t('res_DiagramClearAll')}
             </Button>
             <Button
               size="xs"
@@ -463,8 +520,9 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
                 color: 'var(--accent-text)',
                 border: 'none',
               }}
+              className="uppercase"
             >
-              ADD TO FIGURES
+              {t('res_DiagramAddToFigures')}
             </Button>
           </Group>
         </Group>
@@ -474,43 +532,86 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
           <Group gap={6} wrap="nowrap" pt={4} style={{ borderTop: '1px solid var(--border)' }}>
             {selectedNodeId && (
               <>
-                <Text size="xs" ff="monospace" c="dimmed" style={{ flexShrink: 0, fontSize: 10 }}>
-                  NODE:
+                <Text
+                  size="xs"
+                  ff="monospace"
+                  c="dimmed"
+                  style={{ flexShrink: 0, fontSize: 10 }}
+                  className="uppercase"
+                >
+                  {t('res_DiagramNodeLabel')}
                 </Text>
                 <TextInput
                   size="xs"
                   value={labelInput}
                   onChange={(e) => setLabelInput(e.currentTarget.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') applyLabel(); }}
-                  placeholder="Label…"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') applyLabel();
+                  }}
+                  placeholder={t('res_DiagramPlaceholderLabel')}
                   style={{ width: 140, flexShrink: 0 }}
                   styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 12 } }}
                 />
-                <Button size="xs" variant="outline" color="gray" onClick={applyLabel} style={BTN}>
-                  RENAME
+                <Button
+                  size="xs"
+                  variant="outline"
+                  color="gray"
+                  onClick={applyLabel}
+                  style={BTN}
+                  className="uppercase"
+                >
+                  {t('res_DiagramRename')}
                 </Button>
                 <ColorInput
                   size="xs"
                   value={nodeBg}
-                  onChange={(v) => { setNodeBg(v); applyNodeColors(v, nodeBorder); }}
-                  placeholder="Fill color"
+                  onChange={(v) => {
+                    setNodeBg(v);
+                    applyNodeColors(v, nodeBorder);
+                  }}
+                  placeholder={t('res_DiagramPlaceholderFillColor')}
                   style={{ width: 110, flexShrink: 0 }}
                   format="hex"
                   withEyeDropper={false}
                   popoverProps={{ zIndex: 9999 }}
-                  swatches={['#ffffff','#f1f5f9','#dbeafe','#d1fae5','#fef9c3','#fee2e2','#ede9fe','#fce7f3','#111827','#374151']}
+                  swatches={[
+                    '#ffffff',
+                    '#f1f5f9',
+                    '#dbeafe',
+                    '#d1fae5',
+                    '#fef9c3',
+                    '#fee2e2',
+                    '#ede9fe',
+                    '#fce7f3',
+                    '#111827',
+                    '#374151',
+                  ]}
                   styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
                 />
                 <ColorInput
                   size="xs"
                   value={nodeBorder}
-                  onChange={(v) => { setNodeBorder(v); applyNodeColors(nodeBg, v); }}
-                  placeholder="Border color"
+                  onChange={(v) => {
+                    setNodeBorder(v);
+                    applyNodeColors(nodeBg, v);
+                  }}
+                  placeholder={t('res_DiagramPlaceholderBorderColor')}
                   style={{ width: 110, flexShrink: 0 }}
                   format="hex"
                   withEyeDropper={false}
                   popoverProps={{ zIndex: 9999 }}
-                  swatches={['#aaaaaa','#6366f1','#10b981','#ef4444','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#111827','#000000']}
+                  swatches={[
+                    '#aaaaaa',
+                    '#6366f1',
+                    '#10b981',
+                    '#ef4444',
+                    '#3b82f6',
+                    '#f59e0b',
+                    '#8b5cf6',
+                    '#ec4899',
+                    '#111827',
+                    '#000000',
+                  ]}
                   styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
                 />
               </>
@@ -518,19 +619,39 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
 
             {selectedEdgeId && (
               <>
-                <Text size="xs" ff="monospace" c="dimmed" style={{ flexShrink: 0, fontSize: 10 }}>
-                  EDGE:
+                <Text
+                  size="xs"
+                  ff="monospace"
+                  c="dimmed"
+                  style={{ flexShrink: 0, fontSize: 10 }}
+                  className="uppercase"
+                >
+                  {t('res_DiagramEdgeLabel')}
                 </Text>
                 <ColorInput
                   size="xs"
                   value={edgeColor}
-                  onChange={(v) => { setEdgeColor(v); applyEdgeStyle(v, edgeType, edgeLabelInput); }}
-                  placeholder="Line color"
+                  onChange={(v) => {
+                    setEdgeColor(v);
+                    applyEdgeStyle(v, edgeType, edgeLabelInput);
+                  }}
+                  placeholder={t('res_DiagramPlaceholderLineColor')}
                   style={{ width: 110, flexShrink: 0 }}
                   format="hex"
                   withEyeDropper={false}
                   popoverProps={{ zIndex: 9999 }}
-                  swatches={['#555555','#000000','#6366f1','#10b981','#ef4444','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#ffffff']}
+                  swatches={[
+                    '#555555',
+                    '#000000',
+                    '#6366f1',
+                    '#10b981',
+                    '#ef4444',
+                    '#3b82f6',
+                    '#f59e0b',
+                    '#8b5cf6',
+                    '#ec4899',
+                    '#ffffff',
+                  ]}
                   styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
                 />
                 <Select
@@ -552,7 +673,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') applyEdgeStyle(edgeColor, edgeType, edgeLabelInput);
                   }}
-                  placeholder="Edge label (e.g. Yes/No)…"
+                  placeholder={t('res_DiagramPlaceholderEdgeLabel')}
                   style={{ width: 170, flexShrink: 0 }}
                   styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
                 />
@@ -563,7 +684,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
                   onClick={() => applyEdgeStyle(edgeColor, edgeType, edgeLabelInput)}
                   style={BTN}
                 >
-                  APPLY
+                  {t('res_DiagramApply')}
                 </Button>
               </>
             )}
@@ -577,14 +698,15 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
               leftSection={<IconTrash size={11} />}
               onClick={deleteSelected}
               style={BTN}
+              className="uppercase"
             >
-              DELETE
+              {t('res_DiagramDelete')}
             </Button>
           </Group>
         )}
       </Box>
 
-      {/* ── Canvas ── */}
+      {/* Canvas */}
       <div ref={canvasRef} style={{ flex: 1 }}>
         <style>{`
           .react-flow__controls-button {
@@ -646,10 +768,17 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
         </ReactFlow>
       </div>
 
-      {/* ── Hint bar ── */}
-      <Box p="4px 12px" style={{ background: 'var(--surface-raised)', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+      {/* Hint bar */}
+      <Box
+        p="4px 12px"
+        style={{
+          background: 'var(--surface-raised)',
+          borderTop: '1px solid var(--border)',
+          flexShrink: 0,
+        }}
+      >
         <Text size="xs" c="var(--text-muted)" ff="monospace">
-          Click to select · Drag handle dot to connect · Click edge to select · Del / Backspace to delete · Ctrl+Z to undo
+          {t('res_DiagramHint')}
         </Text>
       </Box>
     </Box>

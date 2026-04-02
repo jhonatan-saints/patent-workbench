@@ -8,17 +8,15 @@ import {
   IconEdit,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useI18n } from '@/i18n/useI18n';
 import type { StepStatus } from '@/types';
 
 function StepIcon({ status }: Readonly<{ status: StepStatus }>) {
-  if (status === 'done')
-    return <IconCircleCheck size={14} className="text-accent shrink-0" />;
+  if (status === 'done') return <IconCircleCheck size={14} className="text-accent shrink-0" />;
   if (status === 'generating')
     return <IconLoader2 size={14} className="spin text-accent shrink-0" />;
-  if (status === 'selecting')
-    return <IconCircleDot size={14} className="text-accent shrink-0" />;
-  if (status === 'input')
-    return <IconEdit size={14} className="text-accent shrink-0" />;
+  if (status === 'selecting') return <IconCircleDot size={14} className="text-accent shrink-0" />;
+  if (status === 'input') return <IconEdit size={14} className="text-accent shrink-0" />;
   return <IconCircle size={14} className="text-fg-muted shrink-0" />;
 }
 
@@ -37,14 +35,24 @@ function stepItemClass(isActive: boolean, isFuture: boolean, canNavigate: boolea
   ].join(' ');
 }
 
-function FiguresIcon({ isActive, hasFigures }: Readonly<{ isActive: boolean; hasFigures: boolean }>) {
-  if (isActive)  return <IconEdit size={14} className="text-accent shrink-0" />;
+function FiguresIcon({
+  isActive,
+  hasFigures,
+}: Readonly<{ isActive: boolean; hasFigures: boolean }>) {
+  if (isActive) return <IconEdit size={14} className="text-accent shrink-0" />;
   if (hasFigures) return <IconCircleCheck size={14} className="text-accent shrink-0" />;
   return <IconCircle size={14} className="text-fg-muted shrink-0" />;
 }
 
 interface WorkflowStepItemProps {
-  step: { moduleId: string; selectedOption: unknown; status: string; label: string; promptTokens: number; completionTokens: number };
+  step: {
+    moduleId: string;
+    selectedOption: unknown;
+    status: string;
+    label: string;
+    promptTokens: number;
+    completionTokens: number;
+  };
   index: number;
   isActive: boolean;
   isDone: boolean;
@@ -53,7 +61,15 @@ interface WorkflowStepItemProps {
   onNavigate: () => void;
 }
 
-function WorkflowStepItem({ step, index, isActive, isDone, isFuture, canNavigate, onNavigate }: Readonly<WorkflowStepItemProps>) {
+function WorkflowStepItem({
+  step,
+  index,
+  isActive,
+  isDone,
+  isFuture,
+  canNavigate,
+  onNavigate,
+}: Readonly<WorkflowStepItemProps>) {
   return (
     <Box
       key={step.moduleId}
@@ -120,10 +136,20 @@ function SpecialStepItem({
 }
 
 export function StepProgress() {
-  const { steps, currentStepIndex, workflowPhase, goToStep, goToPreview, goToInventors, goToFigures, artifact } =
-    useWorkbenchStore();
+  const {
+    steps,
+    currentStepIndex,
+    workflowPhase,
+    goToStep,
+    goToPreview,
+    goToInventors,
+    goToFigures,
+    artifact,
+  } = useWorkbenchStore();
+  const { t } = useI18n();
 
-  const specialUnlocked = steps[0]?.selectedOption !== null && steps[0]?.selectedOption !== undefined;
+  const specialUnlocked =
+    steps[0]?.selectedOption !== null && steps[0]?.selectedOption !== undefined;
   const isFiguresActive = workflowPhase === 'figures';
   const isInventorsActive = workflowPhase === 'inventors';
   const isPreviewActive = workflowPhase === 'preview';
@@ -138,7 +164,7 @@ export function StepProgress() {
         mb={10}
         className="text-fg-muted tracking-widest"
       >
-        Workflow
+        {t('res_Workflow')}
       </Text>
 
       {steps.map((step, i) => {
@@ -165,7 +191,7 @@ export function StepProgress() {
         isActive={isFiguresActive}
         unlocked={specialUnlocked}
         hasDone={!!artifact?.figures?.length}
-        label="08 · FIGURES"
+        label={t('res_Step_Figures')}
         icon={<FiguresIcon isActive={isFiguresActive} hasFigures={!!artifact?.figures?.length} />}
         onClick={goToFigures}
       />
@@ -175,11 +201,13 @@ export function StepProgress() {
         isActive={isInventorsActive}
         unlocked={specialUnlocked}
         hasDone={!!artifact?.inventors.length}
-        label="09 · INVENTORS"
+        label={t('res_Step_Inventors')}
         icon={
-          artifact?.inventors.length
-            ? <IconCircleCheck size={14} className="text-accent shrink-0" />
-            : <IconCircle size={14} className="text-fg-muted shrink-0" />
+          artifact?.inventors.length ? (
+            <IconCircleCheck size={14} className="text-accent shrink-0" />
+          ) : (
+            <IconCircle size={14} className="text-fg-muted shrink-0" />
+          )
         }
         onClick={goToInventors}
       />
@@ -189,7 +217,7 @@ export function StepProgress() {
         isActive={isPreviewActive}
         unlocked={specialUnlocked}
         hasDone={false}
-        label="10 · PREVIEW & EXPORT"
+        label={t('res_Step_PreviewExport')}
         icon={
           <IconFileText
             size={14}

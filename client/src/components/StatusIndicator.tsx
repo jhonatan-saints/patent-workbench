@@ -15,9 +15,9 @@ export function StatusIndicator() {
   }, [checkStatus]);
 
   const STATUS_MAP = {
-    ok:          { color: 'var(--status-online)',   label: t('res_LlmOnline')   },
-    unavailable: { color: 'var(--status-offline)',  label: t('res_LlmOffline')  },
-    checking:    { color: 'var(--status-checking)', label: t('res_Checking')    },
+    ok: { color: 'var(--status-online)', label: t('res_LlmOnline') },
+    unavailable: { color: 'var(--status-offline)', label: t('res_LlmOffline') },
+    checking: { color: 'var(--status-checking)', label: t('res_Checking') },
   } satisfies Record<string, { color: string; label: string }>;
 
   const { color, label } = STATUS_MAP[llmStatus] ?? STATUS_MAP.checking;
@@ -26,9 +26,7 @@ export function StatusIndicator() {
     <Group gap={8}>
       <Tooltip
         label={
-          llmLatency === null
-            ? t('res_CheckingConnection')
-            : t('res_LatencyMs', { ms: llmLatency })
+          llmLatency === null ? t('res_CheckingConnection') : t('res_LatencyMs', { ms: llmLatency })
         }
         position="bottom"
       >
@@ -42,7 +40,7 @@ export function StatusIndicator() {
               className={llmStatus === 'checking' ? 'animate-[pulse_1s_infinite]' : undefined}
             />
           }
-          className="font-mono text-[11px] tracking-[0.08em]"
+          className="font-mono text-[11px] tracking-[0.08em] uppercase"
           style={{ borderColor: color, color }}
         >
           {label}
@@ -50,9 +48,7 @@ export function StatusIndicator() {
       </Tooltip>
 
       {llmLatency != null && llmStatus === 'ok' && (
-        <Text className="text-[11px] text-fg-muted font-mono">
-          {llmLatency}ms
-        </Text>
+        <Text className="text-[11px] text-fg-muted font-mono">{llmLatency}ms</Text>
       )}
 
       <ActionIcon

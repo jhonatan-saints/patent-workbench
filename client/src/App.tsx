@@ -38,7 +38,9 @@ function ResizableSplit({ left, right }: { readonly left: ReactNode; readonly ri
       const pct = ((e.clientX - rect.left) / rect.width) * 100;
       setLeftPct(Math.min(70, Math.max(30, pct)));
     };
-    const onUp = () => { dragging.current = false; };
+    const onUp = () => {
+      dragging.current = false;
+    };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
     return () => {
@@ -55,7 +57,9 @@ function ResizableSplit({ left, right }: { readonly left: ReactNode; readonly ri
       <button
         type="button"
         aria-label="Resize panels"
-        onMouseDown={() => { dragging.current = true; }}
+        onMouseDown={() => {
+          dragging.current = true;
+        }}
         className="w-[2.5px] cursor-col-resize bg-stroke shrink-0 transition-colors duration-150 border-0 p-0 hover:bg-accent"
       />
       <div className="flex-1 overflow-hidden flex flex-col">{right}</div>
@@ -68,7 +72,10 @@ function ThemeToggle() {
   const scheme = useComputedColorScheme('dark');
   const { t } = useI18n();
   return (
-    <Tooltip label={scheme === 'dark' ? t('res_SwitchToLight') : t('res_SwitchToDark')} position="bottom">
+    <Tooltip
+      label={scheme === 'dark' ? t('res_SwitchToLight') : t('res_SwitchToDark')}
+      position="bottom"
+    >
       <ActionIcon
         aria-label="theme toggle"
         variant="subtle"
@@ -105,11 +112,19 @@ export function App() {
       aside={{ width: 300, breakpoint: 'lg' }}
       padding={0}
       styles={{
-        root:   { background: 'var(--bg)', minHeight: '100vh' },
-        header: { background: 'var(--surface-raised)', borderBottom: '1px solid var(--border)', zIndex: 200 },
-        navbar: { background: 'var(--surface)', borderRight: '1px solid var(--border)', zIndex: 100 },
-        aside:  { background: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 100 },
-        main:   { background: 'var(--bg)' },
+        root: { background: 'var(--bg)', minHeight: '100vh' },
+        header: {
+          background: 'var(--surface-raised)',
+          borderBottom: '1px solid var(--border)',
+          zIndex: 200,
+        },
+        navbar: {
+          background: 'var(--surface)',
+          borderRight: '1px solid var(--border)',
+          zIndex: 100,
+        },
+        aside: { background: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 100 },
+        main: { background: 'var(--bg)' },
       }}
     >
       {/* HEADER */}
@@ -177,7 +192,13 @@ export function App() {
         <Box className="h-full flex flex-col p-4">
           <Group gap={8} mb={6}>
             <IconHistory size={14} className="text-accent" />
-            <Text size="xs" fw={700} tt="uppercase" ff="monospace" className="text-accent tracking-[2px]">
+            <Text
+              size="xs"
+              fw={700}
+              tt="uppercase"
+              ff="monospace"
+              className="text-accent tracking-[2px]"
+            >
               {t('res_Sessions')}
             </Text>
           </Group>

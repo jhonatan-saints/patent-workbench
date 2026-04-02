@@ -2,52 +2,52 @@
  * We import only theme (design tokens) and utilities — skipping preflight/base reset
  * so Mantine's own reset is not overridden.
 */
-@import "tailwindcss/theme.css";
-@import "tailwindcss/utilities.css";
+@import 'tailwindcss/theme.css';
+@import 'tailwindcss/utilities.css';
 
 @font-face {
-  font-family: "IBM Plex Sans";
-  src: url("./assets/fonts/ibm-plex/IBMPlexSans-Variable.woff2") format("woff2");
+  font-family: 'IBM Plex Sans';
+  src: url('./assets/fonts/ibm-plex/IBMPlexSans-Variable.woff2') format('woff2');
   font-weight: 300 700;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "IBM Plex Sans";
-  src: url("./assets/fonts/ibm-plex/IBMPlexSans-Variable-Italic.woff2") format("woff2");
+  font-family: 'IBM Plex Sans';
+  src: url('./assets/fonts/ibm-plex/IBMPlexSans-Variable-Italic.woff2') format('woff2');
   font-weight: 300 700;
   font-style: italic;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "IBM Plex Mono";
-  src: url("./assets/fonts/ibm-plex/IBMPlexMono-Regular.woff2") format("woff2");
+  font-family: 'IBM Plex Mono';
+  src: url('./assets/fonts/ibm-plex/IBMPlexMono-Regular.woff2') format('woff2');
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "IBM Plex Serif";
-  src: url("./assets/fonts/ibm-plex/IBMPlexSerif-Variable.woff2") format("woff2");
+  font-family: 'IBM Plex Serif';
+  src: url('./assets/fonts/ibm-plex/IBMPlexSerif-Variable.woff2') format('woff2');
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "IBM Plex Serif";
-  src: url("./assets/fonts/ibm-plex/IBMPlexSerif-Variable-Italic.woff2") format("woff2");
+  font-family: 'IBM Plex Serif';
+  src: url('./assets/fonts/ibm-plex/IBMPlexSerif-Variable-Italic.woff2') format('woff2');
   font-weight: 400 700;
   font-style: italic;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "IBM Plex Sans Condensed";
-  src: url("./assets/fonts/ibm-plex/IBMPlexSansCondensed-Bold.woff2") format("woff2");
+  font-family: 'IBM Plex Sans Condensed';
+  src: url('./assets/fonts/ibm-plex/IBMPlexSansCondensed-Bold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -63,93 +63,93 @@
  */
 @theme {
   /* Surfaces */
-  --color-bg:             var(--bg);
-  --color-surface:        var(--surface);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
   --color-surface-active: var(--surface-active);
 
   /* Borders — "stroke" avoids the `border-border` double-name */
-  --color-stroke:         var(--border);
-  --color-stroke-subtle:  var(--border-subtle);
+  --color-stroke: var(--border);
+  --color-stroke-subtle: var(--border-subtle);
 
   /* Accent */
-  --color-accent:         var(--accent);
-  --color-accent-dim:     var(--accent-dim);
-  --color-accent-glow:    var(--accent-glow);
-  --color-accent-text:    var(--accent-text);
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-glow: var(--accent-glow);
+  --color-accent-text: var(--accent-text);
 
   /* Foreground */
-  --color-fg:             var(--text-primary);
-  --color-fg-secondary:   var(--text-secondary);
-  --color-fg-muted:       var(--text-muted);
+  --color-fg: var(--text-primary);
+  --color-fg-secondary: var(--text-secondary);
+  --color-fg-muted: var(--text-muted);
 
   /* Semantic */
-  --color-danger:           var(--danger);
-  --color-success:          var(--success);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
 
   /* Status */
-  --color-status-online:    var(--status-online);
-  --color-status-checking:  var(--status-checking);
-  --color-status-offline:   var(--status-offline);
+  --color-status-online: var(--status-online);
+  --color-status-checking: var(--status-checking);
+  --color-status-offline: var(--status-offline);
 
   /* Fonts */
   --font-family-display: var(--font-display);
-  --font-family-body:    var(--font-body);
-  --font-family-mono:    var(--font-mono);
-  --font-family-serif:   var(--font-serif);
+  --font-family-body: var(--font-body);
+  --font-family-mono: var(--font-mono);
+  --font-family-serif: var(--font-serif);
 }
 
 /* Design Tokens - Font stacks — shared between schemes */
 :root {
-  --font-display: "IBM Plex Sans Condensed", sans-serif;
-  --font-body:    "IBM Plex Sans", sans-serif;
-  --font-mono:    "IBM Plex Mono", monospace;
-  --font-serif:   "IBM Plex Serif", serif;
+  --font-display: 'IBM Plex Sans Condensed', sans-serif;
+  --font-body: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-serif: 'IBM Plex Serif', serif;
 }
 
 /* Dark scheme (default) */
 :root,
-[data-mantine-color-scheme="dark"] {
-  --bg:             #0e0e0e;
-  --danger:         #ff9f9f;
-  --primary:        #005fb8;
-  --success:        #55ff54;
-  --surface:        #141414;
+[data-mantine-color-scheme='dark'] {
+  --bg: #0e0e0e;
+  --danger: #ff9f9f;
+  --primary: #005fb8;
+  --success: #55ff54;
+  --surface: #141414;
   --surface-raised: #1a1a1a;
   --surface-active: #0d1929;
-  --accent:         #60b5ff;
-  --accent-dim:     #0a91ff;
-  --accent-glow:    rgb(96 181 255 / 12%);
-  --accent-text:    #000;
-  --border:         #2e2e2e;
-  --border-subtle:  #1e1e1e;
-  --text-primary:   #e4e3e3;
+  --accent: #60b5ff;
+  --accent-dim: #0a91ff;
+  --accent-glow: rgb(96 181 255 / 12%);
+  --accent-text: #000;
+  --border: #2e2e2e;
+  --border-subtle: #1e1e1e;
+  --text-primary: #e4e3e3;
   --text-secondary: #a8a8a8;
-  --text-muted:     #f5f5f4;
-  --status-online:  #55ff54;
-  --status-checking:#f1742c;
+  --text-muted: #f5f5f4;
+  --status-online: #55ff54;
+  --status-checking: #f1742c;
   --status-offline: #ff9f9f;
 }
 
 /* Light scheme */
-[data-mantine-color-scheme="light"] {
-  --bg:             #f5f5f4;
-  --danger:         #dd0100;
-  --primary:        #60b5ff;
-  --success:        #009800;
-  --surface:        #fff;
+[data-mantine-color-scheme='light'] {
+  --bg: #f5f5f4;
+  --danger: #dd0100;
+  --primary: #60b5ff;
+  --success: #009800;
+  --surface: #fff;
   --surface-raised: #e4e3e3;
   --surface-active: #edf5ff;
-  --accent:         #005fb8;
-  --accent-dim:     #004890;
-  --accent-glow:    rgb(0 95 184 / 12%);
-  --accent-text:    #fff;
-  --border:         #cccccb;
-  --border-subtle:  #e4e3e3;
-  --text-primary:   #222;
+  --accent: #005fb8;
+  --accent-dim: #004890;
+  --accent-glow: rgb(0 95 184 / 12%);
+  --accent-text: #fff;
+  --border: #cccccb;
+  --border-subtle: #e4e3e3;
+  --text-primary: #222;
   --text-secondary: #474747;
-  --text-muted:     #626261;
-  --status-online:  #017300;
+  --text-muted: #626261;
+  --status-online: #017300;
   --status-offline: #af0000;
   --status-checking: #964902;
 }
@@ -236,11 +236,11 @@ body {
 }
 
 .animate-grow-line-side {
-  animation: grow-line-side 1s cubic-bezier(0.4,0,0.2,1) 0.1s both;
+  animation: grow-line-side 1s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
 }
 
 .animate-grow-line {
-  animation: grow-line 1s cubic-bezier(0.4,0,0.2,1) 0.1s both;
+  animation: grow-line 1s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
 }
 
 .spin {
@@ -271,12 +271,7 @@ body {
 }
 
 .mantine-Skeleton-root::after {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--accent-glow) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, var(--accent-glow) 50%, transparent 100%);
 }
 
 .mantine-AppShell-main {

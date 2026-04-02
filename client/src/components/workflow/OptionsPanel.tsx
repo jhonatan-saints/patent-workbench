@@ -10,6 +10,7 @@ import { useWorkbenchStore } from '@/store/workbench';
 import { WORKFLOW_MODULES } from '@/utils/workflowTemplates';
 import { OptionCard } from '@/components/workflow/OptionCard';
 import { StepInputPanel } from '@/components/workflow/StepInputPanel';
+import { useI18n } from '@/i18n/useI18n';
 
 function CardSkeleton() {
   return (
@@ -41,6 +42,8 @@ export function OptionsPanel() {
     cancelGeneration,
   } = useWorkbenchStore();
 
+  const { t } = useI18n();
+
   const step = steps[currentStepIndex];
   if (!step) return null;
 
@@ -65,14 +68,14 @@ export function OptionsPanel() {
         <Group justify="space-between" align="center" wrap="nowrap">
           <Stack gap={2} className="min-w-0">
             <Text size="xs" ff="monospace" className="text-fg-muted tracking-widest">
-              STEP {currentStepIndex + 1} OF {steps.length}
+              {t('res_Step')} {currentStepIndex + 1} {t('res_Of')} {steps.length}
             </Text>
             <Text fw={700} size="md" className="text-fg">
               {module.label}
             </Text>
             <Text size="xs" c="var(--text-muted)">
               {module.description}
-              {!showInputPanel && !isGenerating && ' · select one option to continue'}
+              {!showInputPanel && !isGenerating && ` · ${t('res_SelectOneOption')}`}
             </Text>
           </Stack>
 
@@ -83,9 +86,9 @@ export function OptionsPanel() {
               leftSection={isFirstStep ? <IconHome size={12} /> : <IconArrowLeft size={12} />}
               onClick={handleBack}
               disabled={isGenerating}
-              className="text-fg-muted font-mono text-[11px]"
+              className="uppercase text-fg-muted font-mono text-[11px]"
             >
-              {isFirstStep ? 'START OVER' : 'BACK'}
+              {isFirstStep ? t('res_StartOver') : t('res_Back')}
             </Button>
 
             {isGenerating && (
@@ -95,9 +98,9 @@ export function OptionsPanel() {
                 size="xs"
                 leftSection={<IconPlayerStop size={12} />}
                 onClick={cancelGeneration}
-                className="font-mono text-[11px]"
+                className="uppercase font-mono text-[11px]"
               >
-                STOP
+                {t('res_Stop')}
               </Button>
             )}
 
@@ -107,9 +110,9 @@ export function OptionsPanel() {
                 size="xs"
                 leftSection={<IconRefresh size={12} />}
                 onClick={regenerateOptions}
-                className="border-stroke text-fg-secondary font-mono text-[11px] tracking-[0.06em]"
+                className="uppercase border-stroke text-fg-secondary font-mono text-[11px] tracking-[0.06em]"
               >
-                REGENERATE
+                {t('res_Regenerate')}
               </Button>
             )}
           </Group>

@@ -10,14 +10,9 @@ import {
   Divider,
   Textarea,
 } from '@mantine/core';
-import {
-  IconArrowLeft,
-  IconCircleCheck,
-  IconPencil,
-  IconCheck,
-  IconX,
-} from '@tabler/icons-react';
+import { IconArrowLeft, IconCircleCheck, IconPencil, IconCheck, IconX } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useI18n } from '@/i18n/useI18n';
 import { WORKFLOW_ORDER, SECTION_LABELS } from '@/utils/workflowTemplates';
 import { ExportPanel } from '@/components/ExportPanel';
 import type { WorkflowModuleId } from '@/types';
@@ -43,6 +38,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
   const { updateSectionContent } = useWorkbenchStore();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(content);
+  const { t } = useI18n();
 
   const handleSave = () => {
     updateSectionContent(moduleId, draft);
@@ -76,7 +72,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
               style={{ color: DOC_UI_MUTED }}
               className="font-mono text-[10px]"
             >
-              CANCEL
+              <span className="uppercase">{t('res_Cancel')}</span>
             </Button>
             <Button
               size="xs"
@@ -84,7 +80,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
               onClick={handleSave}
               className="font-mono text-[10px] font-bold border-none bg-accent text-accent-text"
             >
-              SAVE
+              <span className="uppercase">{t('res_Save')}</span>
             </Button>
           </Group>
         ) : (
@@ -92,11 +88,14 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
             size="xs"
             variant="subtle"
             leftSection={<IconPencil size={11} />}
-            onClick={() => { setDraft(content); setEditing(true); }}
+            onClick={() => {
+              setDraft(content);
+              setEditing(true);
+            }}
             style={{ color: DOC_UI_MUTED }}
             className="font-mono text-[10px]"
           >
-            EDIT
+            <span className="uppercase">{t('res_Edit')}</span>
           </Button>
         )}
       </Group>
@@ -140,6 +139,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
 export function PreviewPhase() {
   const { artifact, resetWorkflow, steps, goToStep, workflowPhase } = useWorkbenchStore();
   const [zoom, setZoom] = useState(1);
+  const { t } = useI18n();
   if (!artifact) return null;
 
   const completedSections = WORKFLOW_ORDER.filter((m) => artifact.sections[m]);
@@ -163,14 +163,20 @@ export function PreviewPhase() {
           <Stack gap={2}>
             <Group gap={8}>
               <IconCircleCheck size={14} className="text-accent" />
-              <Text fw={700} size="sm" ff="monospace" className="text-fg tracking-[0.06em]">
-                {allDone ? 'PATENT DRAFT COMPLETE' : 'DRAFT IN PROGRESS'}
+              <Text
+                fw={700}
+                size="sm"
+                ff="monospace"
+                className="text-fg tracking-[0.06em] uppercase"
+              >
+                {allDone ? t('res_PatentDraftComplete') : t('res_DraftInProgress')}
               </Text>
             </Group>
             <Text size="xs" c="var(--text-muted)" ff="monospace">
-              {completedSections.length}/{WORKFLOW_ORDER.length} sections
+              {completedSections.length}/{WORKFLOW_ORDER.length} {t('res_Sections')}
               {totalTokens > 0 && ` · ${totalTokens}t`}
-              {' · '}{artifact.model.split(':')[0]}
+              {' · '}
+              {artifact.model.split(':')[0]}
               {artifact.inventors.length > 0 &&
                 ` · ${artifact.inventors.map((i) => i.name).join(', ')}`}
             </Text>
@@ -184,7 +190,7 @@ export function PreviewPhase() {
                 onClick={handleBackToWork}
                 className="font-mono text-[11px] text-fg-muted"
               >
-                BACK TO STEPS
+                <span className="uppercase">{t('res_BackToSteps')}</span>
               </Button>
             )}
             <Button
@@ -194,7 +200,7 @@ export function PreviewPhase() {
               onClick={resetWorkflow}
               className="font-mono text-[11px] text-fg-muted"
             >
-              NEW INVENTION
+              <span className="uppercase">{t('res_NewInvention')}</span>
             </Button>
           </Group>
         </Group>
@@ -221,31 +227,133 @@ export function PreviewPhase() {
               {/* Inventors block */}
               {artifact.inventors.length > 0 && (
                 <Box>
-                  <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 18, fontWeight: 400, marginBottom: 6 }}>
-                    Inventors
+                  <Text
+                    style={{
+                      color: DOC_BLUE,
+                      fontFamily: DOC_FONT,
+                      fontSize: 18,
+                      fontWeight: 400,
+                      marginBottom: 6,
+                    }}
+                  >
+                    {t('res_Inventors')}
                   </Text>
                   {artifact.inventors.map((inv) => (
                     <Box key={inv.id} mb={8}>
-                      <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 13, marginTop: 10, marginBottom: 2 }}>Name:</Text>
-                      <Text style={{ fontFamily: DOC_FONT, fontSize: 13, fontWeight: 700, color: DOC_BLACK }}>{inv.name}</Text>
-                      {inv.address && (<>
-                        <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 13, marginTop: 10, marginBottom: 2 }}>Home Address:</Text>
-                        <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>{inv.address}</Text>
-                      </>)}
-                      {inv.telephone && (<>
-                        <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 13, marginTop: 10, marginBottom: 2 }}>Home Telephone:</Text>
-                        <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>{inv.telephone}</Text>
-                      </>)}
-                      <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 13, marginTop: 10, marginBottom: 2 }}>Home Email:</Text>
-                      <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>{inv.email ?? ''}</Text>
-                      {inv.citizenship && (<>
-                        <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 13, marginTop: 10, marginBottom: 2 }}>Citizenship:</Text>
-                        <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>{inv.citizenship}</Text>
-                      </>)}
-                      {inv.employeeId && (<>
-                        <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 13, marginTop: 10, marginBottom: 2 }}>Employee ID:</Text>
-                        <Text style={{ fontFamily: DOC_FONT, fontSize: 13, fontWeight: 700, color: DOC_BLACK }}>{inv.employeeId}</Text>
-                      </>)}
+                      <Text
+                        style={{
+                          color: DOC_BLUE,
+                          fontFamily: DOC_FONT,
+                          fontSize: 13,
+                          marginTop: 10,
+                          marginBottom: 2,
+                        }}
+                      >
+                        {t('res_Name')}:
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: DOC_FONT,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          color: DOC_BLACK,
+                        }}
+                      >
+                        {inv.name}
+                      </Text>
+                      {inv.address && (
+                        <>
+                          <Text
+                            style={{
+                              color: DOC_BLUE,
+                              fontFamily: DOC_FONT,
+                              fontSize: 13,
+                              marginTop: 10,
+                              marginBottom: 2,
+                            }}
+                          >
+                            {t('res_HomeAddress')}:
+                          </Text>
+                          <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>
+                            {inv.address}
+                          </Text>
+                        </>
+                      )}
+                      {inv.telephone && (
+                        <>
+                          <Text
+                            style={{
+                              color: DOC_BLUE,
+                              fontFamily: DOC_FONT,
+                              fontSize: 13,
+                              marginTop: 10,
+                              marginBottom: 2,
+                            }}
+                          >
+                            {t('res_HomeTelephone')}:
+                          </Text>
+                          <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>
+                            {inv.telephone}
+                          </Text>
+                        </>
+                      )}
+                      <Text
+                        style={{
+                          color: DOC_BLUE,
+                          fontFamily: DOC_FONT,
+                          fontSize: 13,
+                          marginTop: 10,
+                          marginBottom: 2,
+                        }}
+                      >
+                        {t('res_HomeEmail')}:
+                      </Text>
+                      <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>
+                        {inv.email ?? ''}
+                      </Text>
+                      {inv.citizenship && (
+                        <>
+                          <Text
+                            style={{
+                              color: DOC_BLUE,
+                              fontFamily: DOC_FONT,
+                              fontSize: 13,
+                              marginTop: 10,
+                              marginBottom: 2,
+                            }}
+                          >
+                            {t('res_Citizenship')}:
+                          </Text>
+                          <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>
+                            {inv.citizenship}
+                          </Text>
+                        </>
+                      )}
+                      {inv.employeeId && (
+                        <>
+                          <Text
+                            style={{
+                              color: DOC_BLUE,
+                              fontFamily: DOC_FONT,
+                              fontSize: 13,
+                              marginTop: 10,
+                              marginBottom: 2,
+                            }}
+                          >
+                            {t('res_EmployeeId')}:
+                          </Text>
+                          <Text
+                            style={{
+                              fontFamily: DOC_FONT,
+                              fontSize: 13,
+                              fontWeight: 700,
+                              color: DOC_BLACK,
+                            }}
+                          >
+                            {inv.employeeId}
+                          </Text>
+                        </>
+                      )}
                     </Box>
                   ))}
                   <Divider mt={20} mb={0} style={{ borderColor: '#ddd' }} />
@@ -255,18 +363,68 @@ export function PreviewPhase() {
               {/* Invention Title + IDF metadata */}
               {(artifact.inventionTitle || artifact.idfNumber || artifact.businessGroup) && (
                 <Box>
-                  <Text style={{ fontFamily: DOC_FONT, fontSize: 13, fontWeight: 700, color: DOC_BLACK, marginBottom: 2 }}>Invention Title</Text>
-                  <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK, marginBottom: 10 }}>
+                  <Text
+                    style={{
+                      fontFamily: DOC_FONT,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: DOC_BLACK,
+                      marginBottom: 2,
+                    }}
+                  >
+                    {t('res_InventionTitle')}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: DOC_FONT,
+                      fontSize: 13,
+                      color: DOC_BLACK,
+                      marginBottom: 10,
+                    }}
+                  >
                     {artifact.inventionTitle ?? artifact.baseIdea}
                   </Text>
-                  <Text style={{ fontFamily: DOC_FONT, fontSize: 13, fontWeight: 700, color: DOC_BLACK, marginBottom: 2 }}>IDF Number</Text>
+                  <Text
+                    style={{
+                      fontFamily: DOC_FONT,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: DOC_BLACK,
+                      marginBottom: 2,
+                    }}
+                  >
+                    {t('res_IDFNumber')}
+                  </Text>
                   {artifact.idfNumber && (
-                    <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK, marginBottom: 10 }}>{artifact.idfNumber}</Text>
+                    <Text
+                      style={{
+                        fontFamily: DOC_FONT,
+                        fontSize: 13,
+                        color: DOC_BLACK,
+                        marginBottom: 10,
+                      }}
+                    >
+                      {artifact.idfNumber}
+                    </Text>
                   )}
-                  {artifact.businessGroup && (<>
-                    <Text style={{ fontFamily: DOC_FONT, fontSize: 13, fontWeight: 700, color: DOC_BLACK, marginBottom: 2 }}>Business Group</Text>
-                    <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>{artifact.businessGroup}</Text>
-                  </>)}
+                  {artifact.businessGroup && (
+                    <>
+                      <Text
+                        style={{
+                          fontFamily: DOC_FONT,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          color: DOC_BLACK,
+                          marginBottom: 2,
+                        }}
+                      >
+                        {t('res_BusinessGroup')}
+                      </Text>
+                      <Text style={{ fontFamily: DOC_FONT, fontSize: 13, color: DOC_BLACK }}>
+                        {artifact.businessGroup}
+                      </Text>
+                    </>
+                  )}
                   <Divider mt={20} mb={0} style={{ borderColor: '#ddd' }} />
                 </Box>
               )}
@@ -286,8 +444,16 @@ export function PreviewPhase() {
               {artifact.figures?.length > 0 && (
                 <Box>
                   <Divider mb={24} style={{ borderColor: '#ddd' }} />
-                  <Text style={{ color: DOC_BLUE, fontFamily: DOC_FONT, fontSize: 18, fontWeight: 400, marginBottom: 16 }}>
-                    Figures
+                  <Text
+                    style={{
+                      color: DOC_BLUE,
+                      fontFamily: DOC_FONT,
+                      fontSize: 18,
+                      fontWeight: 400,
+                      marginBottom: 16,
+                    }}
+                  >
+                    {t('res_Figures')}
                   </Text>
                   <Stack gap={20}>
                     {artifact.figures.map((fig) => (
@@ -297,8 +463,17 @@ export function PreviewPhase() {
                           alt={fig.name}
                           style={{ maxWidth: '100%', border: '1px solid #ddd', borderRadius: 4 }}
                         />
-                        <Text style={{ fontFamily: DOC_FONT, fontSize: 12, color: '#555', marginTop: 6, fontStyle: 'italic' }}>
-                          {fig.name}{fig.caption ? ` — ${fig.caption}` : ''}
+                        <Text
+                          style={{
+                            fontFamily: DOC_FONT,
+                            fontSize: 12,
+                            color: '#555',
+                            marginTop: 6,
+                            fontStyle: 'italic',
+                          }}
+                        >
+                          {fig.name}
+                          {fig.caption ? ` — ${fig.caption}` : ''}
                         </Text>
                       </Box>
                     ))}
@@ -308,7 +483,7 @@ export function PreviewPhase() {
 
               {completedSections.length === 0 && (
                 <Text size="sm" c="var(--text-muted)" ta="center" py={40}>
-                  No sections completed yet. Complete steps to see the draft here.
+                  {t('res_NoSectionsCompletedYet')}
                 </Text>
               )}
             </Stack>

@@ -2,16 +2,11 @@ import { Group, Button, Text, Box, Select } from '@mantine/core';
 import type { Dispatch, SetStateAction } from 'react';
 import { IconFileText, IconFileTypePdf, IconFileWord, IconMarkdown } from '@tabler/icons-react';
 import { useState } from 'react';
-import {
-  Document,
-  Packer,
-  Paragraph,
-  TextRun,
-  AlignmentType,
-} from 'docx';
+import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
 import { useWorkbenchStore } from '@/store/workbench';
 import { WORKFLOW_ORDER, SECTION_LABELS } from '@/utils/workflowTemplates';
 import { escapeHtml } from '@/utils/sanitize';
+import { useI18n } from '@/i18n';
 import type { PatentArtifact } from '@/types';
 
 type ExportFormat = 'md' | 'txt' | 'pdf' | 'docx';
@@ -135,7 +130,9 @@ function buildPDFHTML(artifact: PatentArtifact): string {
     <p class="meta-label">Invention Title</p>
     <p class="field-value">${escapeHtml(titleContent)}</p>`;
 
-  const idfValueHtml = artifact.idfNumber ? `<p class="field-value">${escapeHtml(artifact.idfNumber)}</p>` : '';
+  const idfValueHtml = artifact.idfNumber
+    ? `<p class="field-value">${escapeHtml(artifact.idfNumber)}</p>`
+    : '';
   const bgHtml = artifact.businessGroup
     ? `<p class="meta-label">Business Group</p><p class="field-value">${escapeHtml(artifact.businessGroup)}</p>`
     : '';
@@ -159,12 +156,16 @@ function buildPDFHTML(artifact: PatentArtifact): string {
   const figuresHtml = artifact.figures?.length
     ? `<section>
         <h2>Figures</h2>
-        ${artifact.figures.map((fig) => `
+        ${artifact.figures
+          .map(
+            (fig) => `
           <div style="text-align:center; margin-bottom: 20pt;">
             <img src="${fig.dataUrl}" alt="${escapeHtml(fig.name)}" style="max-width:100%; border:1px solid #ddd;"/>
             <p style="font-size:10pt; color:#555; font-style:italic; margin-top:4pt;">${escapeHtml(fig.name)}${fig.caption ? ` — ${escapeHtml(fig.caption)}` : ''}</p>
           </div>
-        `).join('')}
+        `
+          )
+          .join('')}
       </section>`
     : '';
 
@@ -217,52 +218,129 @@ async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
     );
     artifact.inventors.forEach((inv) => {
       children.push(
-        new Paragraph({ children: [new TextRun({ text: 'Name:', color: BLUE, size: fieldSize, font: 'Calibri' })], spacing: { before: 180, after: 40 } }),
-        new Paragraph({ children: [new TextRun({ text: inv.name, bold: true, size: fieldSize, font: 'Calibri' })], spacing: { after: 0 } })
+        new Paragraph({
+          children: [new TextRun({ text: 'Name:', color: BLUE, size: fieldSize, font: 'Calibri' })],
+          spacing: { before: 180, after: 40 },
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: inv.name, bold: true, size: fieldSize, font: 'Calibri' })],
+          spacing: { after: 0 },
+        })
       );
       if (inv.address) {
         children.push(
-          new Paragraph({ children: [new TextRun({ text: 'Home Address:', color: BLUE, size: fieldSize, font: 'Calibri' })], spacing: { before: 180, after: 40 } }),
-          new Paragraph({ children: [new TextRun({ text: inv.address, size: fieldSize, font: 'Calibri' })], spacing: { after: 0 } })
+          new Paragraph({
+            children: [
+              new TextRun({ text: 'Home Address:', color: BLUE, size: fieldSize, font: 'Calibri' }),
+            ],
+            spacing: { before: 180, after: 40 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: inv.address, size: fieldSize, font: 'Calibri' })],
+            spacing: { after: 0 },
+          })
         );
       }
       if (inv.telephone) {
         children.push(
-          new Paragraph({ children: [new TextRun({ text: 'Home Telephone:', color: BLUE, size: fieldSize, font: 'Calibri' })], spacing: { before: 180, after: 40 } }),
-          new Paragraph({ children: [new TextRun({ text: inv.telephone, size: fieldSize, font: 'Calibri' })], spacing: { after: 0 } })
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: 'Home Telephone:',
+                color: BLUE,
+                size: fieldSize,
+                font: 'Calibri',
+              }),
+            ],
+            spacing: { before: 180, after: 40 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: inv.telephone, size: fieldSize, font: 'Calibri' })],
+            spacing: { after: 0 },
+          })
         );
       }
       children.push(
-        new Paragraph({ children: [new TextRun({ text: 'Home Email:', color: BLUE, size: fieldSize, font: 'Calibri' })], spacing: { before: 180, after: 40 } }),
-        new Paragraph({ children: [new TextRun({ text: inv.email ?? '', size: fieldSize, font: 'Calibri' })], spacing: { after: 0 } })
+        new Paragraph({
+          children: [
+            new TextRun({ text: 'Home Email:', color: BLUE, size: fieldSize, font: 'Calibri' }),
+          ],
+          spacing: { before: 180, after: 40 },
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: inv.email ?? '', size: fieldSize, font: 'Calibri' })],
+          spacing: { after: 0 },
+        })
       );
       if (inv.citizenship) {
         children.push(
-          new Paragraph({ children: [new TextRun({ text: 'Citizenship:', color: BLUE, size: fieldSize, font: 'Calibri' })], spacing: { before: 180, after: 40 } }),
-          new Paragraph({ children: [new TextRun({ text: inv.citizenship, size: fieldSize, font: 'Calibri' })], spacing: { after: 0 } })
+          new Paragraph({
+            children: [
+              new TextRun({ text: 'Citizenship:', color: BLUE, size: fieldSize, font: 'Calibri' }),
+            ],
+            spacing: { before: 180, after: 40 },
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: inv.citizenship, size: fieldSize, font: 'Calibri' })],
+            spacing: { after: 0 },
+          })
         );
       }
       if (inv.employeeId) {
         children.push(
-          new Paragraph({ children: [new TextRun({ text: 'Employee ID:', color: BLUE, size: fieldSize, font: 'Calibri' })], spacing: { before: 180, after: 40 } }),
-          new Paragraph({ children: [new TextRun({ text: inv.employeeId, bold: true, size: fieldSize, font: 'Calibri' })], spacing: { after: 0 } })
+          new Paragraph({
+            children: [
+              new TextRun({ text: 'Employee ID:', color: BLUE, size: fieldSize, font: 'Calibri' }),
+            ],
+            spacing: { before: 180, after: 40 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: inv.employeeId, bold: true, size: fieldSize, font: 'Calibri' }),
+            ],
+            spacing: { after: 0 },
+          })
         );
       }
     });
   }
 
   children.push(
-    new Paragraph({ children: [new TextRun({ text: 'Invention Title', bold: true, size: fieldSize, font: 'Calibri' })], spacing: { before: 240, after: 40 } }),
-    new Paragraph({ children: [new TextRun({ text: titleContent, size: fieldSize, font: 'Calibri' })], spacing: { after: 0 } }),
-    new Paragraph({ children: [new TextRun({ text: 'IDF Number', bold: true, size: fieldSize, font: 'Calibri' })], spacing: { before: 180, after: 40 } })
+    new Paragraph({
+      children: [
+        new TextRun({ text: 'Invention Title', bold: true, size: fieldSize, font: 'Calibri' }),
+      ],
+      spacing: { before: 240, after: 40 },
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: titleContent, size: fieldSize, font: 'Calibri' })],
+      spacing: { after: 0 },
+    }),
+    new Paragraph({
+      children: [new TextRun({ text: 'IDF Number', bold: true, size: fieldSize, font: 'Calibri' })],
+      spacing: { before: 180, after: 40 },
+    })
   );
   if (artifact.idfNumber) {
-    children.push(new Paragraph({ children: [new TextRun({ text: artifact.idfNumber, size: fieldSize, font: 'Calibri' })], spacing: { after: 0 } }));
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: artifact.idfNumber, size: fieldSize, font: 'Calibri' })],
+        spacing: { after: 0 },
+      })
+    );
   }
   if (artifact.businessGroup) {
     children.push(
-      new Paragraph({ children: [new TextRun({ text: 'Business Group', bold: true, size: fieldSize, font: 'Calibri' })], spacing: { before: 180, after: 40 } }),
-      new Paragraph({ children: [new TextRun({ text: artifact.businessGroup, size: fieldSize, font: 'Calibri' })], spacing: { after: 0 } })
+      new Paragraph({
+        children: [
+          new TextRun({ text: 'Business Group', bold: true, size: fieldSize, font: 'Calibri' }),
+        ],
+        spacing: { before: 180, after: 40 },
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: artifact.businessGroup, size: fieldSize, font: 'Calibri' })],
+        spacing: { after: 0 },
+      })
     );
   }
 
@@ -300,7 +378,14 @@ async function buildDocx(artifact: PatentArtifact): Promise<Blob> {
       const captionSuffix = fig.caption ? ` — ${fig.caption}` : '';
       children.push(
         new Paragraph({
-          children: [new TextRun({ text: `${fig.name}${captionSuffix}`, size: fieldSize, font: 'Calibri', italics: true })],
+          children: [
+            new TextRun({
+              text: `${fig.name}${captionSuffix}`,
+              size: fieldSize,
+              font: 'Calibri',
+              italics: true,
+            }),
+          ],
           spacing: { after: 80 },
         })
       );
@@ -344,6 +429,7 @@ export function ExportPanel({
   setZoom?: Dispatch<SetStateAction<number>>;
 }>) {
   const { artifact, saveCurrentSession } = useWorkbenchStore();
+  const { t } = useI18n();
   const [format, setFormat] = useState<ExportFormat>('docx');
   const [exporting, setExporting] = useState(false);
 
@@ -367,7 +453,8 @@ export function ExportPanel({
         const iframe = document.createElement('iframe');
         iframe.setAttribute('title', 'Patent IDF Print');
         iframe.setAttribute('sandbox', 'allow-modals allow-same-origin');
-        iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;visibility:hidden;';
+        iframe.style.cssText =
+          'position:fixed;top:-9999px;left:-9999px;width:0;height:0;visibility:hidden;';
         iframe.srcdoc = html;
         document.body.appendChild(iframe);
         iframe.onload = () => {
@@ -417,16 +504,16 @@ export function ExportPanel({
           </Group>
         )}
         <Text size="xs" c="var(--text-muted)" ff="monospace">
-          Export:
+          {t('res_ExportLabel')}
         </Text>
         <Select
           size="xs"
           value={format}
           onChange={(v) => v && setFormat(v as ExportFormat)}
           data={[
-            { value: 'docx', label: '.docx' },
-            { value: 'pdf', label: '.pdf' },
-            { value: 'txt', label: '.txt' },
+            { value: 'docx', label: t('res_Format_docx') },
+            { value: 'pdf', label: t('res_Format_pdf') },
+            { value: 'txt', label: t('res_Format_txt') },
           ]}
           style={{ width: 90 }}
           styles={{
@@ -451,9 +538,9 @@ export function ExportPanel({
           leftSection={formatIcon(format)}
           onClick={() => void handleExport()}
           loading={exporting}
-          className="border-accent text-accent font-mono text-[11px] font-bold tracking-[0.05em] h-7"
+          className="border-accent text-accent font-mono text-[11px] font-bold tracking-[0.05em] h-7 uppercase"
         >
-          DOWNLOAD
+          {t('res_Download')}
         </Button>
       </Group>
     </Box>
