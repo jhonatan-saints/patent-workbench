@@ -14,7 +14,7 @@ interface ModelContextResponse {
 
 const BASE_URL = '/api';
 
-const DEFAULT_TIMEOUT_MS = 120_000; // 2 min — LLMs are slow
+const DEFAULT_TIMEOUT_MS = Number(import.meta.env.VITE_LLM_TIMEOUT_MS) || 120_000;
 
 // M-4: include API key when the server requires one (set via VITE_API_KEY env var)
 const API_KEY = import.meta.env.VITE_API_KEY as string | undefined;
