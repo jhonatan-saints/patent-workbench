@@ -35,8 +35,10 @@ src/
 │   └── preset.ts              # Mantine theme customisation
 ├── types/
 │   └── index.ts               # Shared TypeScript type definitions
+├── config/
+│   └── reg-templates.json     # Editable REG system contexts — customise without touching app code
 ├── utils/
-│   ├── workflowTemplates.ts   # REG system contexts + RAG context builder
+│   ├── workflowTemplates.ts   # REG module definitions (defaults mirror reg-templates.json) + RAG context builder
 │   ├── optionParser.ts        # Parse OPTION 1/2/3 from LLM response
 │   └── sanitize.ts            # Output XSS prevention + ID generation
 ├── assets/                    # Fonts and icons
@@ -195,7 +197,9 @@ Key actions:
 
 ---
 
-## Template system (`utils/workflowTemplates.ts`)
+## Template system (`utils/workflowTemplates.ts` + `config/reg-templates.json`)
+
+`client/src/config/reg-templates.json` is the primary entry point for customising the REG system contexts. It contains one string per IDF step under a `systemContexts` key and can be edited without changing any application code. The default values in `WORKFLOW_MODULES` (defined in `workflowTemplates.ts`) mirror this file and serve as the fallback when no customisation is applied. See [docs/customising-reg-templates.md](../docs/customising-reg-templates.md) for a full authoring guide.
 
 `WORKFLOW_MODULES` exports one `WorkflowModule` per IDF section. Each module defines:
 

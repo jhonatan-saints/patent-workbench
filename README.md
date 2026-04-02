@@ -73,6 +73,39 @@ Total accumulated context across a full workflow run: **~2 500 tokens**.
 
 ---
 
+## Supported languages
+
+The UI is fully translated into 16 locales:
+
+| Locale | Language |
+| --- | --- |
+| `en-US` | English (US) |
+| `en-GB` | English (UK) |
+| `cy-GB` | Cymraeg (Welsh) |
+| `de-DE` | Deutsch |
+| `es-ES` | Español |
+| `es-CL` | Español (Chile) |
+| `fr-FR` | Français |
+| `fr-CA` | Français (Canada) |
+| `it-IT` | Italiano |
+| `nb-NO` | Norsk |
+| `nl` | Nederlands |
+| `pt-PT` | Português |
+| `pt-BR` | Português (Brasil) |
+| `ru-RU` | Русский |
+| `sv-SE` | Svenska |
+| `zh-CN` | 中文 |
+
+### Inputting invention content in a non-English language
+
+The UI language and the **invention content language** are independent settings. Switching the locale translates all labels, buttons, and tooltips but does **not** change the language the REG algorithm prompts in.
+
+The REG system contexts are authored in English and instruct the model to reason as a USPTO patent analyst. They are defined in `client/src/config/reg-templates.json` — the primary customisation entry point — and mirrored as defaults in `client/src/utils/workflowTemplates.ts`. If you want the LLM to generate patent sections in another language, edit `reg-templates.json` without touching application code: append an explicit instruction such as `"Respond entirely in Portuguese."` to each `systemContexts` string. See [docs/customising-reg-templates.md](docs/customising-reg-templates.md) for a full authoring guide.
+
+Until the REG prompts are adapted, submitting the invention idea in a non-English language will work, but the generated options are likely to be returned in English regardless of the UI locale.
+
+---
+
 ## Architecture
 
 ```text
@@ -166,7 +199,7 @@ Open [http://localhost:3003/patent-workbench](http://localhost:3003/patent-workb
 | `npm run client` | Vite dev server on `:3003` |
 | `npm run client:build` | Build client to `client/dist/` |
 | `npm run lint` | ESLint + Markdown + StyleLint |
-| `npm run format` | Prettier |
+| `npm run audit:check` | Run `npm audit` at moderate severity level |
 
 For server-specific configuration (env vars, endpoints, rate limits) see [server/README.md](server/README.md).
 For client architecture and component details see [client/README.md](client/README.md).
