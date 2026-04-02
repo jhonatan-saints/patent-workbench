@@ -366,6 +366,7 @@ export function ExportPanel({
         const html = buildPDFHTML(artifact);
         const iframe = document.createElement('iframe');
         iframe.setAttribute('title', 'Patent IDF Print');
+        iframe.setAttribute('sandbox', 'allow-modals allow-same-origin');
         iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;visibility:hidden;';
         iframe.srcdoc = html;
         document.body.appendChild(iframe);
