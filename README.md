@@ -36,15 +36,15 @@ input → working (steps 1–7) → figures → inventors → preview / export
 
 | # | Step | IDF Section | Est. tokens |
 | --- | --- | --- | --- |
-| 1 | Problem Description | Why the invention was needed; business/technical pain | ~250 |
-| 2 | Previous Solutions | Existing approaches and their limitations | ~250 |
-| 3 | Key Differences | Novel elements vs. prior art; the inventive step | ~200 |
-| 4 | Invention Summary | High-level overview + key technologies + market context | ~300 |
-| 5 | Possible Variations | Alternative embodiments to broaden patent scope | ~200 |
-| 6 | Other Applications | Domain transfer and additional use cases | ~180 |
-| 7 | Full Description | Complete technical description enabling PHOSITA | ~600 |
+| 1 | Problem Description | Why the invention was needed; business/technical pain | ~650 |
+| 2 | Previous Solutions | Existing approaches and their limitations | ~1000 |
+| 3 | Key Differences | Novel elements vs. prior art; the inventive step | ~1200 |
+| 4 | Invention Summary | High-level overview + key technologies + market context | ~1100 |
+| 5 | Possible Variations | Alternative embodiments to broaden patent scope | ~1200 |
+| 6 | Other Applications | Domain transfer and additional use cases | ~1150 |
+| 7 | Full Description | Complete technical description enabling PHOSITA | ~2500 |
 
-Total accumulated context across a full workflow run: **~2 500 tokens**.
+An average creation using the "guided" method takes about: **~8 800 tokens**.
 
 ### Input modes (per step)
 
