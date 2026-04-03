@@ -13,7 +13,6 @@ type GenerateResult = {
 import logger from '../logger';
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
-const LLM_TIMEOUT_MS = Number(process.env.LLM_TIMEOUT_MS) || 120_000;
 
 export async function generate({
   model,
@@ -21,7 +20,7 @@ export async function generate({
   signal: clientSignal,
 }: GenerateParams): Promise<GenerateResult | null> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), Number(process.env.LLM_TIMEOUT_MS) || 120_000);
 
   // Abort the Ollama request when the HTTP client disconnects
   if (clientSignal) {
