@@ -318,7 +318,7 @@ export function StepInputPanel({ moduleId }: Props) {
                       )
                     }
                     minRows={5}
-                    maxRows={10}
+                    autosize
                     disabled={isGenerating}
                     styles={INPUT_STYLES}
                   />
@@ -350,7 +350,7 @@ export function StepInputPanel({ moduleId }: Props) {
                       )
                     }
                     minRows={3}
-                    maxRows={6}
+                    autosize
                     disabled={isGenerating}
                     styles={INPUT_STYLES}
                   />
@@ -431,32 +431,20 @@ export function StepInputPanel({ moduleId }: Props) {
             {t('res_Guided_Instructions')}
           </Text>
 
-          {module.guidedFields.map((field) =>
-            field.type === 'textarea' ? (
-              <Textarea
-                aria-label={t(field.labelKey)}
-                key={field.key}
-                label={t(field.labelKey)}
-                placeholder={t(field.placeholderKey)}
-                value={guidedFields[field.key] ?? ''}
-                onChange={(e) => setField(field.key, e.currentTarget.value)}
-                minRows={3}
-                maxRows={6}
-                disabled={isGenerating}
-                styles={INPUT_STYLES}
-              />
-            ) : (
-              <TextInput
-                key={field.key}
-                label={t(field.labelKey)}
-                placeholder={t(field.placeholderKey)}
-                value={guidedFields[field.key] ?? ''}
-                onChange={(e) => setField(field.key, e.currentTarget.value)}
-                disabled={isGenerating}
-                styles={INPUT_STYLES}
-              />
-            )
-          )}
+          {module.guidedFields.map((field) => (
+            <Textarea
+              aria-label={t(field.labelKey)}
+              key={field.key}
+              label={t(field.labelKey)}
+              placeholder={t(field.placeholderKey)}
+              value={guidedFields[field.key] ?? ''}
+              onChange={(e) => setField(field.key, e.currentTarget.value)}
+              minRows={3}
+              autosize
+              disabled={isGenerating}
+              styles={INPUT_STYLES}
+            />
+          ))}
 
           {isGenerating ? (
             <Button
@@ -494,7 +482,7 @@ export function StepInputPanel({ moduleId }: Props) {
             value={manualText}
             onChange={(e) => setManualText(e.currentTarget.value)}
             minRows={8}
-            maxRows={16}
+            autosize
             styles={INPUT_STYLES}
           />
           <Button

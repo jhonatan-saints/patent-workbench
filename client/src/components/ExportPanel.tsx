@@ -157,14 +157,19 @@ function buildPDFHTML(artifact: PatentArtifact, labels: Record<string, string>):
     ? `<section>
         <h2>Figures</h2>
         ${artifact.figures
-          .map(
-            (fig) => `
+          .map((fig) => {
+            let imgStyle = 'max-width:100%; height:auto; border:1px solid #ddd;';
+            if (fig.width && fig.height) {
+              imgStyle = `width:${fig.width}px; height:${fig.height}px; max-width:100%; object-fit:contain; border:1px solid #ddd;`;
+            } else if (fig.width) {
+              imgStyle = `width:${fig.width}px; max-width:100%; height:auto; border:1px solid #ddd;`;
+            }
+            return `
           <div style="text-align:center; margin-bottom: 20pt;">
-            <img src="${fig.dataUrl}" alt="${escapeHtml(fig.name)}" style="max-width:100%; border:1px solid #ddd;"/>
+            <img src="${fig.dataUrl}" alt="${escapeHtml(fig.name)}" style="${imgStyle}"/>
             <p style="font-size:10pt; color:#555; font-style:italic; margin-top:4pt;">${escapeHtml(fig.name)}${fig.caption ? ` — ${escapeHtml(fig.caption)}` : ''}</p>
-          </div>
-        `
-          )
+          </div>`;
+          })
           .join('')}
       </section>`
     : '';
@@ -175,21 +180,33 @@ function buildPDFHTML(artifact: PatentArtifact, labels: Record<string, string>):
 <meta charset="UTF-8"/>
 <title>${escapeHtml(titleContent.slice(0, 80))}</title>
 <style>
-  @page { margin: 0; size: letter; }
+  @page {
+    margin: 0.6in 1in 0.9in 1in;
+    size: letter;
+    @bottom-left {
+      content: "patent-workbench";
+      font-family: 'Calibri', Arial, sans-serif;
+      font-size: 9pt;
+      color: #666;
+    }
+    @bottom-center { content: ""; }
+    @bottom-right  {
+      content: "Page " counter(page) " of " counter(pages);
+      font-family: 'Calibri', Arial, sans-serif;
+      font-size: 9pt;
+      color: #666;
+    }
+  }
   * { box-sizing: border-box; }
-  body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; margin: 0; padding: 1in; color: #000; line-height: 1.5; }
+  body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; margin: 0; padding: 0; color: #000; line-height: 1.5; }
   .idf-section-label { color: #4472C4; font-size: 14pt; font-weight: normal; margin: 0 0 6pt 0; }
   .field-label { color: #4472C4; font-size: 11pt; font-weight: normal; margin: 10pt 0 1pt 0; }
   .field-value { font-size: 11pt; font-weight: normal; color: #000; margin: 0 0 0 0; }
   .field-value-bold { font-size: 11pt; font-weight: bold; color: #000; margin: 0 0 0 0; }
   .meta-label { font-size: 11pt; font-weight: bold; color: #000; margin: 12pt 0 1pt 0; }
-  h2 { font-size: 11pt; font-weight: bold; color: #000; margin: 16pt 0 4pt 0; }
-  p { line-height: 1.5; text-align: justify; margin: 0 0 6pt 0; }
-  section { margin-bottom: 4pt; }
-  @media print {
-    h2 { page-break-after: avoid; }
-    section { page-break-inside: avoid; }
-  }
+  h2 { font-size: 11pt; font-weight: bold; color: #000; margin: 16pt 0 4pt 0; page-break-after: avoid; break-after: avoid; }
+  p { line-height: 1.5; text-align: justify; margin: 0 0 6pt 0; orphans: 3; widows: 3; }
+  section { margin-bottom: 12pt; page-break-inside: avoid; break-inside: avoid; }
 </style>
 </head>
 <body>

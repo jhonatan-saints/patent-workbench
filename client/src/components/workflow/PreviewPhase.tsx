@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import {
   Box,
   Stack,
@@ -456,27 +456,33 @@ export function PreviewPhase() {
                     {t('res_Figures')}
                   </Text>
                   <Stack gap={20}>
-                    {artifact.figures.map((fig) => (
-                      <Box key={fig.id} className="text-center">
-                        <img
-                          src={fig.dataUrl}
-                          alt={fig.name}
-                          style={{ maxWidth: '100%', border: '1px solid #ddd', borderRadius: 4 }}
-                        />
-                        <Text
-                          style={{
-                            fontFamily: DOC_FONT,
-                            fontSize: 12,
-                            color: '#555',
-                            marginTop: 6,
-                            fontStyle: 'italic',
-                          }}
-                        >
-                          {fig.name}
-                          {fig.caption ? ` — ${fig.caption}` : ''}
-                        </Text>
-                      </Box>
-                    ))}
+                    {artifact.figures.map((fig) => {
+                      const figImgStyle: CSSProperties = {
+                        maxWidth: '100%',
+                        border: '1px solid #ddd',
+                        borderRadius: 4,
+                      };
+                      if (fig.width) figImgStyle.width = fig.width;
+                      if (fig.height) figImgStyle.height = fig.height;
+                      if (fig.width && fig.height) figImgStyle.objectFit = 'contain';
+                      return (
+                        <Box key={fig.id} className="text-center">
+                          <img src={fig.dataUrl} alt={fig.name} style={figImgStyle} />
+                          <Text
+                            style={{
+                              fontFamily: DOC_FONT,
+                              fontSize: 12,
+                              color: '#555',
+                              marginTop: 6,
+                              fontStyle: 'italic',
+                            }}
+                          >
+                            {fig.name}
+                            {fig.caption ? ` — ${fig.caption}` : ''}
+                          </Text>
+                        </Box>
+                      );
+                    })}
                   </Stack>
                 </Box>
               )}
