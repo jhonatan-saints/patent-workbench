@@ -104,7 +104,7 @@ export function IdeaInputStep() {
           value={idea}
           onChange={(e) => setIdea(e.currentTarget.value)}
           minRows={5}
-          maxRows={10}
+          autosize
           required
           styles={INPUT_STYLES}
         />
@@ -125,7 +125,7 @@ export function IdeaInputStep() {
           value={constraints}
           onChange={(e) => setConstraints(e.currentTarget.value)}
           minRows={3}
-          maxRows={6}
+          autosize
           styles={INPUT_STYLES}
         />
 
