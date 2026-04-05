@@ -21,6 +21,7 @@ import {
   IconVectorTriangle,
   IconBraces,
   IconDownload,
+  IconHome,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { INPUT_STYLES, BTN_PRIMARY } from '@/theme/styles';
@@ -49,7 +50,7 @@ function makeImageFigure(dataUrl: string, img: HTMLImageElement, figureNumber: n
 
 export function FiguresStep() {
   const { t } = useI18n();
-  const { artifact, updateFigures, goToInventors, goToStep, steps } = useWorkbenchStore();
+  const { artifact, updateFigures, goToInventors, goToStep, steps, resetWorkflow } = useWorkbenchStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [figures, setFigures] = useState<FigureItem[]>(() => artifact?.figures ?? []);
@@ -156,21 +157,33 @@ export function FiguresStep() {
               {t('res_UploadImagesHint')}
             </Text>
           </Stack>
-          <Button
-            variant="subtle"
-            size="xs"
-            leftSection={<IconArrowLeft size={14} />}
-            onClick={handleBack}
-            className="font-mono text-[11px] text-fg-muted"
-          >
-            {t('res_BackToSteps')}
-          </Button>
+          <Group gap={8} wrap="nowrap">
+            <Button
+              variant="subtle"
+              size="xs"
+              leftSection={<IconArrowLeft size={14} />}
+              onClick={handleBack}
+              className="font-mono text-[11px] text-fg-muted uppercase"
+            >
+              {t('res_BackToSteps')}
+            </Button>
+            <Button
+              variant="subtle"
+              size="xs"
+              leftSection={<IconHome size={14} />}
+              onClick={resetWorkflow}
+              className="font-mono text-[11px] text-fg-muted uppercase"
+            >
+              {t('res_StartOver')}
+            </Button>
+          </Group>
         </Group>
       </Box>
 
       {/* Mode selector */}
       <Box className="px-5 py-2.5 border-b border-stroke bg-surface shrink-0">
         <SegmentedControl
+          classNames={{ root: 'step-seg' }}
           value={mode}
           onChange={(v) => setMode(v as 'upload' | 'diagram' | 'json')}
           size="xs"
@@ -210,7 +223,15 @@ export function FiguresStep() {
             },
           ]}
           styles={{
-            root: { background: 'var(--surface-raised)', border: '1px solid var(--border)' },
+            root: { background: 'var(--surface)', border: '1px solid var(--border)' },
+            indicator: { background: 'var(--accent)' },
+            label: {
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.05em',
+              color: 'var(--text-secondary)',
+            },
           }}
         />
       </Box>
