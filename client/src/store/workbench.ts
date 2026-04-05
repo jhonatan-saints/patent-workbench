@@ -12,6 +12,7 @@ import {
   getModelContextLength,
   isApiError,
   fetchSessions,
+  getSession,
   saveSession,
   deleteSession as apiDeleteSession,
   clearAllSessions,
@@ -57,6 +58,9 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
 
   // Sessions
   sessions: [],
+
+  // Figures workspace drafts
+  figuresDraft: { diagramNodes: [], diagramEdges: [], jsonText: '' },
 
   // Actions
 
@@ -249,7 +253,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   },
 
   saveCurrentSession: () => {
-    const { steps, artifact, selectedModel } = get();
+    const { steps, artifact, selectedModel, figuresDraft, workflowPhase, currentStepIndex } = get();
     if (!artifact || Object.keys(artifact.sections).length === 0) return;
     const totalTokens = steps.reduce((acc, s) => acc + s.promptTokens + s.completionTokens, 0);
     const stepInputStates = steps.map((s) => ({
@@ -272,6 +276,9 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
         totalTokens,
         persisted: existingPersisted,
         stepInputStates,
+        figuresDraft,
+        lastPhase: workflowPhase,
+        lastStepIndex: currentStepIndex,
       };
       if (existingIndex >= 0) {
         const updated = [...state.sessions];
@@ -283,7 +290,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   },
 
   persistDraft: async () => {
-    const { steps, artifact, selectedModel, sessions } = get();
+    const { steps, artifact, selectedModel, sessions, figuresDraft, workflowPhase, currentStepIndex } = get();
     if (!artifact || Object.keys(artifact.sections).length === 0) return;
     const totalTokens = steps.reduce((acc, s) => acc + s.promptTokens + s.completionTokens, 0);
     const stepInputStates = steps.map((s) => ({
@@ -303,6 +310,9 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       totalTokens,
       persisted: true,
       stepInputStates,
+      figuresDraft,
+      lastPhase: workflowPhase,
+      lastStepIndex: currentStepIndex,
     };
     await saveSession(session);
     set((state) => {
@@ -415,6 +425,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       artifact: null,
       generationStatus: 'idle',
       lastError: null,
+      figuresDraft: { diagramNodes: [], diagramEdges: [], jsonText: '' },
     });
   },
 
@@ -462,24 +473,39 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     });
   },
 
+  setDiagramDraft: (nodes, edges) => {
+    set((state) => ({ figuresDraft: { ...state.figuresDraft, diagramNodes: nodes, diagramEdges: edges } }));
+  },
+
+  setJsonDraftText: (text) => {
+    set((state) => ({ figuresDraft: { ...state.figuresDraft, jsonText: text } }));
+  },
+
   setStepInputState: (index, patch) => {
     set((state) => ({
       steps: state.steps.map((s, i) => (i === index ? { ...s, ...patch } : s)),
     }));
   },
 
-  loadSession: (session: WorkflowSession) => {
+  loadSession: async (session: WorkflowSession) => {
     if (_abortController) {
       _abortController.abort();
       _abortController = null;
     }
+    // For persisted sessions, fetch full data to get figure dataUrls
+    // (the list endpoint strips them for performance)
+    let s = session;
+    if (session.persisted) {
+      const full = await getSession(session.id);
+      if (full) s = { ...full, persisted: true };
+    }
     const steps = WORKFLOW_ORDER.map((moduleId) => {
-      const section = session.artifact.sections[moduleId];
+      const section = s.artifact.sections[moduleId];
       const mod = WORKFLOW_MODULES[moduleId];
       const selectedOption = section
         ? { id: generateId(), index: section.optionIndex, content: section.content }
         : null;
-      const saved = session.stepInputStates?.find((s) => s.moduleId === moduleId);
+      const saved = s.stepInputStates?.find((si) => si.moduleId === moduleId);
       return {
         moduleId,
         label: mod.label,
@@ -496,15 +522,16 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     });
     set({
       artifact: {
-        ...session.artifact,
-        figures: session.artifact.figures ?? [],
+        ...s.artifact,
+        figures: s.artifact.figures ?? [],
       },
       steps,
-      currentStepIndex: steps.length - 1,
-      workflowPhase: 'preview',
+      currentStepIndex: s.lastStepIndex ?? steps.length - 1,
+      workflowPhase: s.lastPhase ?? 'preview',
       generationStatus: 'idle',
       lastError: null,
-      selectedModel: session.model,
+      selectedModel: s.model,
+      figuresDraft: s.figuresDraft ?? { diagramNodes: [], diagramEdges: [], jsonText: '' },
     });
   },
 

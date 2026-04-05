@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { Stack, Text, Group, ActionIcon, Box, Tooltip, ScrollArea, Modal, Button } from '@mantine/core';
+import {
+  Stack,
+  Text,
+  Group,
+  ActionIcon,
+  Box,
+  Tooltip,
+  ScrollArea,
+  Modal,
+  Button,
+} from '@mantine/core';
 import { IconTrash, IconClock, IconX, IconCloudCheck, IconCloudOff } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n/useI18n';
@@ -41,180 +51,180 @@ function DraftItem({
 
   return (
     <>
-    <Box
-      onClick={onLoad}
-      className="group relative cursor-pointer rounded-md overflow-hidden"
-      style={{
-        background: 'var(--surface-raised)',
-        border: session.persisted ? '1px solid var(--border)' : '1px dashed var(--border)',
-        borderLeft: `2px solid ${session.persisted ? 'var(--accent)' : 'var(--text-muted)'}`,
-        opacity: session.persisted ? 1 : 0.75,
-        transition: 'box-shadow 180ms ease, border-color 180ms ease, opacity 180ms ease',
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.boxShadow =
-          '0 4px 20px var(--accent-glow), 0 0 0 1px var(--accent)';
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-      }}
-    >
-      {/* Left ambient glow */}
       <Box
+        onClick={onLoad}
+        className="group relative cursor-pointer rounded-md overflow-hidden"
         style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 48,
-          background: 'linear-gradient(90deg, var(--accent-glow) 0%, transparent 100%)',
-          pointerEvents: 'none',
+          background: 'var(--surface-raised)',
+          border: session.persisted ? '1px solid var(--border)' : '1px dashed var(--border)',
+          borderLeft: `2px solid ${session.persisted ? 'var(--accent)' : 'var(--text-muted)'}`,
+          opacity: session.persisted ? 1 : 0.75,
+          transition: 'box-shadow 180ms ease, border-color 180ms ease, opacity 180ms ease',
         }}
-      />
-
-      <Box style={{ padding: '10px 12px', position: 'relative' }}>
-        {/* Title + delete */}
-        <Group justify="space-between" wrap="nowrap" gap={6} align="flex-start">
-          <Text
-            size="xs"
-            fw={600}
-            ff="var(--font-body)"
-            lineClamp={2}
-            style={{ flex: 1, minWidth: 0, lineHeight: 1.45, color: 'var(--text-primary)' }}
-          >
-            {session.artifact.inventionTitle ?? session.baseIdea}
-          </Text>
-          <Group gap={4} wrap="nowrap" align="center" style={{ flexShrink: 0 }}>
-            <Tooltip
-              label={session.persisted ? t('res_Saved') : t('res_Cached')}
-              position="left"
-              withArrow
-            >
-              <Box style={{ lineHeight: 0 }}>
-                {session.persisted ? (
-                  <IconCloudCheck size={14} style={{ color: 'var(--accent)' }} />
-                ) : (
-                  <IconCloudOff size={14} style={{ color: 'var(--text-muted)', opacity: 0.6 }} />
-                )}
-              </Box>
-            </Tooltip>
-            <Tooltip label={t('res_RemoveDraft')} position="left" withArrow>
-              <ActionIcon
-                aria-label={t('res_RemoveDraft')}
-                variant="subtle"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setConfirmOpen(true);
-                }}
-                style={{ opacity: 0, transition: 'opacity 150ms ease' }}
-                className="group-hover:opacity-100!"
-              >
-                <IconX size={14} style={{ color: 'var(--danger)' }} />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
-        </Group>
-
-        {/* Progress bar */}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.boxShadow =
+            '0 4px 20px var(--accent-glow), 0 0 0 1px var(--accent)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+        }}
+      >
+        {/* Left ambient glow */}
         <Box
           style={{
-            marginTop: 9,
-            height: 2,
-            borderRadius: 99,
-            background: 'var(--border)',
-            overflow: 'hidden',
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 48,
+            background: 'linear-gradient(90deg, var(--accent-glow) 0%, transparent 100%)',
+            pointerEvents: 'none',
           }}
-        >
-          <Box
-            style={{
-              width: `${progress}%`,
-              height: '100%',
-              borderRadius: 99,
-              background:
-                progress === 100
-                  ? 'linear-gradient(90deg, var(--accent-dim), var(--accent))'
-                  : 'var(--accent)',
-              transition: 'width 600ms cubic-bezier(0.4, 0, 0.2, 1)',
-            }}
-          />
-        </Box>
+        />
 
-        {/* Metadata chips row */}
-        <Group gap={0} mt={8} wrap="nowrap" align="center">
-          {/* Step badge */}
+        <Box style={{ padding: '10px 12px', position: 'relative' }}>
+          {/* Title + delete */}
+          <Group justify="space-between" wrap="nowrap" gap={6} align="flex-start">
+            <Text
+              size="xs"
+              fw={600}
+              ff="var(--font-body)"
+              lineClamp={2}
+              style={{ flex: 1, minWidth: 0, lineHeight: 1.45, color: 'var(--text-primary)' }}
+            >
+              {session.artifact.inventionTitle ?? session.baseIdea}
+            </Text>
+            <Group gap={4} wrap="nowrap" align="center" style={{ flexShrink: 0 }}>
+              <Tooltip
+                label={session.persisted ? t('res_Saved') : t('res_Cached')}
+                position="left"
+                withArrow
+              >
+                <Box style={{ lineHeight: 0 }}>
+                  {session.persisted ? (
+                    <IconCloudCheck size={14} style={{ color: 'var(--accent)' }} />
+                  ) : (
+                    <IconCloudOff size={14} style={{ color: 'var(--text-muted)', opacity: 0.6 }} />
+                  )}
+                </Box>
+              </Tooltip>
+              <Tooltip label={t('res_RemoveDraft')} position="left" withArrow>
+                <ActionIcon
+                  aria-label={t('res_RemoveDraft')}
+                  variant="subtle"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmOpen(true);
+                  }}
+                  style={{ opacity: 0, transition: 'opacity 150ms ease' }}
+                  className="group-hover:opacity-100!"
+                >
+                  <IconX size={14} style={{ color: 'var(--danger)' }} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          </Group>
+
+          {/* Progress bar */}
           <Box
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              padding: '1px 6px',
-              borderRadius: 4,
-              border: '1px solid var(--accent)',
-              background: 'var(--accent-glow)',
-              fontSize: 11,
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--accent)',
-              fontWeight: 700,
-              letterSpacing: '0.05em',
-              lineHeight: 1.7,
-              flexShrink: 0,
+              marginTop: 9,
+              height: 2,
+              borderRadius: 99,
+              background: 'var(--border)',
+              overflow: 'hidden',
             }}
           >
-            {completedCount}/{WORKFLOW_ORDER.length}
+            <Box
+              style={{
+                width: `${progress}%`,
+                height: '100%',
+                borderRadius: 99,
+                background:
+                  progress === 100
+                    ? 'linear-gradient(90deg, var(--accent-dim), var(--accent))'
+                    : 'var(--accent)',
+                transition: 'width 600ms cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            />
           </Box>
 
-          {/* Separator */}
-          <Box
-            style={{
-              width: 1,
-              height: 10,
-              background: 'var(--border)',
-              margin: '0 7px',
-              flexShrink: 0,
-            }}
-          />
+          {/* Metadata chips row */}
+          <Group gap={0} mt={8} wrap="nowrap" align="center">
+            {/* Step badge */}
+            <Box
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '1px 6px',
+                borderRadius: 4,
+                border: '1px solid var(--accent)',
+                background: 'var(--accent-glow)',
+                fontSize: 11,
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--accent)',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                lineHeight: 1.7,
+                flexShrink: 0,
+              }}
+            >
+              {completedCount}/{WORKFLOW_ORDER.length}
+            </Box>
 
-          {/* Tokens */}
-          <Text
-            ff="monospace"
-            style={{ fontSize: 11, color: 'var(--text-secondary)', flexShrink: 0 }}
-          >
-            {tokensLabel}t
-          </Text>
+            {/* Separator */}
+            <Box
+              style={{
+                width: 1,
+                height: 10,
+                background: 'var(--border)',
+                margin: '0 7px',
+                flexShrink: 0,
+              }}
+            />
 
-          {/* Dot */}
-          <Text
-            ff="monospace"
-            style={{ fontSize: 11, color: 'var(--border)', margin: '0 5px', flexShrink: 0 }}
-          >
-            ·
-          </Text>
+            {/* Tokens */}
+            <Text
+              ff="monospace"
+              style={{ fontSize: 11, color: 'var(--text-secondary)', flexShrink: 0 }}
+            >
+              {tokensLabel}t
+            </Text>
 
-          {/* Model */}
-          <Text
-            ff="monospace"
-            style={{
-              fontSize: 11,
-              color: 'var(--text-secondary)',
-              flex: 1,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {shortenModel(session.model)}
-          </Text>
+            {/* Dot */}
+            <Text
+              ff="monospace"
+              style={{ fontSize: 11, color: 'var(--border)', margin: '0 5px', flexShrink: 0 }}
+            >
+              ·
+            </Text>
 
-          {/* Time */}
-          <Text
-            ff="monospace"
-            style={{ fontSize: 11, color: 'var(--text-secondary)', flexShrink: 0, marginLeft: 5 }}
-          >
-            {formatTime(session.startedAt)}
-          </Text>
-        </Group>
+            {/* Model */}
+            <Text
+              ff="monospace"
+              style={{
+                fontSize: 11,
+                color: 'var(--text-secondary)',
+                flex: 1,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {shortenModel(session.model)}
+            </Text>
+
+            {/* Time */}
+            <Text
+              ff="monospace"
+              style={{ fontSize: 11, color: 'var(--text-secondary)', flexShrink: 0, marginLeft: 5 }}
+            >
+              {formatTime(session.startedAt)}
+            </Text>
+          </Group>
+        </Box>
       </Box>
-    </Box>
 
       {/* Delete confirmation modal */}
       <Modal

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Box,
   Textarea,
@@ -14,6 +14,7 @@ import { toPng } from 'html-to-image';
 import { generateId } from '@/utils/sanitize';
 import type { FigureItem } from '@/types';
 import { useI18n } from '@/i18n/useI18n';
+import { useWorkbenchStore } from '@/store/workbench';
 
 const DEFAULT_W = 900;
 const DEFAULT_H = 500;
@@ -156,14 +157,29 @@ interface Props {
 }
 
 export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
-  const [jsonText, setJsonText] = useState('');
+  const { figuresDraft, setJsonDraftText } = useWorkbenchStore();
+  const [jsonText, setJsonText] = useState(figuresDraft.jsonText);
   const [exportW, setExportW] = useState<number>(DEFAULT_W);
   const [exportH, setExportH] = useState<number>(DEFAULT_H);
   const [transparentBg, setTransparentBg] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [parsed, setParsed] = useState<unknown>(null);
+  const [parsed, setParsed] = useState<unknown>(() => {
+    if (!figuresDraft.jsonText.trim()) return null;
+    try {
+      return JSON.parse(figuresDraft.jsonText);
+    } catch {
+      return null;
+    }
+  });
   const previewRef = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setJsonDraftText(jsonText);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [jsonText, setJsonDraftText]);
 
   const handleJsonChange = (text: string) => {
     setJsonText(text);

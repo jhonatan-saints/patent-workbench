@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Stack,
   Button,
@@ -54,6 +54,14 @@ export function FiguresStep() {
 
   const [figures, setFigures] = useState<FigureItem[]>(() => artifact?.figures ?? []);
   const [mode, setMode] = useState<'upload' | 'diagram' | 'json'>('upload');
+
+  // Keep artifact.figures in sync with local state so that any navigation path
+  // (sidebar Preview, Save Draft, etc.) always sees the latest figures.
+  useEffect(() => {
+    updateFigures(figures);
+    // updateFigures is a stable Zustand action; omitting it from deps is intentional
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [figures]);
 
   const addImageFromDataUrl = (dataUrl: string) => {
     const img = new Image();
@@ -337,7 +345,7 @@ export function FiguresStep() {
       <Box
         style={{ flex: 1, overflow: 'hidden', display: mode === 'diagram' ? undefined : 'none' }}
       >
-        <DiagramEditor onAddFigure={handleAddFigureFromEditor} figureNumber={figures.length + 1} />
+        <DiagramEditor visible={mode === 'diagram'} onAddFigure={handleAddFigureFromEditor} figureNumber={figures.length + 1} />
       </Box>
 
       {/* Body — JSON viewer */}
