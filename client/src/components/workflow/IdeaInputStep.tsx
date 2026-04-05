@@ -41,7 +41,7 @@ export function IdeaInputStep() {
   const [domain, setDomain] = useState('');
   const [constraints, setConstraints] = useState('');
 
-  const canStart = idea.trim().length > 0 && llmStatus === 'ok';
+  const canStart = idea.trim().length > 0;
 
   const { displayed: headline, done: headlineDone } = useTypewriter(t('res_DescribeYourInvention'));
 
@@ -214,7 +214,7 @@ export function IdeaInputStep() {
                   ff="monospace"
                   mt={8}
                 >
-                  {llmStatus === 'checking' ? t('res_CheckingLLM') : t('res_LLMOffline')}
+                  {llmStatus === 'checking' ? t('res_CheckingLLM') : t('res_LLMOffline_ManualOnly')}
                 </Text>
               )}
             </Box>

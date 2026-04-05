@@ -1,8 +1,12 @@
-# Patent Workbench — Local LLM Assistant for Patent Ideation
+<div align="center">
+  <img src="client/src/assets/icons/favicon.svg" width="72" height="72" alt="Patent Workbench logo" />
+  <h1>Patent Workbench</h1>
+  <p>Local LLM Assistant for Patent Ideation</p>
 
-![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
-![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
-![Status](https://img.shields.io/badge/status-active-success)
+  ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
+  ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
+  ![Status](https://img.shields.io/badge/status-active-success)
+</div>
 
 A local-first visual IDE for patent ideation, drafting, and iteration — powered by local LLMs via [Ollama](https://ollama.com). No cloud, no telemetry, no data leaving your machine.
 

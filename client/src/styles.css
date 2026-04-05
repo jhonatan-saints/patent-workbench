@@ -376,6 +376,22 @@ body {
   animation: pulse-glow 2.2s ease-in-out infinite;
 }
 
+@keyframes grid-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-grid-in {
+  animation: grid-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @keyframes logo-breath {
   0%,
   100% {
