@@ -80,16 +80,25 @@ function WorkflowStepItem({
     >
       <Group gap={8} wrap="nowrap">
         <StepIcon status={isDone && !isActive ? 'done' : (step.status as StepStatus)} />
-        <Box className="flex-1 min-w-0">
-          <Text
-            size="xs"
-            fw={isActive ? 700 : 600}
-            ff="monospace"
-            className={`text-[11px] tracking-[0.04em] truncate ${stepTextClass(isActive, isDone)}`}
-          >
-            {String(index + 1).padStart(2, '0')} ·{' '}
-            {t(MODULE_RESOURCE_KEYS[step.moduleId as WorkflowModuleId]).toUpperCase()}
-          </Text>
+        <Box className="flex-1">
+          <Group gap={4} wrap="nowrap" align="center">
+            <Text
+              size="xs"
+              fw={isActive ? 700 : 600}
+              ff="monospace"
+              className={`text-[11px] tracking-[0.04em] shrink-0 ${stepTextClass(isActive, isDone)}`}
+            >
+              {String(index + 1).padStart(2, '0')} ·
+            </Text>
+            <Text
+              size="xs"
+              fw={isActive ? 700 : 600}
+              ff="monospace"
+              className={`text-[11px] tracking-[0.04em] leading-snug ${stepTextClass(isActive, isDone)}`}
+            >
+              {t(MODULE_RESOURCE_KEYS[step.moduleId as WorkflowModuleId]).toUpperCase()}
+            </Text>
+          </Group>
           {step.status === 'done' && step.promptTokens + step.completionTokens > 0 && (
             <Text size="xs" ff="monospace" className="text-fg-muted text-[10px] mt-px">
               {step.promptTokens + step.completionTokens}t
@@ -129,7 +138,7 @@ function SpecialStepItem({
           size="xs"
           fw={isActive ? 700 : 600}
           ff="monospace"
-          className={`text-[11px] tracking-[0.04em] truncate ${stepTextClass(isActive, hasDone)}`}
+          className={`text-[11px] tracking-[0.04em] leading-snug ${stepTextClass(isActive, hasDone)}`}
         >
           {label}
         </Text>
