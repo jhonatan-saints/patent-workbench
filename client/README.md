@@ -60,12 +60,12 @@ src/
 | `OptionsPanel` | working | Grid of the three generated options for the current step |
 | `OptionCard` | working | Individual option card with select and copy actions |
 | `ArtifactPreview` | working | Live right-panel preview of all sections selected so far |
-| `FiguresStep` | figures | Manage figures: upload images, create diagrams, attach JSON diagrams, set captions |
-| `DiagramEditor` | figures | In-app flowchart editor (`@xyflow/react`); exports PNG or JSON |
-| `JsonViewer` | figures | Read-only viewer for JSON diagram attachments |
+| `FiguresStep` | figures | Manage figures: upload images, create diagrams, render JSON; local state is synced to `artifact.figures` on every change so Save Draft and sidebar navigation always see the latest figures |
+| `DiagramEditor` | figures | In-app flowchart editor (`@xyflow/react`); exports board as PNG; board state is auto-saved to `figuresDraft.diagramNodes/diagramEdges` |
+| `JsonViewer` | figures | JSON editor with syntax-highlighted preview; exports rendered view as PNG; draft text is auto-saved to `figuresDraft.jsonText` |
 | `InventorsStep` | inventors | Form to add/remove inventors and optional patent metadata (IDF number, business group) |
 | `PreviewPhase` | preview | Full artifact review with inline section editing and export |
-| `SessionsPanel` | all | In-memory session history browser (restore or delete past runs) |
+| `DraftsPanel` | all | Persistent session history sidebar (restore or delete; cloud icon indicates DB-persisted vs in-memory-only) |
 
 ### Other components
 
@@ -73,7 +73,7 @@ src/
 | --- | --- |
 | `StatusIndicator` | Header badge — LLM connection status and round-trip latency |
 | `LanguageSwitcher` | Button that allows you to change the app's language |
-| `ExportPanel` | Export the artifact as `.md` (with YAML frontmatter) or `.docx` |
+| `ExportPanel` | Export the artifact as `.txt`, `.pdf` (print dialog with embedded figures), or `.docx` (Word with inventors block and embedded figures); also supports `.md` with YAML frontmatter |
 | `AppLoader` | Splash screen shown while the app initialises |
 
 ---
@@ -187,14 +187,17 @@ Key actions:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `sessions` | `WorkflowSession[]` | In-memory session history (max 20; cleared on page reload) |
+| `sessions` | `WorkflowSession[]` | Session list hydrated from SQLite on app boot; max 20 shown in sidebar |
+| `figuresDraft` | `FiguresDraft` | Diagram board nodes/edges and JSON editor text; persisted with each session |
 
 | Action | Description |
 | --- | --- |
-| `saveCurrentSession()` | Snapshots current artifact + step input states; upserts by `startedAt` |
-| `loadSession(session)` | Restores a past session; navigates to `preview` phase |
-| `deleteSession(id)` | Removes a session from history |
-| `clearSessions()` | Clears entire history |
+| `initSessions()` | Fetches `GET /sessions` on boot and populates `sessions[]`; marks all as `persisted: true` |
+| `saveCurrentSession()` | Snapshots the current artifact + step states into the in-memory `sessions[]` (no server call); used by `resetWorkflow` and export |
+| `persistDraft()` | Full server save — calls `POST /sessions` with figures, board state, nav state; marks session `persisted: true` |
+| `loadSession(session)` | Async — fetches `GET /sessions/:id` for persisted sessions (to retrieve figure `dataUrl`s stripped by the list endpoint), then restores artifact, steps, and `figuresDraft` into the store |
+| `deleteSession(id)` | Removes from `sessions[]`; calls `DELETE /sessions/:id` if persisted |
+| `clearSessions()` | Resets `sessions[]`; calls `DELETE /sessions` if any were persisted |
 
 ---
 
@@ -263,6 +266,11 @@ All server communication is centralised in `client.ts`. Functions:
 | `getModels()` | GET | `/models` |
 | `getModelContextLength(name)` | GET | `/models/:name/context` |
 | `generatePatentContent(req, signal)` | POST | `/generate` |
+| `fetchSessions()` | GET | `/sessions` |
+| `getSession(id)` | GET | `/sessions/:id` |
+| `saveSession(session)` | POST | `/sessions` |
+| `deleteSession(id)` | DELETE | `/sessions/:id` |
+| `clearAllSessions()` | DELETE | `/sessions` |
 
 Requests are made relative to `/api` (proxied to `localhost:3001` by Vite during development). `isApiError(result)` is a type guard used across the store and components.
 

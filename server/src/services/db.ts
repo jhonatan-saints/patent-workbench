@@ -8,14 +8,14 @@ fs.mkdirSync(DATA_DIR, { recursive: true })
 // Restrict data directory and DB file to owner-only on Unix/macOS.
 // On Windows this is a no-op — use NTFS ACLs or BitLocker at the OS level.
 if (process.platform !== 'win32') {
-  fs.chmodSync(DATA_DIR, 0o700) // rwx------
+  fs.chmodSync(DATA_DIR, 0o700) // rwx
 }
 
 const DB_PATH = path.join(DATA_DIR, 'workbench.db')
 const db = new Database(DB_PATH)
 
 if (process.platform !== 'win32') {
-  fs.chmodSync(DB_PATH, 0o600) // rw-------
+  fs.chmodSync(DB_PATH, 0o600) // rw
 }
 
 db.pragma('journal_mode = WAL')
@@ -23,17 +23,20 @@ db.pragma('synchronous = NORMAL')
 db.pragma('wal_autocheckpoint = 1000') // checkpoint every ~4 MB;
 db.pragma('foreign_keys = ON')
 
-const SCHEMA_VERSION = 1
+const SCHEMA_VERSION = 4
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS sessions (
-    id            TEXT    PRIMARY KEY,
-    started_at    INTEGER NOT NULL,
-    completed_at  INTEGER,
-    base_idea     TEXT    NOT NULL,
-    model         TEXT    NOT NULL,
-    total_tokens  INTEGER NOT NULL DEFAULT 0,
-    artifact      TEXT    NOT NULL
+    id                 TEXT    PRIMARY KEY,
+    started_at         INTEGER NOT NULL,
+    completed_at       INTEGER,
+    base_idea          TEXT    NOT NULL,
+    model              TEXT    NOT NULL,
+    total_tokens       INTEGER NOT NULL DEFAULT 0,
+    artifact           TEXT    NOT NULL,
+    step_input_states  TEXT,
+    figures_draft      TEXT,
+    nav_state          TEXT
   );
 
   CREATE TABLE IF NOT EXISTS figures (
@@ -51,6 +54,12 @@ db.exec(`
 
 const version = (db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version
 if (version < SCHEMA_VERSION) {
+  // v2: add step_input_states column
+  try { db.exec(`ALTER TABLE sessions ADD COLUMN step_input_states TEXT`) } catch { /* already exists */ }
+  // v3: add figures_draft column
+  try { db.exec(`ALTER TABLE sessions ADD COLUMN figures_draft TEXT`) } catch { /* already exists */ }
+  // v4: add nav_state column
+  try { db.exec(`ALTER TABLE sessions ADD COLUMN nav_state TEXT`) } catch { /* already exists */ }
   db.pragma(`user_version = ${SCHEMA_VERSION}`)
 }
 

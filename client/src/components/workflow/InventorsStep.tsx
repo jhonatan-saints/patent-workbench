@@ -20,6 +20,7 @@ import {
   IconCheck,
   IconArrowLeft,
   IconWand,
+  IconHome,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { INPUT_STYLES, btnPrimary } from '@/theme/styles';
@@ -50,6 +51,7 @@ export function InventorsStep() {
     updateInventionTitle,
     goToPreview,
     goToFigures,
+    resetWorkflow,
   } = useWorkbenchStore();
 
   const [inventionTitle, setInventionTitle] = useState(artifact?.inventionTitle ?? '');
@@ -141,15 +143,26 @@ export function InventorsStep() {
               {t('res_FilingMetadataHint')}
             </Text>
           </Stack>
-          <Button
-            variant="subtle"
-            size="xs"
-            leftSection={<IconArrowLeft size={14} />}
-            onClick={handleBack}
-            className="uppercase font-mono text-[11px] text-fg-muted"
-          >
-            {t('res_BackToFigures')}
-          </Button>
+          <Group gap={8} wrap="nowrap">
+            <Button
+              variant="subtle"
+              size="xs"
+              leftSection={<IconArrowLeft size={14} />}
+              onClick={handleBack}
+              className="uppercase font-mono text-[11px] text-fg-muted"
+            >
+              {t('res_BackToFigures')}
+            </Button>
+            <Button
+              variant="subtle"
+              size="xs"
+              leftSection={<IconHome size={14} />}
+              onClick={resetWorkflow}
+              className="uppercase font-mono text-[11px] text-fg-muted"
+            >
+              {t('res_StartOver')}
+            </Button>
+          </Group>
         </Group>
       </Box>
 
@@ -161,11 +174,8 @@ export function InventorsStep() {
             <Box className="border border-stroke rounded-md px-4.5 py-4 bg-surface">
               <Group gap={6} mb={12}>
                 <IconFileDescription size={14} className="text-fg-muted" />
-                <Text size="xs" ff="monospace" fw={700} className="text-fg-muted tracking-[0.06em]">
+                <Text size="xs" ff="monospace" fw={700} className="text-fg-muted tracking-[0.06em] uppercase">
                   {t('res_FilingInfo')}
-                  <Text span size="xs" fw={400} className="ml-1.5 text-fg-muted italic">
-                    — {t('res_Optional')}
-                  </Text>
                 </Text>
               </Group>
               <TextInput

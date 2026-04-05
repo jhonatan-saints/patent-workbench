@@ -149,6 +149,20 @@ export async function saveSession(session: WorkflowSession): Promise<void> {
   }
 }
 
+export async function getSession(id: string): Promise<WorkflowSession | null> {
+  try {
+    const result = await apiFetch<{ success: true; data: WorkflowSession }>(
+      `/sessions/${id}`,
+      {},
+      SESSIONS_TIMEOUT_MS
+    );
+    if (isApiError(result)) return null;
+    return result.data;
+  } catch {
+    return null;
+  }
+}
+
 export async function deleteSession(id: string): Promise<void> {
   try {
     await apiFetch(`/sessions/${id}`, { method: 'DELETE' }, SESSIONS_TIMEOUT_MS);

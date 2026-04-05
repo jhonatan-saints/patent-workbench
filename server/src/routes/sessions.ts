@@ -25,6 +25,13 @@ const figureSchema = z.object({
     }),
 })
 
+const stepInputStateSchema = z.object({
+  moduleId: z.string().min(1),
+  inputMode: z.enum(['auto', 'guided', 'manual']),
+  guidedFields: z.record(z.string()).default({}),
+  manualDraft: z.string().default(''),
+})
+
 // Zod schema for saving a session
 const saveSessionSchema = z.object({
   id: z.string().min(1),
@@ -36,13 +43,21 @@ const saveSessionSchema = z.object({
   artifact: z.object({
     figures: z.array(figureSchema).default([]),
   }).passthrough(),
+  stepInputStates: z.array(stepInputStateSchema).optional(),
+  figuresDraft: z.object({
+    diagramNodes: z.array(z.unknown()).default([]),
+    diagramEdges: z.array(z.unknown()).default([]),
+    jsonText: z.string().default(''),
+  }).optional(),
+  lastPhase: z.enum(['input', 'working', 'figures', 'inventors', 'preview']).optional(),
+  lastStepIndex: z.number().optional(),
 })
 
 // GET /sessions — list without figures (lightweight)
 router.get('/', (_req: Request, res: Response) => {
   const sessions = db
     .prepare(
-      `SELECT id, started_at, completed_at, base_idea, model, total_tokens, artifact
+      `SELECT id, started_at, completed_at, base_idea, model, total_tokens, artifact, step_input_states, figures_draft, nav_state
        FROM sessions ORDER BY started_at DESC LIMIT 100`
     )
     .all() as Array<{
@@ -53,6 +68,9 @@ router.get('/', (_req: Request, res: Response) => {
     model: string
     total_tokens: number
     artifact: string
+    step_input_states: string | null
+    figures_draft: string | null
+    nav_state: string | null
   }>
 
   const result = sessions.map((row) => {
@@ -83,6 +101,9 @@ router.get('/', (_req: Request, res: Response) => {
       model: row.model,
       totalTokens: row.total_tokens,
       artifact: { ...artifact, figures: figureMeta },
+      stepInputStates: row.step_input_states ? JSON.parse(row.step_input_states) : undefined,
+      figuresDraft: row.figures_draft ? JSON.parse(row.figures_draft) : undefined,
+      ...(row.nav_state ? (JSON.parse(row.nav_state) as { lastPhase: string; lastStepIndex: number | null }) : {}),
     }
   })
 
@@ -102,6 +123,9 @@ router.get('/:id', (req: Request, res: Response) => {
         model: string
         total_tokens: number
         artifact: string
+        step_input_states: string | null
+        figures_draft: string | null
+        nav_state: string | null
       }
     | undefined
 
@@ -133,6 +157,9 @@ router.get('/:id', (req: Request, res: Response) => {
       model: row.model,
       totalTokens: row.total_tokens,
       artifact: { ...artifact, figures },
+      stepInputStates: row.step_input_states ? JSON.parse(row.step_input_states) : undefined,
+      figuresDraft: row.figures_draft ? JSON.parse(row.figures_draft) : undefined,
+      ...(row.nav_state ? (JSON.parse(row.nav_state) as { lastPhase: string; lastStepIndex: number | null }) : {}),
     },
   })
 })
@@ -145,15 +172,21 @@ router.post('/', (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Validation failed', fields })
   }
 
-  const { id, startedAt, completedAt, baseIdea, model, totalTokens, artifact } = parsed.data
+  const { id, startedAt, completedAt, baseIdea, model, totalTokens, artifact, stepInputStates, figuresDraft, lastPhase, lastStepIndex } = parsed.data
   const { figures, ...artifactWithoutFigures } = artifact
 
   db.transaction(() => {
     db.prepare(
       `INSERT OR REPLACE INTO sessions
-         (id, started_at, completed_at, base_idea, model, total_tokens, artifact)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    ).run(id, startedAt, completedAt, baseIdea, model, totalTokens, JSON.stringify(artifactWithoutFigures))
+         (id, started_at, completed_at, base_idea, model, total_tokens, artifact, step_input_states, figures_draft, nav_state)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      id, startedAt, completedAt, baseIdea, model, totalTokens,
+      JSON.stringify(artifactWithoutFigures),
+      stepInputStates ? JSON.stringify(stepInputStates) : null,
+      figuresDraft ? JSON.stringify(figuresDraft) : null,
+      lastPhase == null ? null : JSON.stringify({ lastPhase, lastStepIndex: lastStepIndex ?? null }),
+    )
 
     db.prepare('DELETE FROM figures WHERE session_id = ?').run(id)
 

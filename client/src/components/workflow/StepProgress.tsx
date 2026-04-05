@@ -15,13 +15,14 @@ import {
   IconWorld,
   IconAlignLeft,
   IconEdit,
-  IconDeviceFloppy,
+  IconCloudUpload,
 } from '@tabler/icons-react';
 import type { ComponentType } from 'react';
 import { useState, useCallback } from 'react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n/useI18n';
 import { MODULE_RESOURCE_KEYS } from '@/utils/workflowTemplates';
+import { BTN_PRIMARY } from '@/theme/styles';
 import type { StepStatus, WorkflowModuleId } from '@/types';
 
 // Icon registry
@@ -291,7 +292,7 @@ function SaveSection({
               opacity: saving ? 0.6 : 1,
             }}
           >
-            <IconDeviceFloppy size={15} style={{ color: 'var(--accent)' }} />
+            <IconCloudUpload size={15} style={{ color: 'var(--accent)' }} />
           </Box>
         </Tooltip>
       </Box>
@@ -304,12 +305,10 @@ function SaveSection({
       <Box style={{ display: 'flex', justifyContent: 'center' }}>
         <Button
           size="xs"
-          variant="light"
-          leftSection={<IconDeviceFloppy size={14} />}
+          leftSection={<IconCloudUpload size={14} />}
           loading={saving}
           onClick={onSave}
-          ff="monospace"
-          style={{ fontSize: 11, letterSpacing: '0.04em', width: '80%', justifyContent: 'center' }}
+          style={{ ...BTN_PRIMARY, width: '80%', justifyContent: 'center' }}
         >
           {isAllDone ? t('res_Save') : t('res_SaveDraft')}
         </Button>

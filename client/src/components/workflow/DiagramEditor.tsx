@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -24,6 +24,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { Button, Group, Text, Box, TextInput, Switch, ColorInput, Select } from '@mantine/core';
 import { useI18n } from '@/i18n/useI18n';
+import { useWorkbenchStore } from '@/store/workbench';
 import {
   IconTrash,
   IconCheck,
@@ -297,11 +298,20 @@ const BTN = { fontFamily: 'var(--font-mono)', fontSize: 11, flexShrink: 0 } as c
 interface DiagramEditorProps {
   onAddFigure: (figure: FigureItem) => void;
   figureNumber: number;
+  visible?: boolean;
 }
 
-function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEditorProps>) {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<DiagramEditorProps>) {
+  const { figuresDraft, setDiagramDraft } = useWorkbenchStore();
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>(figuresDraft.diagramNodes as Node[]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(figuresDraft.diagramEdges as Edge[]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDiagramDraft(nodes, edges);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [nodes, edges, setDiagramDraft]);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
@@ -315,8 +325,17 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
   const [edgeLabelInput, setEdgeLabelInput] = useState('');
 
   const [transparentBg, setTransparentBg] = useState(false);
-  const { getNodes, getNodesBounds, getEdges } = useReactFlow();
+  const { getNodes, getNodesBounds, getEdges, fitView } = useReactFlow();
   const canvasRef = useRef<HTMLDivElement>(null);
+
+  // Re-fit when the panel becomes visible (container was hidden via display:none on mount,
+  // so the initial fitView prop had no dimensions to work with).
+  useEffect(() => {
+    if (!visible || nodes.length === 0) return;
+    const timer = setTimeout(() => fitView({ padding: 0.2 }), 50);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
   const { t } = useI18n();
 
   const onConnect = useCallback(
@@ -601,6 +620,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
               onClick={() => {
                 setNodes([]);
                 setEdges([]);
+                setDiagramDraft([], []);
               }}
               disabled={nodes.length === 0}
               style={BTN}
@@ -917,3 +937,4 @@ export function DiagramEditor(props: Readonly<DiagramEditorProps>) {
     </ReactFlowProvider>
   );
 }
+

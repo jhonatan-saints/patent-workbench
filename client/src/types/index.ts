@@ -119,6 +119,12 @@ export interface PatentArtifact {
   startedAt: number;
 }
 
+export interface FiguresDraft {
+  diagramNodes: unknown[];
+  diagramEdges: unknown[];
+  jsonText: string;
+}
+
 export interface WorkflowSession {
   id: string;
   startedAt: number;
@@ -134,6 +140,9 @@ export interface WorkflowSession {
     guidedFields: Record<string, string>;
     manualDraft: string;
   }>;
+  figuresDraft?: FiguresDraft;
+  lastPhase?: WorkflowPhase;
+  lastStepIndex?: number;
 }
 
 // UI state
@@ -155,6 +164,11 @@ export interface WorkbenchState {
 
   // Sessions (persisted via server SQLite)
   sessions: WorkflowSession[];
+
+  // Figures workspace drafts (diagram board + JSON editor)
+  figuresDraft: FiguresDraft;
+  setDiagramDraft: (nodes: unknown[], edges: unknown[]) => void;
+  setJsonDraftText: (text: string) => void;
 
   // Actions
   setModel: (model: string) => void;
@@ -182,7 +196,7 @@ export interface WorkbenchState {
   initSessions: () => Promise<void>;
   saveCurrentSession: () => void;
   persistDraft: () => Promise<void>;
-  loadSession: (session: WorkflowSession) => void;
+  loadSession: (session: WorkflowSession) => Promise<void>;
   clearSessions: () => void;
   deleteSession: (id: string) => void;
 }

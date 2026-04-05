@@ -90,6 +90,19 @@ export function OptionsPanel() {
               {isFirstStep ? t('res_StartOver') : t('res_Back')}
             </Button>
 
+            {!isFirstStep && !isGenerating && (
+              <Button
+                variant="subtle"
+                size="xs"
+                leftSection={<IconHome size={14} />}
+                onClick={resetWorkflow}
+                disabled={isGenerating}
+                className="uppercase text-fg-muted font-mono text-[11px]"
+              >
+                {t('res_StartOver')}
+              </Button>
+            )}
+
             {isGenerating && (
               <Button
                 variant="filled"
