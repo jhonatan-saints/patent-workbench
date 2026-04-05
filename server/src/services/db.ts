@@ -5,7 +5,18 @@ import fs from 'node:fs'
 const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), 'data')
 fs.mkdirSync(DATA_DIR, { recursive: true })
 
-const db = new Database(path.join(DATA_DIR, 'workbench.db'))
+// Restrict data directory and DB file to owner-only on Unix/macOS.
+// On Windows this is a no-op — use NTFS ACLs or BitLocker at the OS level.
+if (process.platform !== 'win32') {
+  fs.chmodSync(DATA_DIR, 0o700) // rwx------
+}
+
+const DB_PATH = path.join(DATA_DIR, 'workbench.db')
+const db = new Database(DB_PATH)
+
+if (process.platform !== 'win32') {
+  fs.chmodSync(DB_PATH, 0o600) // rw-------
+}
 
 db.pragma('journal_mode = WAL')
 db.pragma('synchronous = NORMAL')
