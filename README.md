@@ -6,6 +6,14 @@
 
 A local-first visual IDE for patent ideation, drafting, and iteration — powered by local LLMs via [Ollama](https://ollama.com). No cloud, no telemetry, no data leaving your machine.
 
+---
+
+## Screenshot
+
+![Patent Workbench landing page](client/src/assets/prints/Landing%20page.png)
+
+---
+
 ## What it does
 
 Patent Workbench guides inventors through a structured, five-phase workflow that produces a complete patent application draft. Each of the seven drafting steps uses a dedicated prompt template built on the **REG** (Role + Examples + Goal) pattern, instructing the model to reason like a USPTO patent analyst or attorney and produce output that conforms to standard IDF language conventions.
