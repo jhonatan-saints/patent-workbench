@@ -86,7 +86,7 @@ function SessionItem({
             lineClamp={2}
             style={{ flex: 1, minWidth: 0, lineHeight: 1.45, color: 'var(--text-primary)' }}
           >
-            {session.baseIdea}
+            {session.artifact.inventionTitle ?? session.baseIdea}
           </Text>
           <Tooltip label={t('res_RemoveSession')} position="left" withArrow>
             <ActionIcon

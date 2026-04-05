@@ -38,10 +38,10 @@ const ACCEPTED_TEXT_TYPES = '.txt,.md,.json,.csv,.xml,.yaml,.yml,.log';
 function ContextSummary({
   artifact,
   moduleId,
-}: {
+}: Readonly<{
   artifact: PatentArtifact;
   moduleId: WorkflowModuleId;
-}) {
+}>) {
   const tr = (s: string, max: number) => (s.length > max ? `${s.slice(0, max)}…` : s);
   const { t } = useI18n();
 

@@ -72,6 +72,7 @@ export function InventorsStep() {
   );
 
   const hasAtLeastOne = inventors.some((inv) => inv.name.trim().length > 0);
+  const canConfirm = hasAtLeastOne && inventionTitle.trim().length > 0;
 
   const updateInventor = (id: string, field: keyof InventorInfo, value: string) => {
     setInventors((prev) => prev.map((inv) => (inv.id === id ? { ...inv, [field]: value } : inv)));
@@ -157,6 +158,7 @@ export function InventorsStep() {
                 placeholder={t('res_InventionTitle_Placeholder')}
                 value={inventionTitle}
                 onChange={(e) => setInventionTitle(e.currentTarget.value)}
+                required
                 styles={INPUT_STYLES}
                 mb={10}
                 rightSection={
@@ -288,9 +290,9 @@ export function InventorsStep() {
               <Button
                 leftSection={<IconCheck size={13} />}
                 onClick={handleConfirm}
-                disabled={!hasAtLeastOne}
+                disabled={!canConfirm}
                 size="sm"
-                style={btnPrimary(hasAtLeastOne)}
+                style={btnPrimary(canConfirm)}
                 className="uppercase"
               >
                 {t('res_ConfirmAndGoToPreview')}

@@ -9,7 +9,7 @@ import {
   useMantineColorScheme,
   useComputedColorScheme,
 } from '@mantine/core';
-import { IconSun, IconMoon, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
+import { IconSun, IconMoon, IconChevronLeft, IconChevronRight, IconBrandGithub } from '@tabler/icons-react';
 import { useRef, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { StatusIndicator } from '@/components/StatusIndicator';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -63,6 +63,55 @@ function ResizableSplit({ left, right }: { readonly left: ReactNode; readonly ri
       />
       <div className="flex-1 overflow-hidden flex flex-col">{right}</div>
     </div>
+  );
+}
+
+function LogoDots() {
+  const [active, setActive] = useState<number>(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    let last = -1;
+    const schedule = () => {
+      const delay = 900 + Math.random() * 1200;
+      setTimeout(() => {
+        if (cancelled) return;
+        let next: number;
+        do { next = Math.floor(Math.random() * 9); } while (next === last);
+        last = next;
+        setActive(next);
+        schedule();
+      }, delay);
+    };
+    schedule();
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <span
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 4px)',
+        gap: 3,
+        flexShrink: 0,
+        alignSelf: 'center',
+      }}
+    >
+      {Array.from({ length: 9 }, (_, i) => (
+        <span
+          key={i}
+          style={{
+            display: 'block',
+            width: 4,
+            height: 4,
+            background: 'var(--accent)',
+            opacity: active === i ? 1 : 0.2,
+            boxShadow: active === i ? '0 0 5px var(--accent), 0 0 12px var(--accent)' : 'none',
+            transition: 'opacity 600ms ease, box-shadow 600ms ease',
+          }}
+        />
+      ))}
+    </span>
   );
 }
 
@@ -150,17 +199,7 @@ export function App() {
         <Group h="100%" px={20} justify="space-between" align="center" wrap="nowrap">
           {/* Logo */}
           <Group gap={10} align="center" wrap="nowrap">
-            <span
-              style={{
-                display: 'block',
-                width: 7,
-                height: 7,
-                borderRadius: '50%',
-                background: 'var(--accent)',
-                flexShrink: 0,
-                alignSelf: 'center',
-              }}
-            />
+            <LogoDots />
             <Text
               fw={600}
               size="sm"
@@ -210,9 +249,24 @@ export function App() {
               borderTop: '1px solid var(--border)',
               padding: navCollapsed ? '8px 0' : '8px 10px',
               display: 'flex',
-              justifyContent: navCollapsed ? 'center' : 'flex-end',
+              justifyContent: navCollapsed ? 'center' : 'space-between',
+              alignItems: 'center',
             }}
           >
+            <Tooltip label="GitHub" position="right" withArrow>
+              <ActionIcon
+                component="a"
+                href="https://github.com/jhonatan-saints/patent-workbench"
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="subtle"
+                size="sm"
+                aria-label="GitHub repository"
+                className="text-fg-muted hover:text-accent"
+              >
+                <IconBrandGithub size={13} />
+              </ActionIcon>
+            </Tooltip>
             <Tooltip
               label={navCollapsed ? 'Expand' : 'Collapse'}
               position="right"
@@ -305,8 +359,25 @@ export function App() {
           </Box>
 
           {/* Sessions list */}
-          <Box className="flex-1 overflow-hidden p-4">
+          <Box className="flex-1 overflow-y-auto min-h-0 p-4">
             <SessionsPanel />
+          </Box>
+
+          {/* Powered by */}
+          <Box
+            style={{
+              padding: '8px 0',
+              textAlign: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Text
+              ff="monospace"
+              className="text-fg-muted"
+              style={{ fontSize: 9, letterSpacing: '0.07em', userSelect: 'none', opacity: 0.5 }}
+            >
+              {t('res_PoweredByOllama')}
+            </Text>
           </Box>
         </Box>
       </AppShell.Aside>

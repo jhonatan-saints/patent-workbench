@@ -120,7 +120,6 @@ interface WorkflowStepItemProps {
 
 function WorkflowStepItem({
   step,
-  index,
   isActive,
   isDone,
   isFuture,
@@ -142,25 +141,15 @@ function WorkflowStepItem({
       <Group gap={7} wrap="nowrap" align="center">
         <StepStatusIcon status={isDone && !isActive ? 'done' : (step.status as StepStatus)} />
         <Box style={{ flex: 1 }}>
-          <Group gap={4} wrap="nowrap" align="center">
-            <Text
-              size="xs"
-              fw={isActive ? 700 : 600}
-              ff="monospace"
-              className={`text-[10.5px] tracking-[0.04em] ${stepTextClass(isActive, isDone)}`}
-              style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-            >
-              {String(index + 1).padStart(2, '0')} ·
-            </Text>
-            <Text
-              size="xs"
-              fw={isActive ? 700 : 600}
-              ff="monospace"
-              className={`text-[10.5px] tracking-[0.04em] leading-snug ${stepTextClass(isActive, isDone)}`}
-            >
-              {t(MODULE_RESOURCE_KEYS[step.moduleId as WorkflowModuleId]).toUpperCase()}
-            </Text>
-          </Group>
+          <Text
+            size="xs"
+            fw={isActive ? 700 : 600}
+            ff="monospace"
+            className={`text-[10.5px] tracking-[0.04em] leading-snug ${stepTextClass(isActive, isDone)}`}
+            style={{ whiteSpace: 'nowrap' }}
+          >
+            {t(MODULE_RESOURCE_KEYS[step.moduleId as WorkflowModuleId]).toUpperCase()}
+          </Text>
           {isDone && totalTokens > 0 && (
             <Text size="xs" ff="monospace" className="text-fg-muted text-[9.5px] mt-px leading-none">
               {totalTokens >= 1000 ? `${(totalTokens / 1000).toFixed(1)}k` : totalTokens}t
@@ -281,7 +270,7 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
           return (
             <CollapsedItem
               key={step.moduleId}
-              tooltipLabel={`${String(i + 1).padStart(2, '0')} · ${t(MODULE_RESOURCE_KEYS[step.moduleId])}`}
+              tooltipLabel={t(MODULE_RESOURCE_KEYS[step.moduleId])}
               isActive={isActive}
               isFuture={isFuture}
               canNavigate={canNavigate}
@@ -295,7 +284,7 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
 
         {/* Figures */}
         <CollapsedItem
-          tooltipLabel={t('res_Step_Figures')}
+          tooltipLabel={t('res_Figures')}
           isActive={isFiguresActive}
           isFuture={!specialUnlocked}
           canNavigate={specialUnlocked}
@@ -310,7 +299,7 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
 
         {/* Inventors */}
         <CollapsedItem
-          tooltipLabel={t('res_Step_Inventors')}
+          tooltipLabel={t('res_Inventors')}
           isActive={isInventorsActive}
           isFuture={!specialUnlocked}
           canNavigate={specialUnlocked}
@@ -325,7 +314,7 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
 
         {/* Preview */}
         <CollapsedItem
-          tooltipLabel={t('res_Step_PreviewExport')}
+          tooltipLabel={t('res_PreviewExport')}
           isActive={isPreviewActive}
           isFuture={!specialUnlocked}
           canNavigate={specialUnlocked}
