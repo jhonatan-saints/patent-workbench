@@ -209,136 +209,135 @@ export function FiguresStep() {
 
       {/* Body — upload */}
       <ScrollArea style={{ flex: 1, display: mode === 'upload' ? undefined : 'none' }}>
-          <Box p={28} style={{ maxWidth: 800, margin: '0 auto' }}>
-            <Stack gap={20}>
-              <Box
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-stroke rounded-lg px-6 py-8 text-center cursor-pointer transition-colors duration-150 bg-surface hover:border-accent hover:bg-surface-raised"
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                <IconUpload size={24} className="text-fg-muted mb-2" />
-                <Text size="sm" fw={600} className="text-fg">
-                  {t('res_ClickToUploadImages')}
-                </Text>
-                <Text size="xs" c="var(--text-muted)" mt={4}>
-                  {t('res_SupportedImageTypesHint')}
-                </Text>
-              </Box>
+        <Box p={28} style={{ maxWidth: 800, margin: '0 auto' }}>
+          <Stack gap={20}>
+            <Box
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-stroke rounded-lg px-6 py-8 text-center cursor-pointer transition-colors duration-150 bg-surface hover:border-accent hover:bg-surface-raised"
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <IconUpload size={24} className="text-fg-muted mb-2" />
+              <Text size="sm" fw={600} className="text-fg">
+                {t('res_ClickToUploadImages')}
+              </Text>
+              <Text size="xs" c="var(--text-muted)" mt={4}>
+                {t('res_SupportedImageTypesHint')}
+              </Text>
+            </Box>
 
-              {figures.map((fig, idx) => (
-                <Box
-                  key={fig.id}
-                  className="border border-stroke rounded-md overflow-hidden bg-surface"
+            {figures.map((fig, idx) => (
+              <Box
+                key={fig.id}
+                className="border border-stroke rounded-md overflow-hidden bg-surface"
+              >
+                <Group
+                  justify="space-between"
+                  className="px-3.5 py-2.5 bg-surface-raised border-b border-stroke"
                 >
-                  <Group
-                    justify="space-between"
-                    className="px-3.5 py-2.5 bg-surface-raised border-b border-stroke"
-                  >
-                    <Group gap={8}>
+                  <Group gap={8}>
+                    <Text
+                      size="xs"
+                      ff="monospace"
+                      fw={700}
+                      className="text-fg-muted tracking-[0.06em]"
+                    >
+                      {figureTypeLabel(fig.type)} {idx + 1}
+                    </Text>
+                    {fig.type !== 'image' && fig.type != null && (
                       <Text
                         size="xs"
                         ff="monospace"
-                        fw={700}
-                        className="text-fg-muted tracking-[0.06em]"
+                        className="text-accent text-[10px] bg-surface-active px-1.5 py-px rounded border border-accent"
                       >
-                        {figureTypeLabel(fig.type)} {idx + 1}
+                        {figureTypeLabel(fig.type)}
                       </Text>
-                      {fig.type !== 'image' && fig.type != null && (
-                        <Text
-                          size="xs"
-                          ff="monospace"
-                          className="text-accent text-[10px] bg-surface-active px-1.5 py-px rounded border border-accent"
-                        >
-                          {figureTypeLabel(fig.type)}
-                        </Text>
-                      )}
-                    </Group>
-                    <Group gap={4}>
-                      <ActionIcon
-                        variant="subtle"
-                        size="sm"
-                        onClick={() => downloadFigure(fig)}
-                        aria-label={t('res_DownloadFigure')}
-                        className="text-fg-muted"
-                      >
-                        <IconDownload size={13} />
-                      </ActionIcon>
-                      <ActionIcon
-                        variant="subtle"
-                        size="sm"
-                        color="red"
-                        onClick={() => removeFigure(fig.id)}
-                        aria-label={t('res_RemoveFigure')}
-                      >
-                        <IconTrash size={13} />
-                      </ActionIcon>
-                    </Group>
+                    )}
                   </Group>
-                  <Box p={14}>
-                    <Group align="flex-start" gap={16} wrap="nowrap">
-                      <Box className="w-45 h-32.5 shrink-0 border border-stroke rounded flex items-center justify-center overflow-hidden bg-white">
-                        <img
-                          src={fig.dataUrl}
-                          alt={fig.name}
-                          className="max-w-full max-h-full object-contain"
-                        />
-                      </Box>
-                      <Stack gap={10} className="flex-1">
-                        <TextInput
-                          label={t('res_FigureLabel')}
-                          value={fig.name}
-                          onChange={(e) => updateFigure(fig.id, 'name', e.currentTarget.value)}
+                  <Group gap={4}>
+                    <ActionIcon
+                      variant="subtle"
+                      size="sm"
+                      onClick={() => downloadFigure(fig)}
+                      aria-label={t('res_DownloadFigure')}
+                      className="text-fg-muted"
+                    >
+                      <IconDownload size={13} />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="subtle"
+                      size="sm"
+                      color="red"
+                      onClick={() => removeFigure(fig.id)}
+                      aria-label={t('res_RemoveFigure')}
+                    >
+                      <IconTrash size={13} />
+                    </ActionIcon>
+                  </Group>
+                </Group>
+                <Box p={14}>
+                  <Group align="flex-start" gap={16} wrap="nowrap">
+                    <Box className="w-45 h-32.5 shrink-0 border border-stroke rounded flex items-center justify-center overflow-hidden bg-white">
+                      <img
+                        src={fig.dataUrl}
+                        alt={fig.name}
+                        className="max-w-full max-h-full object-contain"
+                      />
+                    </Box>
+                    <Stack gap={10} className="flex-1">
+                      <TextInput
+                        label={t('res_FigureLabel')}
+                        value={fig.name}
+                        onChange={(e) => updateFigure(fig.id, 'name', e.currentTarget.value)}
+                        styles={INPUT_STYLES}
+                      />
+                      <Group gap={10} grow>
+                        <NumberInput
+                          label={t('res_WidthPx')}
+                          value={fig.width ?? ''}
+                          onChange={(val) => updateFigureDimension(fig.id, 'width', val)}
+                          min={1}
+                          allowDecimal={false}
                           styles={INPUT_STYLES}
                         />
-                        <Group gap={10} grow>
-                          <NumberInput
-                            label={t('res_WidthPx')}
-                            value={fig.width ?? ''}
-                            onChange={(val) => updateFigureDimension(fig.id, 'width', val)}
-                            min={1}
-                            allowDecimal={false}
-                            styles={INPUT_STYLES}
-                          />
-                          <NumberInput
-                            label={t('res_HeightPx')}
-                            value={fig.height ?? ''}
-                            onChange={(val) => updateFigureDimension(fig.id, 'height', val)}
-                            min={1}
-                            allowDecimal={false}
-                            styles={INPUT_STYLES}
-                          />
-                        </Group>
-                        <Textarea
-                          label={t('res_Caption')}
-                          placeholder={t('res_Caption_Placeholder')}
-                          value={fig.caption}
-                          onChange={(e) => updateFigure(fig.id, 'caption', e.currentTarget.value)}
-                          minRows={2}
-                          autosize
+                        <NumberInput
+                          label={t('res_HeightPx')}
+                          value={fig.height ?? ''}
+                          onChange={(val) => updateFigureDimension(fig.id, 'height', val)}
+                          min={1}
+                          allowDecimal={false}
                           styles={INPUT_STYLES}
                         />
-                      </Stack>
-                    </Group>
-                  </Box>
+                      </Group>
+                      <Textarea
+                        label={t('res_Caption')}
+                        placeholder={t('res_Caption_Placeholder')}
+                        value={fig.caption}
+                        onChange={(e) => updateFigure(fig.id, 'caption', e.currentTarget.value)}
+                        minRows={2}
+                        autosize
+                        styles={INPUT_STYLES}
+                      />
+                    </Stack>
+                  </Group>
                 </Box>
-              ))}
-            </Stack>
-          </Box>
-        </ScrollArea>
+              </Box>
+            ))}
+          </Stack>
+        </Box>
+      </ScrollArea>
 
       {/* Body — diagram editor */}
-      <Box style={{ flex: 1, overflow: 'hidden', display: mode === 'diagram' ? undefined : 'none' }}>
-        <DiagramEditor
-          onAddFigure={handleAddFigureFromEditor}
-          figureNumber={figures.length + 1}
-        />
+      <Box
+        style={{ flex: 1, overflow: 'hidden', display: mode === 'diagram' ? undefined : 'none' }}
+      >
+        <DiagramEditor onAddFigure={handleAddFigureFromEditor} figureNumber={figures.length + 1} />
       </Box>
 
       {/* Body — JSON viewer */}

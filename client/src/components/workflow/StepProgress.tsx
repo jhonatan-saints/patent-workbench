@@ -24,7 +24,10 @@ import type { StepStatus, WorkflowModuleId } from '@/types';
 
 // Icon registry
 
-const MODULE_ICONS: Record<WorkflowModuleId, ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
+const MODULE_ICONS: Record<
+  WorkflowModuleId,
+  ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>
+> = {
   problem: IconAlertTriangle,
   previous_solutions: IconHistory,
   differences: IconGitBranch,
@@ -50,7 +53,8 @@ function accentIconClass(isActive: boolean, isDone: boolean): string {
 
 function StepStatusIcon({ status }: Readonly<{ status: StepStatus }>) {
   if (status === 'done') return <IconCircleCheck size={13} className="text-accent shrink-0" />;
-  if (status === 'generating') return <IconLoader2 size={13} className="spin text-accent shrink-0" />;
+  if (status === 'generating')
+    return <IconLoader2 size={13} className="spin text-accent shrink-0" />;
   if (status === 'selecting') return <IconCircleDot size={13} className="text-accent shrink-0" />;
   if (status === 'input') return <IconEdit size={13} className="text-accent shrink-0" />;
   return <IconCircle size={13} className="text-fg-muted shrink-0" />;
@@ -151,7 +155,11 @@ function WorkflowStepItem({
             {t(MODULE_RESOURCE_KEYS[step.moduleId as WorkflowModuleId]).toUpperCase()}
           </Text>
           {isDone && totalTokens > 0 && (
-            <Text size="xs" ff="monospace" className="text-fg-muted text-[9.5px] mt-px leading-none">
+            <Text
+              size="xs"
+              ff="monospace"
+              className="text-fg-muted text-[9.5px] mt-px leading-none"
+            >
               {totalTokens >= 1000 ? `${(totalTokens / 1000).toFixed(1)}k` : totalTokens}t
             </Text>
           )}
@@ -319,9 +327,7 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
           isFuture={!specialUnlocked}
           canNavigate={specialUnlocked}
           onClick={goToPreview}
-          icon={
-            <IconEye size={15} className={accentIconClass(isPreviewActive, false)} />
-          }
+          icon={<IconEye size={15} className={accentIconClass(isPreviewActive, false)} />}
         />
       </Stack>
     );

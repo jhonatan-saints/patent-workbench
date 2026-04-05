@@ -1,12 +1,4 @@
-import {
-  Stack,
-  Text,
-  Group,
-  ActionIcon,
-  Box,
-  Tooltip,
-  ScrollArea,
-} from '@mantine/core';
+import { Stack, Text, Group, ActionIcon, Box, Tooltip, ScrollArea } from '@mantine/core';
 import { IconTrash, IconClock, IconX } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n/useI18n';
@@ -154,7 +146,13 @@ function SessionItem({
 
           {/* Separator */}
           <Box
-            style={{ width: 1, height: 10, background: 'var(--border)', margin: '0 7px', flexShrink: 0 }}
+            style={{
+              width: 1,
+              height: 10,
+              background: 'var(--border)',
+              margin: '0 7px',
+              flexShrink: 0,
+            }}
           />
 
           {/* Tokens */}
@@ -166,7 +164,10 @@ function SessionItem({
           </Text>
 
           {/* Dot */}
-          <Text ff="monospace" style={{ fontSize: 11, color: 'var(--border)', margin: '0 5px', flexShrink: 0 }}>
+          <Text
+            ff="monospace"
+            style={{ fontSize: 11, color: 'var(--border)', margin: '0 5px', flexShrink: 0 }}
+          >
             ·
           </Text>
 
@@ -239,10 +240,7 @@ export function SessionsPanel() {
         >
           {t('res_NoSessionsYet')}
         </Text>
-        <Text
-          size="xs"
-          style={{ color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.7 }}
-        >
+        <Text size="xs" style={{ color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.7 }}>
           {t('res_CompletedWorkflowsHere')}
         </Text>
       </Box>

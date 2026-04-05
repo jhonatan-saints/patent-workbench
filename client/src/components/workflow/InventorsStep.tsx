@@ -1,5 +1,17 @@
 import { useState, useRef } from 'react';
-import { Stack, TextInput, Button, Text, Group, Box, Divider, ScrollArea, ActionIcon, Loader, Tooltip } from '@mantine/core';
+import {
+  Stack,
+  TextInput,
+  Button,
+  Text,
+  Group,
+  Box,
+  Divider,
+  ScrollArea,
+  ActionIcon,
+  Loader,
+  Tooltip,
+} from '@mantine/core';
 import {
   IconFileDescription,
   IconUser,
@@ -58,7 +70,10 @@ export function InventorsStep() {
     try {
       const context = buildArtifactContext(artifact);
       const prompt = `You are a patent title writer. Based on the invention below, generate a single concise and professional patent title (typically 5–15 words). Output ONLY the title text, with no quotes, no punctuation at the end, and no explanation.\n\n${context}`;
-      const result = await generatePatentContent({ prompt, model: artifact.model }, abortRef.current.signal);
+      const result = await generatePatentContent(
+        { prompt, model: artifact.model },
+        abortRef.current.signal
+      );
       if (result.success) {
         setInventionTitle(result.data.response.trim());
       }
