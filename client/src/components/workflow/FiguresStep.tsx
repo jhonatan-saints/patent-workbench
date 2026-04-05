@@ -20,6 +20,7 @@ import {
   IconArrowRight,
   IconVectorTriangle,
   IconBraces,
+  IconDownload,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { INPUT_STYLES, BTN_PRIMARY } from '@/theme/styles';
@@ -93,6 +94,17 @@ export function FiguresStep() {
 
   const removeFigure = (id: string) => {
     setFigures((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const downloadFigure = (fig: FigureItem) => {
+    const mime = fig.dataUrl.split(';')[0].split(':')[1] ?? 'image/png';
+    let ext = 'png';
+    if (mime === 'image/jpeg') ext = 'jpg';
+    else if (mime === 'image/webp') ext = 'webp';
+    const a = document.createElement('a');
+    a.href = fig.dataUrl;
+    a.download = `${fig.name.replaceAll(' ', '_')}.${ext}`;
+    a.click();
   };
 
   const handleAddFigureFromEditor = (fig: FigureItem) => {
@@ -196,8 +208,7 @@ export function FiguresStep() {
       </Box>
 
       {/* Body — upload */}
-      {mode === 'upload' && (
-        <ScrollArea style={{ flex: 1 }}>
+      <ScrollArea style={{ flex: 1, display: mode === 'upload' ? undefined : 'none' }}>
           <Box p={28} style={{ maxWidth: 800, margin: '0 auto' }}>
             <Stack gap={20}>
               <Box
@@ -249,15 +260,26 @@ export function FiguresStep() {
                         </Text>
                       )}
                     </Group>
-                    <ActionIcon
-                      variant="subtle"
-                      size="sm"
-                      color="red"
-                      onClick={() => removeFigure(fig.id)}
-                      aria-label={t('res_RemoveFigure')}
-                    >
-                      <IconTrash size={13} />
-                    </ActionIcon>
+                    <Group gap={4}>
+                      <ActionIcon
+                        variant="subtle"
+                        size="sm"
+                        onClick={() => downloadFigure(fig)}
+                        aria-label={t('res_DownloadFigure')}
+                        className="text-fg-muted"
+                      >
+                        <IconDownload size={13} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        size="sm"
+                        color="red"
+                        onClick={() => removeFigure(fig.id)}
+                        aria-label={t('res_RemoveFigure')}
+                      >
+                        <IconTrash size={13} />
+                      </ActionIcon>
+                    </Group>
                   </Group>
                   <Box p={14}>
                     <Group align="flex-start" gap={16} wrap="nowrap">
@@ -310,24 +332,19 @@ export function FiguresStep() {
             </Stack>
           </Box>
         </ScrollArea>
-      )}
 
       {/* Body — diagram editor */}
-      {mode === 'diagram' && (
-        <Box style={{ flex: 1, overflow: 'hidden' }}>
-          <DiagramEditor
-            onAddFigure={handleAddFigureFromEditor}
-            figureNumber={figures.length + 1}
-          />
-        </Box>
-      )}
+      <Box style={{ flex: 1, overflow: 'hidden', display: mode === 'diagram' ? undefined : 'none' }}>
+        <DiagramEditor
+          onAddFigure={handleAddFigureFromEditor}
+          figureNumber={figures.length + 1}
+        />
+      </Box>
 
       {/* Body — JSON viewer */}
-      {mode === 'json' && (
-        <Box style={{ flex: 1, overflow: 'hidden' }}>
-          <JsonViewer onAddFigure={handleAddFigureFromEditor} figureNumber={figures.length + 1} />
-        </Box>
-      )}
+      <Box style={{ flex: 1, overflow: 'hidden', display: mode === 'json' ? undefined : 'none' }}>
+        <JsonViewer onAddFigure={handleAddFigureFromEditor} figureNumber={figures.length + 1} />
+      </Box>
 
       {/* Footer */}
       <Box className="px-7 py-3 border-t border-stroke bg-surface-raised shrink-0">

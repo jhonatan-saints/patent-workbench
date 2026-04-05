@@ -11,6 +11,7 @@ import {
   useEdgesState,
   Handle,
   Position,
+  NodeResizer,
   useReactFlow,
   ConnectionMode,
   type Connection,
@@ -62,6 +63,7 @@ function AllHandles() {
 function ProcessNode({ data, selected }: Readonly<NodeProps>) {
   const bg = (data.bgColor as string) || '#ffffff';
   const border = (data.borderColor as string) || '#aaaaaa';
+  const color = (data.fontColor as string) || '#111111';
   return (
     <div
       style={{
@@ -71,12 +73,18 @@ function ProcessNode({ data, selected }: Readonly<NodeProps>) {
         background: bg,
         fontSize: 13,
         fontFamily: 'monospace',
-        minWidth: 120,
+        width: '100%',
+        height: '100%',
         textAlign: 'center',
-        color: '#111',
+        color,
         position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxSizing: 'border-box',
       }}
     >
+      <NodeResizer minWidth={80} minHeight={36} isVisible={selected} lineStyle={{ border: '1px dashed #6366f1' }} handleStyle={{ width: 8, height: 8, borderRadius: 2 }} />
       <AllHandles />
       <span>{(data.label as string) || 'Process'}</span>
     </div>
@@ -86,8 +94,10 @@ function ProcessNode({ data, selected }: Readonly<NodeProps>) {
 function DecisionNode({ data, selected }: Readonly<NodeProps>) {
   const bg = (data.bgColor as string) || '#ffffff';
   const border = (data.borderColor as string) || '#aaaaaa';
+  const color = (data.fontColor as string) || '#111111';
   return (
-    <div style={{ width: 120, height: 120, position: 'relative' }}>
+    <div style={{ width: '100%', height: '100%', minWidth: 100, minHeight: 100, position: 'relative' }}>
+      <NodeResizer minWidth={100} minHeight={100} isVisible={selected} lineStyle={{ border: '1px dashed #6366f1' }} handleStyle={{ width: 8, height: 8, borderRadius: 2 }} />
       <AllHandles />
       <div
         style={{
@@ -110,7 +120,7 @@ function DecisionNode({ data, selected }: Readonly<NodeProps>) {
           textAlign: 'center',
           padding: '0 20px',
           pointerEvents: 'none',
-          color: '#111',
+          color,
         }}
       >
         {(data.label as string) || 'Decision?'}
@@ -122,6 +132,7 @@ function DecisionNode({ data, selected }: Readonly<NodeProps>) {
 function StartNode({ data, selected }: Readonly<NodeProps>) {
   const bg = (data.bgColor as string) || '#d1fae5';
   const border = (data.borderColor as string) || '#10b981';
+  const color = (data.fontColor as string) || '#111111';
   return (
     <div
       style={{
@@ -131,12 +142,18 @@ function StartNode({ data, selected }: Readonly<NodeProps>) {
         background: bg,
         fontSize: 12,
         fontFamily: 'monospace',
-        minWidth: 90,
+        width: '100%',
+        height: '100%',
         textAlign: 'center',
-        color: '#111',
+        color,
         position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxSizing: 'border-box',
       }}
     >
+      <NodeResizer minWidth={80} minHeight={36} isVisible={selected} lineStyle={{ border: '1px dashed #6366f1' }} handleStyle={{ width: 8, height: 8, borderRadius: 2 }} />
       <AllHandles />
       <span>{(data.label as string) || 'Start'}</span>
     </div>
@@ -146,6 +163,7 @@ function StartNode({ data, selected }: Readonly<NodeProps>) {
 function EndNode({ data, selected }: Readonly<NodeProps>) {
   const bg = (data.bgColor as string) || '#fee2e2';
   const border = (data.borderColor as string) || '#ef4444';
+  const color = (data.fontColor as string) || '#111111';
   const ringColor = selected ? '#6366f1' : border;
   return (
     <div
@@ -156,14 +174,19 @@ function EndNode({ data, selected }: Readonly<NodeProps>) {
         background: bg,
         fontSize: 12,
         fontFamily: 'monospace',
-        minWidth: 90,
+        width: '100%',
+        height: '100%',
         textAlign: 'center',
-        color: '#111',
+        color,
         position: 'relative',
         boxShadow: `0 0 0 4px ${ringColor}`,
-        margin: 4,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxSizing: 'border-box',
       }}
     >
+      <NodeResizer minWidth={80} minHeight={36} isVisible={selected} lineStyle={{ border: '1px dashed #6366f1' }} handleStyle={{ width: 8, height: 8, borderRadius: 2 }} />
       <AllHandles />
       <span>{(data.label as string) || 'End'}</span>
     </div>
@@ -173,8 +196,10 @@ function EndNode({ data, selected }: Readonly<NodeProps>) {
 function IONode({ data, selected }: Readonly<NodeProps>) {
   const bg = (data.bgColor as string) || '#eff6ff';
   const border = (data.borderColor as string) || '#3b82f6';
+  const color = (data.fontColor as string) || '#111111';
   return (
-    <div style={{ position: 'relative', minWidth: 130 }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', minWidth: 100, minHeight: 36 }}>
+      <NodeResizer minWidth={100} minHeight={36} isVisible={selected} lineStyle={{ border: '1px dashed #6366f1' }} handleStyle={{ width: 8, height: 8, borderRadius: 2 }} />
       <AllHandles />
       <div
         style={{
@@ -184,8 +209,14 @@ function IONode({ data, selected }: Readonly<NodeProps>) {
           fontSize: 12,
           fontFamily: 'monospace',
           textAlign: 'center',
-          color: '#111',
+          color,
           transform: 'skewX(-15deg)',
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxSizing: 'border-box',
         }}
       >
         <span style={{ display: 'inline-block', transform: 'skewX(15deg)' }}>
@@ -211,12 +242,12 @@ const EDGE_TYPE_OPTIONS = [
   { value: 'smoothstep', label: 'Smooth Step' },
 ];
 
-const NODE_DEFAULTS: Record<string, { label: string; bgColor: string; borderColor: string }> = {
-  process: { label: 'Process', bgColor: '#ffffff', borderColor: '#aaaaaa' },
-  decision: { label: 'Decision?', bgColor: '#ffffff', borderColor: '#aaaaaa' },
-  start: { label: 'Start', bgColor: '#d1fae5', borderColor: '#10b981' },
-  end: { label: 'End', bgColor: '#fee2e2', borderColor: '#ef4444' },
-  io: { label: 'Input/Output', bgColor: '#eff6ff', borderColor: '#3b82f6' },
+const NODE_DEFAULTS: Record<string, { label: string; bgColor: string; borderColor: string; fontColor: string }> = {
+  process: { label: 'Process', bgColor: '#ffffff', borderColor: '#aaaaaa', fontColor: '#111111' },
+  decision: { label: 'Decision?', bgColor: '#ffffff', borderColor: '#aaaaaa', fontColor: '#111111' },
+  start: { label: 'Start', bgColor: '#d1fae5', borderColor: '#10b981', fontColor: '#111111' },
+  end: { label: 'End', bgColor: '#fee2e2', borderColor: '#ef4444', fontColor: '#111111' },
+  io: { label: 'Input/Output', bgColor: '#eff6ff', borderColor: '#3b82f6', fontColor: '#111111' },
 };
 
 const BTN = { fontFamily: 'var(--font-mono)', fontSize: 11, flexShrink: 0 } as const;
@@ -236,6 +267,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
   const [labelInput, setLabelInput] = useState('');
   const [nodeBg, setNodeBg] = useState('#ffffff');
   const [nodeBorder, setNodeBorder] = useState('#aaaaaa');
+  const [nodeFontColor, setNodeFontColor] = useState('#111111');
   const [edgeColor, setEdgeColor] = useState('#555555');
   const [edgeType, setEdgeType] = useState('default');
   const [edgeLabelInput, setEdgeLabelInput] = useState('');
@@ -272,6 +304,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
         setLabelInput((n.data.label as string) || '');
         setNodeBg((n.data.bgColor as string) || '#ffffff');
         setNodeBorder((n.data.borderColor as string) || '#aaaaaa');
+        setNodeFontColor((n.data.fontColor as string) || '#111111');
       } else if (selEdges.length === 1 && selNodes.length === 0) {
         const e = selEdges[0];
         setSelectedEdgeId(e.id);
@@ -297,12 +330,12 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
   }, [selectedNodeId, labelInput, setNodes]);
 
   const applyNodeColors = useCallback(
-    (bg: string, border: string) => {
+    (bg: string, border: string, fontColor: string) => {
       if (!selectedNodeId) return;
       setNodes((nds: Node[]) =>
         nds.map((n: Node) =>
           n.id === selectedNodeId
-            ? { ...n, data: { ...n.data, bgColor: bg, borderColor: border } }
+            ? { ...n, data: { ...n.data, bgColor: bg, borderColor: border, fontColor } }
             : n
         )
       );
@@ -363,6 +396,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
       setLabelInput(d.label);
       setNodeBg(d.bgColor);
       setNodeBorder(d.borderColor);
+      setNodeFontColor(d.fontColor);
     },
     [setNodes]
   );
@@ -567,7 +601,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
                   value={nodeBg}
                   onChange={(v) => {
                     setNodeBg(v);
-                    applyNodeColors(v, nodeBorder);
+                    applyNodeColors(v, nodeBorder, nodeFontColor);
                   }}
                   placeholder={t('res_DiagramPlaceholderFillColor')}
                   style={{ width: 110, flexShrink: 0 }}
@@ -593,7 +627,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
                   value={nodeBorder}
                   onChange={(v) => {
                     setNodeBorder(v);
-                    applyNodeColors(nodeBg, v);
+                    applyNodeColors(nodeBg, v, nodeFontColor);
                   }}
                   placeholder={t('res_DiagramPlaceholderBorderColor')}
                   style={{ width: 110, flexShrink: 0 }}
@@ -611,6 +645,32 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
                     '#ec4899',
                     '#111827',
                     '#000000',
+                  ]}
+                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
+                />
+                <ColorInput
+                  size="xs"
+                  value={nodeFontColor}
+                  onChange={(v) => {
+                    setNodeFontColor(v);
+                    applyNodeColors(nodeBg, nodeBorder, v);
+                  }}
+                  placeholder={t('res_DiagramPlaceholderFontColor')}
+                  style={{ width: 110, flexShrink: 0 }}
+                  format="hex"
+                  withEyeDropper={false}
+                  popoverProps={{ zIndex: 9999 }}
+                  swatches={[
+                    '#111111',
+                    '#000000',
+                    '#ffffff',
+                    '#6366f1',
+                    '#10b981',
+                    '#ef4444',
+                    '#3b82f6',
+                    '#f59e0b',
+                    '#8b5cf6',
+                    '#ec4899',
                   ]}
                   styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
                 />

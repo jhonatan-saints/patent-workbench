@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Stack, TextInput, Button, Text, Group, Box, Divider, ScrollArea } from '@mantine/core';
+import { useState, useRef } from 'react';
+import { Stack, TextInput, Button, Text, Group, Box, Divider, ScrollArea, ActionIcon, Loader, Tooltip } from '@mantine/core';
 import {
   IconFileDescription,
   IconUser,
@@ -7,12 +7,15 @@ import {
   IconTrash,
   IconCheck,
   IconArrowLeft,
+  IconWand,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { INPUT_STYLES, btnPrimary } from '@/theme/styles';
 import type { InventorInfo } from '@/types';
 import { generateId } from '@/utils/sanitize';
 import { useI18n } from '@/i18n/useI18n';
+import { buildArtifactContext } from '@/utils/workflowTemplates';
+import { generatePatentContent } from '@/api/client';
 
 function emptyInventor(): InventorInfo {
   return {
@@ -40,6 +43,29 @@ export function InventorsStep() {
   const [inventionTitle, setInventionTitle] = useState(artifact?.inventionTitle ?? '');
   const [idfNumber, setIdfNumber] = useState(artifact?.idfNumber ?? '');
   const [businessGroup, setBusinessGroup] = useState(artifact?.businessGroup ?? '');
+  const [generatingTitle, setGeneratingTitle] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const handleGenerateTitle = async () => {
+    if (generatingTitle) {
+      abortRef.current?.abort();
+      setGeneratingTitle(false);
+      return;
+    }
+    if (!artifact) return;
+    abortRef.current = new AbortController();
+    setGeneratingTitle(true);
+    try {
+      const context = buildArtifactContext(artifact);
+      const prompt = `You are a patent title writer. Based on the invention below, generate a single concise and professional patent title (typically 5–15 words). Output ONLY the title text, with no quotes, no punctuation at the end, and no explanation.\n\n${context}`;
+      const result = await generatePatentContent({ prompt, model: artifact.model }, abortRef.current.signal);
+      if (result.success) {
+        setInventionTitle(result.data.response.trim());
+      }
+    } finally {
+      setGeneratingTitle(false);
+    }
+  };
 
   const [inventors, setInventors] = useState<InventorInfo[]>(() =>
     artifact?.inventors.length ? artifact.inventors : [emptyInventor()]
@@ -133,6 +159,18 @@ export function InventorsStep() {
                 onChange={(e) => setInventionTitle(e.currentTarget.value)}
                 styles={INPUT_STYLES}
                 mb={10}
+                rightSection={
+                  <Tooltip label={t('res_GenerateTitle')} withArrow position="top">
+                    <ActionIcon
+                      variant="subtle"
+                      size="sm"
+                      onClick={() => void handleGenerateTitle()}
+                      className="text-fg-muted"
+                    >
+                      {generatingTitle ? <Loader size={12} /> : <IconWand size={14} />}
+                    </ActionIcon>
+                  </Tooltip>
+                }
               />
               <Group grow gap={10}>
                 <TextInput
