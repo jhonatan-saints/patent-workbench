@@ -23,7 +23,7 @@ export function StatusIndicator() {
   const { color, label } = STATUS_MAP[llmStatus] ?? STATUS_MAP.checking;
 
   return (
-    <Group gap={8}>
+    <Group gap={6} align="center" wrap="nowrap">
       <Tooltip
         label={
           llmLatency === null ? t('res_CheckingConnection') : t('res_LatencyMs', { ms: llmLatency })
@@ -53,12 +53,12 @@ export function StatusIndicator() {
 
       <ActionIcon
         variant="subtle"
-        size="xs"
+        size="md"
         onClick={checkStatus}
         title={t('res_RefreshStatus')}
-        className="text-fg-muted"
+        className="text-fg-muted hover:text-accent"
       >
-        <IconRefresh size={14} />
+        <IconRefresh size={16} />
       </ActionIcon>
     </Group>
   );
