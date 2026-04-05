@@ -181,8 +181,6 @@ In the **Ollama desktop app settings**, ensure the following are **disabled**:
 
 ### Context length recommendations
 
-Each full workflow run accumulates ~8 800 tokens of context.
-
 | Available RAM | Recommended `num_ctx` | Notes |
 | --- | --- | --- |
 | 16 GB | 4 096 | Minimum viable; may truncate on the final steps for large prompts |
@@ -190,7 +188,8 @@ Each full workflow run accumulates ~8 800 tokens of context.
 | 64 GB+ | > 16 384 | For very large models or context-heavy reference documents |
 
 > [!TIP] 
-> Apply via Ollama app settings.
+> - Apply via Ollama app settings.
+> - Each full workflow run accumulates ~8 800 tokens of context.
 
 ---
 
