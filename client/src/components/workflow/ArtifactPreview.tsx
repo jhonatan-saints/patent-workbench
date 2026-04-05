@@ -17,7 +17,7 @@ export function ArtifactPreview() {
       {/* Header */}
       <Box className="px-4 py-3.5 border-b border-stroke bg-surface-raised shrink-0">
         <Group gap={8} mb={3}>
-          <IconFileText size={13} className="text-accent" />
+          <IconFileText size={14} className="text-accent" />
           <Text
             size="xs"
             fw={700}

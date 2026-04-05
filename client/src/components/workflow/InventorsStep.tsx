@@ -303,7 +303,7 @@ export function InventorsStep() {
               </Button>
 
               <Button
-                leftSection={<IconCheck size={13} />}
+                leftSection={<IconCheck size={14} />}
                 onClick={handleConfirm}
                 disabled={!canConfirm}
                 size="sm"

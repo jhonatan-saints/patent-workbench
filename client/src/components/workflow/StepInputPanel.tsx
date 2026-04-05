@@ -235,7 +235,7 @@ export function StepInputPanel({ moduleId }: Props) {
 
   const generateBtn = isGenerating ? (
     <Button
-      leftSection={<IconPlayerStop size={13} />}
+      leftSection={<IconPlayerStop size={14} />}
       onClick={cancelGeneration}
       size="sm"
       style={BTN_STOP}
@@ -244,7 +244,7 @@ export function StepInputPanel({ moduleId }: Props) {
     </Button>
   ) : (
     <Button
-      leftSection={<IconWand size={13} />}
+      leftSection={<IconWand size={14} />}
       onClick={handleGenerate}
       size="sm"
       style={btnPrimary(true)}
@@ -459,7 +459,7 @@ export function StepInputPanel({ moduleId }: Props) {
 
           {isGenerating ? (
             <Button
-              leftSection={<IconPlayerStop size={13} />}
+              leftSection={<IconPlayerStop size={14} />}
               onClick={cancelGeneration}
               size="sm"
               style={BTN_STOP}
@@ -468,7 +468,7 @@ export function StepInputPanel({ moduleId }: Props) {
             </Button>
           ) : (
             <Button
-              leftSection={<IconForms size={13} />}
+              leftSection={<IconForms size={14} />}
               onClick={handleGenerate}
               size="sm"
               style={btnPrimary(true)}
@@ -497,7 +497,7 @@ export function StepInputPanel({ moduleId }: Props) {
             styles={INPUT_STYLES}
           />
           <Button
-            leftSection={<IconPencil size={13} />}
+            leftSection={<IconPencil size={14} />}
             onClick={handleManualConfirm}
             disabled={!manualText.trim()}
             size="sm"

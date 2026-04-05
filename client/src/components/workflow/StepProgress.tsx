@@ -1,4 +1,4 @@
-import { Box, Stack, Text, Group, Tooltip, Divider } from '@mantine/core';
+import { Box, Stack, Text, Group, Tooltip, Divider, Button } from '@mantine/core';
 import {
   IconCircleCheck,
   IconCircleDot,
@@ -15,8 +15,10 @@ import {
   IconWorld,
   IconAlignLeft,
   IconEdit,
+  IconDeviceFloppy,
 } from '@tabler/icons-react';
 import type { ComponentType } from 'react';
+import { useState, useCallback } from 'react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n/useI18n';
 import { MODULE_RESOURCE_KEYS } from '@/utils/workflowTemplates';
@@ -52,12 +54,12 @@ function accentIconClass(isActive: boolean, isDone: boolean): string {
 // Status icon (expanded)
 
 function StepStatusIcon({ status }: Readonly<{ status: StepStatus }>) {
-  if (status === 'done') return <IconCircleCheck size={13} className="text-accent shrink-0" />;
+  if (status === 'done') return <IconCircleCheck size={14} className="text-accent shrink-0" />;
   if (status === 'generating')
-    return <IconLoader2 size={13} className="spin text-accent shrink-0" />;
-  if (status === 'selecting') return <IconCircleDot size={13} className="text-accent shrink-0" />;
-  if (status === 'input') return <IconEdit size={13} className="text-accent shrink-0" />;
-  return <IconCircle size={13} className="text-fg-muted shrink-0" />;
+    return <IconLoader2 size={14} className="spin text-accent shrink-0" />;
+  if (status === 'selecting') return <IconCircleDot size={14} className="text-accent shrink-0" />;
+  if (status === 'input') return <IconEdit size={14} className="text-accent shrink-0" />;
+  return <IconCircle size={14} className="text-fg-muted shrink-0" />;
 }
 
 // Collapsed icon item
@@ -238,6 +240,84 @@ function SpecialStepItem({
   );
 }
 
+// Animated save section — shared by both views
+
+function SaveSection({
+  visible,
+  saving,
+  isAllDone,
+  onSave,
+  collapsed,
+}: Readonly<{
+  visible: boolean;
+  saving: boolean;
+  isAllDone: boolean;
+  onSave: () => void;
+  collapsed: boolean;
+}>) {
+  const { t } = useI18n();
+  const animStyle: React.CSSProperties = {
+    overflow: 'hidden',
+    maxHeight: visible ? 64 : 0,
+    opacity: visible ? 1 : 0,
+    transform: visible ? 'translateY(0)' : 'translateY(-6px)',
+    transition: 'max-height 280ms ease, opacity 280ms ease, transform 280ms ease',
+  };
+
+  if (collapsed) {
+    return (
+      <Box style={animStyle}>
+        <Divider w={24} my={4} mx="auto" className="border-stroke" />
+        <Tooltip
+          label={isAllDone ? t('res_Save') : t('res_SaveDraft')}
+          position="right"
+          withArrow
+          offset={6}
+        >
+          <Box
+            onClick={() => !saving && onSave()}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 34,
+              height: 34,
+              margin: '0 auto',
+              borderRadius: 6,
+              cursor: saving ? 'default' : 'pointer',
+              border: '1px solid var(--accent)',
+              background: 'var(--accent-glow)',
+              transition: 'opacity 150ms ease',
+              opacity: saving ? 0.6 : 1,
+            }}
+          >
+            <IconDeviceFloppy size={15} style={{ color: 'var(--accent)' }} />
+          </Box>
+        </Tooltip>
+      </Box>
+    );
+  }
+
+  return (
+    <Box style={animStyle}>
+      <Divider mb={10} mt={6} className="border-stroke" />
+      <Box style={{ display: 'flex', justifyContent: 'center' }}>
+        <Button
+          size="xs"
+          variant="light"
+          leftSection={<IconDeviceFloppy size={14} />}
+          loading={saving}
+          onClick={onSave}
+          ff="monospace"
+          style={{ fontSize: 11, letterSpacing: '0.04em', width: '80%', justifyContent: 'center' }}
+        >
+          {isAllDone ? t('res_Save') : t('res_SaveDraft')}
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+
 // Main component
 
 interface StepProgressProps {
@@ -254,8 +334,17 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
     goToInventors,
     goToFigures,
     artifact,
+    persistDraft,
   } = useWorkbenchStore();
   const { t } = useI18n();
+
+  const [saving, setSaving] = useState(false);
+  const isAllDone = steps.every((s) => s.selectedOption !== null);
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    await persistDraft();
+    setSaving(false);
+  }, [persistDraft]);
 
   const specialUnlocked =
     steps[0]?.selectedOption !== null && steps[0]?.selectedOption !== undefined;
@@ -267,30 +356,26 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
   if (collapsed) {
     return (
       <Stack gap={2} py={14} px={0} align="center">
-        {/* Workflow steps */}
         {steps.map((step, i) => {
           const isActive = i === currentStepIndex && workflowPhase === 'working';
           const isDone = step.selectedOption !== null;
           const isFuture = i > currentStepIndex && step.status === 'pending';
-          const canNavigate = step.status !== 'pending';
           const Icon = MODULE_ICONS[step.moduleId];
-          const iconClass = accentIconClass(isActive, isDone);
           return (
             <CollapsedItem
               key={step.moduleId}
               tooltipLabel={t(MODULE_RESOURCE_KEYS[step.moduleId])}
               isActive={isActive}
               isFuture={isFuture}
-              canNavigate={canNavigate}
+              canNavigate={step.status !== 'pending'}
               onClick={() => goToStep(i)}
-              icon={<Icon size={15} className={iconClass} />}
+              icon={<Icon size={15} className={accentIconClass(isActive, isDone)} />}
             />
           );
         })}
 
         <Divider w={24} my={4} className="border-stroke" />
 
-        {/* Figures */}
         <CollapsedItem
           tooltipLabel={t('res_Figures')}
           isActive={isFiguresActive}
@@ -304,8 +389,6 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
             />
           }
         />
-
-        {/* Inventors */}
         <CollapsedItem
           tooltipLabel={t('res_Inventors')}
           isActive={isInventorsActive}
@@ -319,8 +402,6 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
             />
           }
         />
-
-        {/* Preview */}
         <CollapsedItem
           tooltipLabel={t('res_PreviewExport')}
           isActive={isPreviewActive}
@@ -328,6 +409,14 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
           canNavigate={specialUnlocked}
           onClick={goToPreview}
           icon={<IconEye size={15} className={accentIconClass(isPreviewActive, false)} />}
+        />
+
+        <SaveSection
+          visible={specialUnlocked}
+          saving={saving}
+          isAllDone={isAllDone}
+          onSave={() => void handleSave()}
+          collapsed
         />
       </Stack>
     );
@@ -376,7 +465,7 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
         label={t('res_Step_Figures')}
         icon={
           <IconPhoto
-            size={13}
+            size={14}
             className={`shrink-0 ${isFiguresActive || !!artifact?.figures?.length ? 'text-accent' : 'text-fg-muted'}`}
           />
         }
@@ -391,7 +480,7 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
         label={t('res_Step_Inventors')}
         icon={
           <IconUsers
-            size={13}
+            size={14}
             className={`shrink-0 ${isInventorsActive || !!artifact?.inventors.length ? 'text-accent' : 'text-fg-muted'}`}
           />
         }
@@ -406,11 +495,19 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
         label={t('res_Step_PreviewExport')}
         icon={
           <IconEye
-            size={13}
+            size={14}
             className={`shrink-0 ${isPreviewActive ? 'text-accent' : 'text-fg-muted'}`}
           />
         }
         onClick={goToPreview}
+      />
+
+      <SaveSection
+        visible={specialUnlocked}
+        saving={saving}
+        isAllDone={isAllDone}
+        onSave={() => void handleSave()}
+        collapsed={false}
       />
     </Stack>
   );

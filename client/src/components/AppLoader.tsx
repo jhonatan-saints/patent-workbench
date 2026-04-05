@@ -36,7 +36,7 @@ export function AppLoader() {
         // vary clear duration 180–300ms for organic feel
         clearGlowRef.current = setTimeout(
           clearActive.bind(null, setActive),
-          180 + Math.floor(Math.random() * 120),
+          180 + Math.floor(Math.random() * 120)
         );
       }, GLOW_INTERVAL_MS);
 

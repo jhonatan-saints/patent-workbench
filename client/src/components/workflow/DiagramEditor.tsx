@@ -315,7 +315,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
   const [edgeLabelInput, setEdgeLabelInput] = useState('');
 
   const [transparentBg, setTransparentBg] = useState(false);
-  const { getNodes, getNodesBounds } = useReactFlow();
+  const { getNodes, getNodesBounds, getEdges } = useReactFlow();
   const canvasRef = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
 
@@ -450,6 +450,27 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
     if (!rfViewport) return;
     const bounds = getNodesBounds(allNodes);
     const vp = getViewportForBounds(bounds, IMAGE_W, IMAGE_H, 0.5, 2, 0.2);
+
+    // Build set of handles that have at least one connection
+    const connectedHandles = new Set<string>();
+    getEdges().forEach((edge) => {
+      if (edge.source && edge.sourceHandle)
+        connectedHandles.add(`${edge.source}__${edge.sourceHandle}`);
+      if (edge.target && edge.targetHandle)
+        connectedHandles.add(`${edge.target}__${edge.targetHandle}`);
+    });
+
+    // Hide unconnected handles before export
+    const hiddenHandles: HTMLElement[] = [];
+    rfViewport.querySelectorAll<HTMLElement>('.react-flow__handle').forEach((el) => {
+      const nodeId = el.dataset.nodeid;
+      const handleId = el.dataset.handleid;
+      if (nodeId && handleId && !connectedHandles.has(`${nodeId}__${handleId}`)) {
+        el.style.visibility = 'hidden';
+        hiddenHandles.push(el);
+      }
+    });
+
     try {
       const dataUrl = await toPng(rfViewport, {
         backgroundColor: transparentBg ? undefined : '#ffffff',
@@ -473,8 +494,10 @@ function DiagramEditorInner({ onAddFigure, figureNumber }: Readonly<DiagramEdito
       });
     } catch (err) {
       console.error('Diagram export failed:', err);
+    } finally {
+      hiddenHandles.forEach((el) => (el.style.visibility = ''));
     }
-  }, [getNodes, getNodesBounds, onAddFigure, figureNumber, transparentBg]);
+  }, [getNodes, getNodesBounds, getEdges, onAddFigure, figureNumber, transparentBg]);
 
   const hasSelection = selectedNodeId !== null || selectedEdgeId !== null;
 

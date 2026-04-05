@@ -268,7 +268,7 @@ export function FiguresStep() {
                       aria-label={t('res_DownloadFigure')}
                       className="text-fg-muted"
                     >
-                      <IconDownload size={13} />
+                      <IconDownload size={14} />
                     </ActionIcon>
                     <ActionIcon
                       variant="subtle"
@@ -277,7 +277,7 @@ export function FiguresStep() {
                       onClick={() => removeFigure(fig.id)}
                       aria-label={t('res_RemoveFigure')}
                     >
-                      <IconTrash size={13} />
+                      <IconTrash size={14} />
                     </ActionIcon>
                   </Group>
                 </Group>
@@ -352,7 +352,7 @@ export function FiguresStep() {
             {footerText}
           </Text>
           <Button
-            leftSection={<IconArrowRight size={13} />}
+            leftSection={<IconArrowRight size={14} />}
             onClick={handleConfirm}
             size="sm"
             style={BTN_PRIMARY}
