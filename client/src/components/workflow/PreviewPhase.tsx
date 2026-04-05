@@ -10,7 +10,16 @@ import {
   Divider,
   Textarea,
 } from '@mantine/core';
-import { IconArrowLeft, IconCircleCheck, IconPencil, IconCheck, IconX, IconCopy, IconClipboardCheck, IconHome } from '@tabler/icons-react';
+import {
+  IconArrowLeft,
+  IconCircleCheck,
+  IconPencil,
+  IconCheck,
+  IconX,
+  IconCopy,
+  IconClipboardCheck,
+  IconHome,
+} from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n/useI18n';
 import { WORKFLOW_ORDER, SECTION_LABELS } from '@/utils/workflowTemplates';
@@ -248,7 +257,7 @@ export function PreviewPhase() {
               {artifact.inventors.length > 0 && (
                 <Box>
                   <Text
-                    className='uppercase'
+                    className="uppercase"
                     style={{
                       color: DOC_BLUE,
                       fontFamily: DOC_FONT,
@@ -466,7 +475,7 @@ export function PreviewPhase() {
                 <Box>
                   <Divider mb={24} style={{ borderColor: '#ddd' }} />
                   <Text
-                    className='uppercase'
+                    className="uppercase"
                     style={{
                       color: DOC_BLUE,
                       fontFamily: DOC_FONT,

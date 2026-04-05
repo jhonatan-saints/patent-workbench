@@ -9,7 +9,13 @@ import {
   useMantineColorScheme,
   useComputedColorScheme,
 } from '@mantine/core';
-import { IconSun, IconMoon, IconChevronLeft, IconChevronRight, IconBrandGithub } from '@tabler/icons-react';
+import {
+  IconSun,
+  IconMoon,
+  IconChevronLeft,
+  IconChevronRight,
+  IconBrandGithub,
+} from '@tabler/icons-react';
 import { useRef, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { StatusIndicator } from '@/components/StatusIndicator';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -77,14 +83,18 @@ function LogoDots() {
       setTimeout(() => {
         if (cancelled) return;
         let next: number;
-        do { next = Math.floor(Math.random() * 9); } while (next === last);
+        do {
+          next = Math.floor(Math.random() * 9);
+        } while (next === last);
         last = next;
         setActive(next);
         schedule();
       }, delay);
     };
     schedule();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -152,7 +162,7 @@ export function App() {
   }, []);
 
   const [navCollapsed, setNavCollapsed] = useState(
-    () => localStorage.getItem('nav-collapsed') === 'true',
+    () => localStorage.getItem('nav-collapsed') === 'true'
   );
   const toggleNav = useCallback(() => {
     setNavCollapsed((prev) => {
@@ -268,11 +278,7 @@ export function App() {
                 <IconBrandGithub size={13} />
               </ActionIcon>
             </Tooltip>
-            <Tooltip
-              label={navCollapsed ? 'Expand' : 'Collapse'}
-              position="right"
-              withArrow
-            >
+            <Tooltip label={navCollapsed ? 'Expand' : 'Collapse'} position="right" withArrow>
               <ActionIcon
                 variant="subtle"
                 size="sm"
