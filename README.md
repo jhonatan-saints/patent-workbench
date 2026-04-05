@@ -26,10 +26,10 @@ Design, validate and refine invention concepts in a unified workspace built for 
 
 ## Table of Contents
 
-<div align="center">
+<div>
 
 | Section | Description |
-|--------|------------|
+| --- | --- |
 | [What it does](#what-it-does) | Platform overview and workflow explanation |
 | [Workflow](#workflow) | End-to-end drafting pipeline |
 | [Key features](#key-features) | Core platform capabilities |
@@ -122,7 +122,7 @@ input → working (steps 1–7) → figures → inventors → preview / export
 The UI is fully translated into 16 locales:
 
 | English | European Languages | Nordic | Other |
-|--------|-------------------|--------|------|
+| --- | --- | --- | --- |
 | `en-US`, `en-GB` | `de-DE`, `es-ES`, `es-CL`, `fr-FR`, `fr-CA`, `it-IT`, `nl`, `pt-PT`, `pt-BR` | `nb-NO`, `sv-SE` | `cy-GB`, `ru-RU`, `zh-CN` |
 
 <br/>
@@ -261,6 +261,8 @@ For on-premise enterprise licenses, POC access, or private builds that include t
 
 <br/>
 <div id="contact" align="center">
-  <a href="https://www.linkedin.com/in/jhonatan-santos/" target="_blank" style="text-decoration: none;"><img src="https://www.readmecodegen.com/api/social-icon?name=linkedin&size=30&color=%23ffffff" alt="linkedin" /></a>&nbsp;&nbsp;<a href="mailto:jhonatan.santos@mitel.com" style="text-decoration: none;"><img src="https://www.readmecodegen.com/api/social-icon?name=maildotru&size=29&color=%23ffffff" alt="maildotru" /></a>&nbsp;&nbsp;<a href="https://x.com/dev4Dcoin" tyle="text-decoration: none;"><img src="https://www.readmecodegen.com/api/social-icon?name=x&size=30&color=%23ffffff" alt="x" /></a>
+
+[![linkedin](https://www.readmecodegen.com/api/social-icon?name=linkedin&size=30&color=%23ffffff)](https://www.linkedin.com/in/jhonatan-santos/)&nbsp;&nbsp;[![maildotru](https://www.readmecodegen.com/api/social-icon?name=maildotru&size=29&color=%23ffffff)](mailto:jhonatan.santos@mitel.com)&nbsp;&nbsp;[![x](https://www.readmecodegen.com/api/social-icon?name=x&size=30&color=%23ffffff)](https://x.com/dev4Dcoin)
+
 </div>
 <br/>
