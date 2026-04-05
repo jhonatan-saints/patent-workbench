@@ -162,6 +162,7 @@ export function InventorsStep() {
                 rightSection={
                   <Tooltip label={t('res_GenerateTitle')} withArrow position="top">
                     <ActionIcon
+                      aria-label={t('res_GenerateTitle')}
                       variant="subtle"
                       size="sm"
                       onClick={() => void handleGenerateTitle()}

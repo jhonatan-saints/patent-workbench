@@ -126,6 +126,9 @@ function SpecialStepItem({
   onClick: () => void;
 }>) {
   const isLocked = !unlocked;
+  const separatorIndex = label.indexOf(' · ');
+  const stepNumber = separatorIndex === -1 ? null : label.slice(0, separatorIndex);
+  const stepLabel = separatorIndex === -1 ? label : label.slice(separatorIndex + 3);
   return (
     <Box
       onClick={() => unlocked && onClick()}
@@ -134,14 +137,26 @@ function SpecialStepItem({
     >
       <Group gap={8} wrap="nowrap">
         {icon}
-        <Text
-          size="xs"
-          fw={isActive ? 700 : 600}
-          ff="monospace"
-          className={`text-[11px] tracking-[0.04em] leading-snug ${stepTextClass(isActive, hasDone)}`}
-        >
-          {label}
-        </Text>
+        <Group gap={4} wrap="nowrap" align="center">
+          {stepNumber && (
+            <Text
+              size="xs"
+              fw={isActive ? 700 : 600}
+              ff="monospace"
+              className={`text-[11px] tracking-[0.04em] shrink-0 ${stepTextClass(isActive, hasDone)}`}
+            >
+              {stepNumber} ·
+            </Text>
+          )}
+          <Text
+            size="xs"
+            fw={isActive ? 700 : 600}
+            ff="monospace"
+            className={`text-[11px] tracking-[0.04em] leading-snug ${stepTextClass(isActive, hasDone)}`}
+          >
+            {stepLabel}
+          </Text>
+        </Group>
       </Group>
     </Box>
   );
