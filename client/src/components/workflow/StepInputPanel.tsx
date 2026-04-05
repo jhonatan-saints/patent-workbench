@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import {
   Box,
   Stack,
@@ -171,6 +171,7 @@ export function StepInputPanel({ moduleId }: Props) {
     setStepInputState,
     updateArtifactBase,
     updateContextFiles,
+    llmStatus,
   } = useWorkbenchStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -178,9 +179,17 @@ export function StepInputPanel({ moduleId }: Props) {
   const isGenerating = generationStatus === 'loading';
   const isFirstStep = currentStepIndex === 0;
   const { t } = useI18n();
+  const llmOffline = llmStatus !== 'ok';
 
   const step = steps[currentStepIndex];
   const mode: InputMode = step?.inputMode ?? 'auto';
+
+  // Force manual mode when LLM is offline
+  useEffect(() => {
+    if (llmOffline && (mode === 'auto' || mode === 'guided')) {
+      setStepInputState(currentStepIndex, { inputMode: 'manual' });
+    }
+  }, [llmOffline, mode, currentStepIndex, setStepInputState]);
   const guidedFields: Record<string, string> = step?.guidedFields ?? {};
   const manualText: string = step?.manualDraft ?? '';
 
@@ -257,6 +266,7 @@ export function StepInputPanel({ moduleId }: Props) {
         data={[
           {
             value: 'auto',
+            disabled: llmOffline,
             label: (
               <Group gap={5} justify="center">
                 <IconWand size={14} />
@@ -266,6 +276,7 @@ export function StepInputPanel({ moduleId }: Props) {
           },
           {
             value: 'guided',
+            disabled: llmOffline,
             label: (
               <Group gap={5} justify="center">
                 <IconForms size={14} />

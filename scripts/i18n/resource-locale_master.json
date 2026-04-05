@@ -2961,6 +2961,27 @@
     "zh-CN": "LLM 未连接。请在开始前启动 Ollama。"
   },
   {
+    "key": "res_LLMOffline_ManualOnly",
+    "UI Element Type": "Label",
+    "Usage Description": "LLM offline warning shown when starting workflow — guided and auto modes are disabled, only manual is available",
+    "cy-GB": "LLM all-lein — dim ond y modd Llawlyfr sydd ar gael.",
+    "de-DE": "LLM offline — Geführt- und Auto-Modi sind nicht verfügbar.",
+    "en-GB": "LLM offline — Guided and Auto modes are unavailable.",
+    "en-US": "LLM offline — Guided and Auto modes are unavailable.",
+    "es-CL": "LLM offline — los modos Guiado y Automático no están disponibles.",
+    "es-ES": "LLM offline — los modos Guiado y Automático no están disponibles.",
+    "fr-CA": "LLM hors ligne — les modes Guidé et Auto sont indisponibles.",
+    "fr-FR": "LLM hors ligne — les modes Guidé et Auto sont indisponibles.",
+    "it-IT": "LLM offline — le modalità Guidata e Auto non sono disponibili.",
+    "nb-NO": "LLM frakoblet — Guidet- og Auto-modusene er utilgjengelige.",
+    "nl": "LLM offline — de modi Begeleiding en Auto zijn niet beschikbaar.",
+    "pt-BR": "LLM offline — os modos Guiado e Automático estão indisponíveis.",
+    "pt-PT": "LLM offline — os modos Guiado e Automático estão indisponíveis.",
+    "ru-RU": "LLM офлайн — режимы «Ведомый» и «Авто» недоступны.",
+    "sv-SE": "LLM offline — Guidad- och Auto-lägena är otillgängliga.",
+    "zh-CN": "LLM 离线 — 引导和自动模式不可用。"
+  },
+  {
     "key": "res_LlmOnline",
     "UI Element Type": "Badge",
     "Usage Description": "Status indicator — LLM connected",

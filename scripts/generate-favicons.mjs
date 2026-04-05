@@ -24,13 +24,13 @@ try {
   process.exit(1);
 }
 
-const svgPath = join(root, 'client', 'public', 'favicon.svg');
+const svgPath = join(root, 'client', 'src', 'assets', 'icons', 'favicon.svg');
 const svgBuffer = readFileSync(svgPath);
 
 const sizes = [16, 32, 48, 192];
 
 for (const size of sizes) {
-  const outPath = join(root, 'client', 'public', `favicon-${size}x${size}.png`);
+  const outPath = join(root, 'client', 'src', 'assets', 'icons', `favicon-${size}x${size}.png`);
   await sharp(svgBuffer)
     .resize(size, size)
     .png()
