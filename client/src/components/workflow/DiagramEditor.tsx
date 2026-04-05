@@ -84,7 +84,13 @@ function ProcessNode({ data, selected }: Readonly<NodeProps>) {
         boxSizing: 'border-box',
       }}
     >
-      <NodeResizer minWidth={80} minHeight={36} isVisible={selected} lineStyle={{ border: '1px dashed #6366f1' }} handleStyle={{ width: 8, height: 8, borderRadius: 2 }} />
+      <NodeResizer
+        minWidth={80}
+        minHeight={36}
+        isVisible={selected}
+        lineStyle={{ border: '1px dashed #6366f1' }}
+        handleStyle={{ width: 8, height: 8, borderRadius: 2 }}
+      />
       <AllHandles />
       <span>{(data.label as string) || 'Process'}</span>
     </div>
@@ -96,8 +102,16 @@ function DecisionNode({ data, selected }: Readonly<NodeProps>) {
   const border = (data.borderColor as string) || '#aaaaaa';
   const color = (data.fontColor as string) || '#111111';
   return (
-    <div style={{ width: '100%', height: '100%', minWidth: 100, minHeight: 100, position: 'relative' }}>
-      <NodeResizer minWidth={100} minHeight={100} isVisible={selected} lineStyle={{ border: '1px dashed #6366f1' }} handleStyle={{ width: 8, height: 8, borderRadius: 2 }} />
+    <div
+      style={{ width: '100%', height: '100%', minWidth: 100, minHeight: 100, position: 'relative' }}
+    >
+      <NodeResizer
+        minWidth={100}
+        minHeight={100}
+        isVisible={selected}
+        lineStyle={{ border: '1px dashed #6366f1' }}
+        handleStyle={{ width: 8, height: 8, borderRadius: 2 }}
+      />
       <AllHandles />
       <div
         style={{
@@ -153,7 +167,13 @@ function StartNode({ data, selected }: Readonly<NodeProps>) {
         boxSizing: 'border-box',
       }}
     >
-      <NodeResizer minWidth={80} minHeight={36} isVisible={selected} lineStyle={{ border: '1px dashed #6366f1' }} handleStyle={{ width: 8, height: 8, borderRadius: 2 }} />
+      <NodeResizer
+        minWidth={80}
+        minHeight={36}
+        isVisible={selected}
+        lineStyle={{ border: '1px dashed #6366f1' }}
+        handleStyle={{ width: 8, height: 8, borderRadius: 2 }}
+      />
       <AllHandles />
       <span>{(data.label as string) || 'Start'}</span>
     </div>
@@ -186,7 +206,13 @@ function EndNode({ data, selected }: Readonly<NodeProps>) {
         boxSizing: 'border-box',
       }}
     >
-      <NodeResizer minWidth={80} minHeight={36} isVisible={selected} lineStyle={{ border: '1px dashed #6366f1' }} handleStyle={{ width: 8, height: 8, borderRadius: 2 }} />
+      <NodeResizer
+        minWidth={80}
+        minHeight={36}
+        isVisible={selected}
+        lineStyle={{ border: '1px dashed #6366f1' }}
+        handleStyle={{ width: 8, height: 8, borderRadius: 2 }}
+      />
       <AllHandles />
       <span>{(data.label as string) || 'End'}</span>
     </div>
@@ -198,8 +224,16 @@ function IONode({ data, selected }: Readonly<NodeProps>) {
   const border = (data.borderColor as string) || '#3b82f6';
   const color = (data.fontColor as string) || '#111111';
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', minWidth: 100, minHeight: 36 }}>
-      <NodeResizer minWidth={100} minHeight={36} isVisible={selected} lineStyle={{ border: '1px dashed #6366f1' }} handleStyle={{ width: 8, height: 8, borderRadius: 2 }} />
+    <div
+      style={{ position: 'relative', width: '100%', height: '100%', minWidth: 100, minHeight: 36 }}
+    >
+      <NodeResizer
+        minWidth={100}
+        minHeight={36}
+        isVisible={selected}
+        lineStyle={{ border: '1px dashed #6366f1' }}
+        handleStyle={{ width: 8, height: 8, borderRadius: 2 }}
+      />
       <AllHandles />
       <div
         style={{
@@ -242,9 +276,17 @@ const EDGE_TYPE_OPTIONS = [
   { value: 'smoothstep', label: 'Smooth Step' },
 ];
 
-const NODE_DEFAULTS: Record<string, { label: string; bgColor: string; borderColor: string; fontColor: string }> = {
+const NODE_DEFAULTS: Record<
+  string,
+  { label: string; bgColor: string; borderColor: string; fontColor: string }
+> = {
   process: { label: 'Process', bgColor: '#ffffff', borderColor: '#aaaaaa', fontColor: '#111111' },
-  decision: { label: 'Decision?', bgColor: '#ffffff', borderColor: '#aaaaaa', fontColor: '#111111' },
+  decision: {
+    label: 'Decision?',
+    bgColor: '#ffffff',
+    borderColor: '#aaaaaa',
+    fontColor: '#111111',
+  },
   start: { label: 'Start', bgColor: '#d1fae5', borderColor: '#10b981', fontColor: '#111111' },
   end: { label: 'End', bgColor: '#fee2e2', borderColor: '#ef4444', fontColor: '#111111' },
   io: { label: 'Input/Output', bgColor: '#eff6ff', borderColor: '#3b82f6', fontColor: '#111111' },

@@ -1,14 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  Stack,
-  Textarea,
-  TextInput,
-  Button,
-  Text,
-  Group,
-  Box,
-  Select,
-} from '@mantine/core';
+import { Stack, Textarea, TextInput, Button, Text, Group, Box, Select } from '@mantine/core';
 import { IconWand, IconFileDescription } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { INPUT_STYLES, btnPrimary } from '@/theme/styles';
