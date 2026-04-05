@@ -10,7 +10,7 @@ import {
   Divider,
   Textarea,
 } from '@mantine/core';
-import { IconArrowLeft, IconCircleCheck, IconPencil, IconCheck, IconX } from '@tabler/icons-react';
+import { IconArrowLeft, IconCircleCheck, IconPencil, IconCheck, IconX, IconCopy, IconClipboardCheck } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n/useI18n';
 import { WORKFLOW_ORDER, SECTION_LABELS } from '@/utils/workflowTemplates';
@@ -38,7 +38,15 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
   const { updateSectionContent } = useWorkbenchStore();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(content);
+  const [copied, setCopied] = useState(false);
   const { t } = useI18n();
+
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const handleSave = () => {
     updateSectionContent(moduleId, draft);
@@ -84,19 +92,31 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
             </Button>
           </Group>
         ) : (
-          <Button
-            size="xs"
-            variant="subtle"
-            leftSection={<IconPencil size={11} />}
-            onClick={() => {
-              setDraft(content);
-              setEditing(true);
-            }}
-            style={{ color: DOC_UI_MUTED }}
-            className="font-mono text-[10px]"
-          >
-            <span className="uppercase">{t('res_Edit')}</span>
-          </Button>
+          <Group gap={6} className="shrink-0">
+            <Button
+              size="xs"
+              variant="subtle"
+              leftSection={copied ? <IconClipboardCheck size={11} /> : <IconCopy size={11} />}
+              onClick={handleCopy}
+              style={{ color: copied ? '#4caf50' : DOC_UI_MUTED }}
+              className="font-mono text-[10px]"
+            >
+              <span className="uppercase">{copied ? t('res_Copied') : t('res_Copy')}</span>
+            </Button>
+            <Button
+              size="xs"
+              variant="subtle"
+              leftSection={<IconPencil size={11} />}
+              onClick={() => {
+                setDraft(content);
+                setEditing(true);
+              }}
+              style={{ color: DOC_UI_MUTED }}
+              className="font-mono text-[10px]"
+            >
+              <span className="uppercase">{t('res_Edit')}</span>
+            </Button>
+          </Group>
         )}
       </Group>
 
