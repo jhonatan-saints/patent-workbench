@@ -262,7 +262,7 @@ For on-premise enterprise licenses, POC access, or private builds that include t
 <br/>
 <div id="contact" align="center">
 
-[![linkedin](https://www.readmecodegen.com/api/social-icon?name=linkedin&size=30&color=%23ffffff)](https://www.linkedin.com/in/jhonatan-santos/)&nbsp;&nbsp;[![maildotru](https://www.readmecodegen.com/api/social-icon?name=maildotru&size=29&color=%23ffffff)](mailto:jhonatan.santos@mitel.com)&nbsp;&nbsp;[![x](https://www.readmecodegen.com/api/social-icon?name=x&size=30&color=%23ffffff)](https://x.com/dev4Dcoin)
+[![linkedin](https://www.readmecodegen.com/api/social-icon?name=linkedin&size=30&color=%23ffffff)](https://www.linkedin.com/in/jhonatan-saints/)&nbsp;&nbsp;[![maildotru](https://www.readmecodegen.com/api/social-icon?name=maildotru&size=29&color=%23ffffff)](mailto:jhonatan.santos@mitel.com)&nbsp;&nbsp;[![x](https://www.readmecodegen.com/api/social-icon?name=x&size=30&color=%23ffffff)](https://x.com/dev4Dcoin)
 
 </div>
 <br/>
