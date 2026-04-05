@@ -2,7 +2,6 @@ import {
   AppShell,
   Group,
   Text,
-  Divider,
   Box,
   ActionIcon,
   Tooltip,
@@ -10,8 +9,8 @@ import {
   useMantineColorScheme,
   useComputedColorScheme,
 } from '@mantine/core';
-import { IconGavel, IconHistory, IconSun, IconMoon } from '@tabler/icons-react';
-import { useRef, useState, useEffect, type ReactNode } from 'react';
+import { IconSun, IconMoon, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
+import { useRef, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { StatusIndicator } from '@/components/StatusIndicator';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { StepProgress } from '@/components/workflow/StepProgress';
@@ -27,7 +26,7 @@ import { AppLoader } from '@/components/AppLoader';
 import { useI18n } from '@/i18n';
 
 function ResizableSplit({ left, right }: { readonly left: ReactNode; readonly right: ReactNode }) {
-  const [leftPct, setLeftPct] = useState(50);
+  const [leftPct, setLeftPct] = useState(40);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
 
@@ -79,11 +78,11 @@ function ThemeToggle() {
       <ActionIcon
         aria-label="theme toggle"
         variant="subtle"
-        size="sm"
+        size="md"
         onClick={() => setColorScheme(scheme === 'dark' ? 'light' : 'dark')}
         className="text-fg-muted hover:text-accent"
       >
-        {scheme === 'dark' ? <IconSun size={14} /> : <IconMoon size={14} />}
+        {scheme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
       </ActionIcon>
     </Tooltip>
   );
@@ -103,43 +102,96 @@ export function App() {
     return () => clearTimeout(handle);
   }, []);
 
+  const [navCollapsed, setNavCollapsed] = useState(
+    () => localStorage.getItem('nav-collapsed') === 'true',
+  );
+  const toggleNav = useCallback(() => {
+    setNavCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('nav-collapsed', String(next));
+      return next;
+    });
+  }, []);
+
   if (loading) return <AppLoader />;
 
   return (
     <AppShell
-      header={{ height: 52 }}
-      navbar={{ width: 255, breakpoint: 'sm' }}
+      header={{ height: 44 }}
+      navbar={{ width: navCollapsed ? 52 : 240, breakpoint: 'sm' }}
       aside={{ width: 300, breakpoint: 'lg' }}
       padding={0}
       styles={{
         root: { background: 'var(--bg)', minHeight: '100vh' },
         header: {
-          background: 'var(--surface-raised)',
-          borderBottom: '1px solid var(--border)',
+          background: 'color-mix(in srgb, var(--surface-raised) 80%, transparent)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: 'none',
+          boxShadow: '0 1px 0 var(--border)',
           zIndex: 200,
         },
         navbar: {
           background: 'var(--surface)',
           borderRight: '1px solid var(--border)',
           zIndex: 100,
+          transition: 'width 220ms cubic-bezier(0.4, 0, 0.2, 1)',
+          overflow: 'hidden',
         },
         aside: { background: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 100 },
-        main: { background: 'var(--bg)' },
+        main: {
+          background: 'var(--bg)',
+          transition: 'margin-left 220ms cubic-bezier(0.4, 0, 0.2, 1)',
+        },
       }}
     >
       {/* HEADER */}
       <AppShell.Header>
-        <Group h="100%" px={20} justify="space-between">
-          <Group gap={12}>
-            <IconGavel size={20} className="text-accent" />
-            <Text fw={700} size="sm" className="font-display tracking-[0.08em] text-fg uppercase">
+        <Group h="100%" px={20} justify="space-between" align="center" wrap="nowrap">
+          {/* Logo */}
+          <Group gap={10} align="center" wrap="nowrap">
+            <span
+              style={{
+                display: 'block',
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: 'var(--accent)',
+                flexShrink: 0,
+                alignSelf: 'center',
+              }}
+            />
+            <Text
+              fw={600}
+              size="sm"
+              ff="monospace"
+              className="text-fg tracking-widest uppercase"
+              style={{ letterSpacing: '0.1em' }}
+            >
               {t('res_PatentWorkbench')}
             </Text>
-            <Text size="xs" ff="monospace" className="pl-3 border-l border-stroke text-fg-muted">
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '2px 8px',
+                borderRadius: 4,
+                border: '1px solid var(--border)',
+                fontSize: 10,
+                fontFamily: 'monospace',
+                color: 'var(--text-muted)',
+                letterSpacing: '0.06em',
+                lineHeight: 1.6,
+                textTransform: 'uppercase',
+                userSelect: 'none',
+              }}
+            >
               {t('res_LocalFirstZeroTelemetry')}
-            </Text>
+            </span>
           </Group>
-          <Group gap={8} className="items-center">
+
+          {/* Right actions */}
+          <Group gap={8} align="center" wrap="nowrap">
             <LanguageSwitcher />
             <ThemeToggle />
             <StatusIndicator />
@@ -149,39 +201,65 @@ export function App() {
 
       {/* LEFT NAV */}
       <AppShell.Navbar>
-        <Box className="h-full overflow-y-auto">
-          <StepProgress />
+        <Box className="h-full flex flex-col overflow-hidden">
+          <Box className="flex-1 overflow-y-auto min-h-0">
+            <StepProgress collapsed={navCollapsed} />
+          </Box>
+          <Box
+            style={{
+              borderTop: '1px solid var(--border)',
+              padding: navCollapsed ? '8px 0' : '8px 10px',
+              display: 'flex',
+              justifyContent: navCollapsed ? 'center' : 'flex-end',
+            }}
+          >
+            <Tooltip
+              label={navCollapsed ? 'Expand' : 'Collapse'}
+              position="right"
+              withArrow
+            >
+              <ActionIcon
+                variant="subtle"
+                size="sm"
+                onClick={toggleNav}
+                aria-label={navCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                className="text-fg-muted hover:text-accent"
+              >
+                {navCollapsed ? <IconChevronRight size={13} /> : <IconChevronLeft size={13} />}
+              </ActionIcon>
+            </Tooltip>
+          </Box>
         </Box>
       </AppShell.Navbar>
 
       {/* MAIN */}
       <AppShell.Main>
         {workflowPhase === 'input' && (
-          <ScrollArea style={{ height: 'calc(100vh - 52px)' }}>
+          <ScrollArea style={{ height: 'calc(100vh - 44px)' }}>
             <IdeaInputStep />
           </ScrollArea>
         )}
 
         {isWorking && (
-          <Box style={{ height: 'calc(100vh - 52px)', overflow: 'hidden' }}>
+          <Box style={{ height: 'calc(100vh - 44px)', overflow: 'hidden' }}>
             <ResizableSplit left={<OptionsPanel />} right={<ArtifactPreview />} />
           </Box>
         )}
 
         {isFigures && (
-          <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 52px)' }}>
+          <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 44px)' }}>
             <FiguresStep />
           </Box>
         )}
 
         {isInventors && (
-          <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 52px)' }}>
+          <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 44px)' }}>
             <InventorsStep />
           </Box>
         )}
 
         {isPreview && (
-          <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 52px)' }}>
+          <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 44px)' }}>
             <PreviewPhase />
           </Box>
         )}
@@ -189,24 +267,45 @@ export function App() {
 
       {/* RIGHT ASIDE */}
       <AppShell.Aside>
-        <Box className="h-full flex flex-col p-4">
-          <Group gap={8} mb={6}>
-            <IconHistory size={14} className="text-accent" />
-            <Text
-              size="xs"
-              fw={700}
-              tt="uppercase"
-              ff="monospace"
-              className="text-accent tracking-[2px]"
-            >
-              {t('res_Sessions')}
+        <Box className="h-full flex flex-col overflow-hidden">
+          {/* Aside chrome header — mirrors ArtifactPreview header structure (px-4 py-3.5) */}
+          <Box
+            className="px-4 py-3.5 shrink-0"
+            style={{
+              borderBottom: '1px solid var(--border)',
+              background: 'var(--surface-raised)',
+            }}
+          >
+            {/* Row 1: icon + label */}
+            <Group gap={8} mb={3} align="center" wrap="nowrap">
+              <Box
+                className="animate-pulse-glow"
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: 'var(--accent)',
+                  flexShrink: 0,
+                }}
+              />
+              <Text
+                ff="monospace"
+                fw={700}
+                tt="uppercase"
+                className="text-accent tracking-widest"
+                size="xs"
+              >
+                {t('res_Sessions')}
+              </Text>
+            </Group>
+            {/* Row 2: subtitle */}
+            <Text size="xs" ff="monospace" c="var(--text-muted)">
+              {t('res_InMemoryOnly')}
             </Text>
-          </Group>
-          <Text size="xs" c="var(--text-muted)" mb={12}>
-            {t('res_InMemoryOnly')}
-          </Text>
-          <Divider mb={14} className="border-stroke" />
-          <Box className="flex-1 overflow-hidden">
+          </Box>
+
+          {/* Sessions list */}
+          <Box className="flex-1 overflow-hidden p-4">
             <SessionsPanel />
           </Box>
         </Box>

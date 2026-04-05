@@ -4,10 +4,8 @@ import {
   Group,
   ActionIcon,
   Box,
-  Badge,
-  Button,
-  ScrollArea,
   Tooltip,
+  ScrollArea,
 } from '@mantine/core';
 import { IconTrash, IconClock, IconX } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
@@ -17,6 +15,17 @@ import type { WorkflowSession } from '@/types';
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function shortenModel(model: string): string {
+  const base = model.split(':')[0];
+  const part = base.includes('/') ? base.split('/').pop()! : base;
+  const m = /claude-(\d+)-?(\d+)?-(\w+)/.exec(part);
+  if (m) {
+    const ver = m[2] ? `${m[1]}.${m[2]}` : m[1];
+    return `c${ver}-${m[3]}`;
+  }
+  return part.slice(0, 14);
 }
 
 function SessionItem({
@@ -30,49 +39,161 @@ function SessionItem({
 }>) {
   const { t } = useI18n();
   const completedCount = WORKFLOW_ORDER.filter((m) => session.artifact.sections[m]).length;
+  const progress = Math.round((completedCount / WORKFLOW_ORDER.length) * 100);
+  const tokensLabel =
+    session.totalTokens >= 1000
+      ? `${(session.totalTokens / 1000).toFixed(1)}k`
+      : `${session.totalTokens}`;
 
   return (
     <Box
       onClick={onLoad}
-      className="p-[10px_12px] rounded border border-stroke bg-surface cursor-pointer transition-colors duration-150 hover:border-accent"
+      className="group relative cursor-pointer rounded-md overflow-hidden"
+      style={{
+        background: 'var(--surface-raised)',
+        border: '1px solid var(--border)',
+        borderLeft: '2px solid var(--accent)',
+        transition: 'box-shadow 180ms ease, border-color 180ms ease',
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.boxShadow =
+          '0 4px 20px var(--accent-glow), 0 0 0 1px var(--accent)';
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+      }}
     >
-      <Group justify="space-between" wrap="nowrap" gap={8}>
-        <Stack gap={4} className="flex-1 min-w-0">
-          <Group gap={6} wrap="nowrap">
-            <Badge
-              size="xs"
-              variant="outline"
-              className="border-accent text-accent font-mono text-[9px] shrink-0"
-            >
-              {completedCount}/{WORKFLOW_ORDER.length}
-            </Badge>
-            <Text size="xs" c="var(--text-muted)" ff="monospace" className="shrink-0">
-              {formatTime(session.startedAt)}
-            </Text>
-          </Group>
-          <Text size="xs" className="text-fg truncate">
-            {session.baseIdea.slice(0, 70)}
-            {session.baseIdea.length > 70 ? '...' : ''}
-          </Text>
-          <Text size="xs" c="var(--text-muted)" ff="monospace">
-            {session.model.split(':')[0]} · {session.totalTokens}t
-          </Text>
-        </Stack>
-        <Tooltip label={t('res_RemoveSession')}>
-          <ActionIcon
-            aria-label={t('res_RemoveSession')}
-            variant="subtle"
+      {/* Left ambient glow */}
+      <Box
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 48,
+          background: 'linear-gradient(90deg, var(--accent-glow) 0%, transparent 100%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      <Box style={{ padding: '10px 12px', position: 'relative' }}>
+        {/* Title + delete */}
+        <Group justify="space-between" wrap="nowrap" gap={6} align="flex-start">
+          <Text
             size="xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="text-fg-muted shrink-0"
+            fw={600}
+            ff="var(--font-body)"
+            lineClamp={2}
+            style={{ flex: 1, minWidth: 0, lineHeight: 1.45, color: 'var(--text-primary)' }}
           >
-            <IconX size={12} />
-          </ActionIcon>
-        </Tooltip>
-      </Group>
+            {session.baseIdea}
+          </Text>
+          <Tooltip label={t('res_RemoveSession')} position="left" withArrow>
+            <ActionIcon
+              aria-label={t('res_RemoveSession')}
+              variant="subtle"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              style={{ opacity: 0, transition: 'opacity 150ms ease', flexShrink: 0 }}
+              className="group-hover:opacity-100!"
+            >
+              <IconX size={14} style={{ color: 'var(--danger)' }} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
+
+        {/* Progress bar */}
+        <Box
+          style={{
+            marginTop: 9,
+            height: 2,
+            borderRadius: 99,
+            background: 'var(--border)',
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            style={{
+              width: `${progress}%`,
+              height: '100%',
+              borderRadius: 99,
+              background:
+                progress === 100
+                  ? 'linear-gradient(90deg, var(--accent-dim), var(--accent))'
+                  : 'var(--accent)',
+              transition: 'width 600ms cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          />
+        </Box>
+
+        {/* Metadata chips row */}
+        <Group gap={0} mt={8} wrap="nowrap" align="center">
+          {/* Step badge */}
+          <Box
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '1px 6px',
+              borderRadius: 4,
+              border: '1px solid var(--accent)',
+              background: 'var(--accent-glow)',
+              fontSize: 11,
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--accent)',
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+              lineHeight: 1.7,
+              flexShrink: 0,
+            }}
+          >
+            {completedCount}/{WORKFLOW_ORDER.length}
+          </Box>
+
+          {/* Separator */}
+          <Box
+            style={{ width: 1, height: 10, background: 'var(--border)', margin: '0 7px', flexShrink: 0 }}
+          />
+
+          {/* Tokens */}
+          <Text
+            ff="monospace"
+            style={{ fontSize: 11, color: 'var(--text-secondary)', flexShrink: 0 }}
+          >
+            {tokensLabel}t
+          </Text>
+
+          {/* Dot */}
+          <Text ff="monospace" style={{ fontSize: 11, color: 'var(--border)', margin: '0 5px', flexShrink: 0 }}>
+            ·
+          </Text>
+
+          {/* Model */}
+          <Text
+            ff="monospace"
+            style={{
+              fontSize: 11,
+              color: 'var(--text-secondary)',
+              flex: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {shortenModel(session.model)}
+          </Text>
+
+          {/* Time */}
+          <Text
+            ff="monospace"
+            style={{ fontSize: 11, color: 'var(--text-secondary)', flexShrink: 0, marginLeft: 5 }}
+          >
+            {formatTime(session.startedAt)}
+          </Text>
+        </Group>
+      </Box>
     </Box>
   );
 }
@@ -83,11 +204,45 @@ export function SessionsPanel() {
 
   if (sessions.length === 0) {
     return (
-      <Box className="px-4 py-6 border border-dashed border-stroke rounded-md text-center">
-        <IconClock size={25} className="text-fg-muted mb-1" />
-        <Text size="xs" c="var(--text-muted)" ff="monospace" style={{ lineHeight: 1.7 }}>
+      <Box
+        style={{
+          padding: '28px 12px',
+          border: '1px dashed var(--border)',
+          borderRadius: 8,
+          background: 'var(--surface-raised)',
+          textAlign: 'center',
+        }}
+      >
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            background: 'var(--accent-glow)',
+            border: '1px solid var(--accent)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 12px',
+            boxSizing: 'border-box',
+            flexShrink: 0,
+            lineHeight: 0,
+          }}
+        >
+          <IconClock size={16} style={{ color: 'var(--accent)', display: 'block' }} />
+        </div>
+        <Text
+          size="xs"
+          fw={600}
+          ff="monospace"
+          style={{ color: 'var(--text-secondary)', letterSpacing: '0.04em' }}
+        >
           {t('res_NoSessionsYet')}
-          <br />
+        </Text>
+        <Text
+          size="xs"
+          style={{ color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.7 }}
+        >
           {t('res_CompletedWorkflowsHere')}
         </Text>
       </Box>
@@ -96,31 +251,59 @@ export function SessionsPanel() {
 
   return (
     <Stack gap={8}>
-      <Group justify="space-between">
-        <Text
-          size="xs"
-          fw={700}
-          tt="uppercase"
-          c="var(--text-muted)"
-          ff="monospace"
-          className="tracking-widest"
-        >
-          {`${t('res_Sessions')} (${sessions.length})`}
-        </Text>
-        <Button
-          variant="subtle"
-          size="xs"
-          color="red"
-          leftSection={<IconTrash size={12} />}
-          onClick={clearSessions}
-          className="text-[11px] font-mono"
-        >
-          {t('res_Clear')}
-        </Button>
+      {/* Count + clear row */}
+      <Group justify="space-between" align="center">
+        <Group gap={6} align="center">
+          <Text
+            ff="monospace"
+            tt="uppercase"
+            fw={700}
+            style={{
+              fontSize: 11,
+              color: 'var(--text-muted)',
+              letterSpacing: '0.12em',
+            }}
+          >
+            {t('res_Sessions')}
+          </Text>
+          <Box
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: 18,
+              height: 16,
+              padding: '0 5px',
+              borderRadius: 99,
+              background: 'var(--accent-glow)',
+              border: '1px solid var(--accent)',
+              fontSize: 11,
+              fontFamily: 'var(--font-mono)',
+              color: 'var(--accent)',
+              fontWeight: 700,
+            }}
+          >
+            {sessions.length}
+          </Box>
+        </Group>
+
+        <Tooltip label={t('res_Clear')} position="left" withArrow>
+          <ActionIcon
+            variant="subtle"
+            size="sm"
+            onClick={clearSessions}
+            aria-label={t('res_Clear')}
+            style={{ opacity: 0.55, transition: 'opacity 150ms ease' }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.opacity = '1')}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.opacity = '0.55')}
+          >
+            <IconTrash size={14} style={{ color: 'var(--danger)' }} />
+          </ActionIcon>
+        </Tooltip>
       </Group>
 
-      <ScrollArea.Autosize mah={420}>
-        <Stack gap={6}>
+      <ScrollArea.Autosize mah={440}>
+        <Stack gap={5}>
           {sessions.map((session) => (
             <SessionItem
               key={session.id}

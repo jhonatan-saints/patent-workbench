@@ -1,21 +1,22 @@
 import { ActionIcon, Menu, Tooltip } from '@mantine/core';
 import { IconLanguage } from '@tabler/icons-react';
-import { useI18n, LOCALE_LABELS, type Locale } from '@/i18n';
+import { useI18n, LOCALE_LABELS } from '@/i18n';
 
 export function LanguageSwitcher() {
   const { locale, setLocale, localeOptions } = useI18n();
 
   return (
+    <div style={{ display: 'flex', alignItems: 'center' }}>
     <Menu position="bottom-end" offset={6} withinPortal>
       <Menu.Target>
         <Tooltip label={LOCALE_LABELS[locale]} position="bottom">
           <ActionIcon
             variant="subtle"
-            size="sm"
+            size="md"
             aria-label="Select language"
             className="text-fg-muted hover:text-accent"
           >
-            <IconLanguage size={14} />
+            <IconLanguage size={16} />
           </ActionIcon>
         </Tooltip>
       </Menu.Target>
@@ -30,7 +31,7 @@ export function LanguageSwitcher() {
         {localeOptions.map(({ value, label }) => (
           <Menu.Item
             key={value}
-            onClick={() => setLocale(value as Locale)}
+            onClick={() => setLocale(value)}
             style={{
               fontFamily: 'var(--font-mono)',
               fontSize: 11,
@@ -43,5 +44,6 @@ export function LanguageSwitcher() {
         ))}
       </Menu.Dropdown>
     </Menu>
+    </div>
   );
 }
