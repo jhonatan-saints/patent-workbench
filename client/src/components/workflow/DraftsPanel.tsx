@@ -1,4 +1,5 @@
-import { Stack, Text, Group, ActionIcon, Box, Tooltip, ScrollArea } from '@mantine/core';
+import { useState } from 'react';
+import { Stack, Text, Group, ActionIcon, Box, Tooltip, ScrollArea, Modal, Button } from '@mantine/core';
 import { IconTrash, IconClock, IconX, IconCloudCheck, IconCloudOff } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n/useI18n';
@@ -30,6 +31,7 @@ function DraftItem({
   onLoad: () => void;
 }>) {
   const { t } = useI18n();
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const completedCount = WORKFLOW_ORDER.filter((m) => session.artifact.sections[m]).length;
   const progress = Math.round((completedCount / WORKFLOW_ORDER.length) * 100);
   const tokensLabel =
@@ -38,6 +40,7 @@ function DraftItem({
       : `${session.totalTokens}`;
 
   return (
+    <>
     <Box
       onClick={onLoad}
       className="group relative cursor-pointer rounded-md overflow-hidden"
@@ -102,7 +105,7 @@ function DraftItem({
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDelete();
+                  setConfirmOpen(true);
                 }}
                 style={{ opacity: 0, transition: 'opacity 150ms ease' }}
                 className="group-hover:opacity-100!"
@@ -212,12 +215,43 @@ function DraftItem({
         </Group>
       </Box>
     </Box>
+
+      {/* Delete confirmation modal */}
+      <Modal
+        opened={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title={t('res_DeleteDraftConfirmTitle')}
+        centered
+        size="sm"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Text size="sm" mb="lg">
+          {t('res_DeleteDraftConfirmMessage')}
+        </Text>
+        <Group justify="flex-end" gap={8}>
+          <Button variant="default" size="xs" onClick={() => setConfirmOpen(false)}>
+            {t('res_Cancel')}
+          </Button>
+          <Button
+            color="red"
+            size="xs"
+            onClick={() => {
+              setConfirmOpen(false);
+              onDelete();
+            }}
+          >
+            {t('res_Delete')}
+          </Button>
+        </Group>
+      </Modal>
+    </>
   );
 }
 
 export function DraftsPanel() {
   const { sessions, loadSession, deleteSession, clearSessions } = useWorkbenchStore();
   const { t } = useI18n();
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
   if (sessions.length === 0) {
     return (
@@ -286,7 +320,7 @@ export function DraftsPanel() {
           <ActionIcon
             variant="subtle"
             size="sm"
-            onClick={clearSessions}
+            onClick={() => setClearConfirmOpen(true)}
             aria-label={t('res_Clear')}
             style={{ opacity: 0.55, transition: 'opacity 150ms ease' }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.opacity = '1')}
@@ -309,6 +343,34 @@ export function DraftsPanel() {
           ))}
         </Stack>
       </ScrollArea.Autosize>
+
+      {/* Clear all confirmation modal */}
+      <Modal
+        opened={clearConfirmOpen}
+        onClose={() => setClearConfirmOpen(false)}
+        title={t('res_ClearAllDraftsConfirmTitle')}
+        centered
+        size="sm"
+      >
+        <Text size="sm" mb="lg">
+          {t('res_ClearAllDraftsConfirmMessage')}
+        </Text>
+        <Group justify="flex-end" gap={8}>
+          <Button variant="default" size="xs" onClick={() => setClearConfirmOpen(false)}>
+            {t('res_Cancel')}
+          </Button>
+          <Button
+            color="red"
+            size="xs"
+            onClick={() => {
+              setClearConfirmOpen(false);
+              clearSessions();
+            }}
+          >
+            {t('res_Delete')}
+          </Button>
+        </Group>
+      </Modal>
     </Stack>
   );
 }
