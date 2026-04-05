@@ -10,7 +10,9 @@ A local-first visual IDE for patent ideation, drafting, and iteration — powere
 
 ## What it does
 
-Patent Workbench guides inventors through a structured, five-phase workflow that produces a complete patent application draft. Each of the seven drafting steps uses a dedicated prompt template built on the **REG** (Role + Examples + Goal) pattern, instructing the model to reason like a USPTO patent analyst or attorney and produce output that conforms to standard IDF language conventions.
+Patent Workbench guides inventors through a structured five-phase workflow, composed of seven core drafting steps that produce a complete patent application draft. Each step uses a dedicated prompt template built on the REG (Role + Examples + Goal) pattern, instructing the model to reason like a USPTO patent analyst or attorney and generate output aligned with standard IDF language conventions.
+
+In addition to the core workflow, three supporting steps are included: figure creation (step 08), inventor and naming details (step 09), and final preview and export (step 10).
 
 At every step the LLM generates **three distinct options** to compare. You pick the one that best fits your intent — or regenerate — before the workflow advances automatically.
 
@@ -64,7 +66,7 @@ An average creation using the "guided" method takes about: **~8 800 tokens**.
 - **LLM status indicator** — real-time connectivity check with latency; polls every 30 seconds.
 - **Session history** — in-memory record of up to 20 completed sessions; browse, restore, or delete.
 - **Diagram editor** — in-app flowchart creator (`@xyflow/react`); exports as PNG or JSON.
-- **Export** — save as `.md` with YAML frontmatter or `.docx` (Word document with embedded figures).
+- **Export** — save as `.txt`, `.pdf`, or `.docx` (Word document with embedded figures).
 - **Prompt injection protection** — server-side detection and rejection of jailbreak/override patterns.
 - **Cancellation** — abort an in-progress generation at any time via AbortController.
 - **Dark / light mode** and **resizable split view** (input + options on the left, live preview on the right).
