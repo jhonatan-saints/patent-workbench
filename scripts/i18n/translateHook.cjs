@@ -14,8 +14,18 @@ const masterPath = path.join(__dirname, 'resource-locale_master.json');
 const srcLocalesDir = path.join(__dirname, '../../client/src/i18n/locales');
 const publicLocalesDir = path.join(__dirname, '../../client/public/locales');
 
+function sortObjectKeys(obj) {
+  return Object.fromEntries(
+    Object.keys(obj).sort().map(k => [k, obj[k]])
+  );
+}
+
 function generateLanguage() {
   const master = JSON.parse(fs.readFileSync(masterPath, 'utf-8'));
+
+  // Sort master entries by key alphabetically and write back
+  const sortedMaster = [...master].sort((a, b) => a.key.localeCompare(b.key));
+  fs.writeFileSync(masterPath, JSON.stringify(sortedMaster, null, 2) + '\n', 'utf-8');
 
   if (!fs.existsSync(srcLocalesDir)) {
     fs.mkdirSync(srcLocalesDir, { recursive: true });
@@ -23,14 +33,15 @@ function generateLanguage() {
 
   for (const locale of LOCALES) {
     const out = {};
-    for (const entry of master) {
+    for (const entry of sortedMaster) {
       if (Object.hasOwn(entry, locale)) {
         out[entry.key] = entry[locale];
       }
     }
+    const sortedOut = sortObjectKeys(out);
     const dest = path.join(srcLocalesDir, `${locale}.json`);
-    fs.writeFileSync(dest, JSON.stringify(out, null, 2) + '\n', 'utf-8');
-    console.log(`  - Generated ${locale}.json (${Object.keys(out).length} keys)`);
+    fs.writeFileSync(dest, JSON.stringify(sortedOut, null, 2) + '\n', 'utf-8');
+    console.log(`  - Generated ${locale}.json (${Object.keys(sortedOut).length} keys)`);
   }
 
   console.log(`\nLocale files written to: ${srcLocalesDir}\n`);

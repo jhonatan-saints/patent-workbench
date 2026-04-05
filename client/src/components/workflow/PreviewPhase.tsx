@@ -248,6 +248,7 @@ export function PreviewPhase() {
               {artifact.inventors.length > 0 && (
                 <Box>
                   <Text
+                    className='uppercase'
                     style={{
                       color: DOC_BLUE,
                       fontFamily: DOC_FONT,
@@ -465,6 +466,7 @@ export function PreviewPhase() {
                 <Box>
                   <Divider mb={24} style={{ borderColor: '#ddd' }} />
                   <Text
+                    className='uppercase'
                     style={{
                       color: DOC_BLUE,
                       fontFamily: DOC_FONT,
