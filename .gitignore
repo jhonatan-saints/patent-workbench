@@ -12,6 +12,11 @@ server/dist/
 .settings.local.json
 settings.local.json
 
+#Data
+*.db
+*.db-shm
+*.db-wal
+
 # Environment files
 .env
 .env.*

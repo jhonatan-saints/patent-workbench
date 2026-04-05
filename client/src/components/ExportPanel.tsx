@@ -166,7 +166,7 @@ function buildPDFHTML(artifact: PatentArtifact, labels: Record<string, string>):
             }
             return `
           <div style="text-align:center; margin-bottom: 20pt;">
-            <img src="${fig.dataUrl}" alt="${escapeHtml(fig.name)}" style="${imgStyle}"/>
+            <img src="${escapeHtml(fig.dataUrl)}" alt="${escapeHtml(fig.name)}" style="${imgStyle}"/>
             <p style="font-size:10pt; color:#555; font-style:italic; margin-top:4pt;">${escapeHtml(fig.name)}${fig.caption ? ` — ${escapeHtml(fig.caption)}` : ''}</p>
           </div>`;
           })
@@ -432,10 +432,10 @@ function downloadFile(content: string, filename: string, mimeType: string) {
 }
 
 function formatIcon(format: ExportFormat) {
-  if (format === 'pdf') return <IconFileTypePdf size={13} />;
-  if (format === 'docx') return <IconFileWord size={13} />;
-  if (format === 'md') return <IconMarkdown size={13} />;
-  return <IconFileText size={13} />;
+  if (format === 'pdf') return <IconFileTypePdf size={14} />;
+  if (format === 'docx') return <IconFileWord size={14} />;
+  if (format === 'md') return <IconMarkdown size={14} />;
+  return <IconFileText size={14} />;
 }
 
 export function ExportPanel({

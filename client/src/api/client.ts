@@ -5,6 +5,7 @@ import type {
   ApiResult,
   StatusResponse,
   ModelsResponse,
+  WorkflowSession,
 } from '@/types';
 
 interface ModelContextResponse {
@@ -121,4 +122,45 @@ export async function getModelContextLength(model: string): Promise<number | nul
 
 export function isApiError(result: ApiResult<unknown>): result is ApiError {
   return (result as ApiError).success === false;
+}
+
+// Sessions API — short timeout, no abort needed
+const SESSIONS_TIMEOUT_MS = 10_000;
+
+export async function fetchSessions(): Promise<WorkflowSession[]> {
+  try {
+    const result = await apiFetch<{ success: true; data: WorkflowSession[] }>(
+      '/sessions',
+      {},
+      SESSIONS_TIMEOUT_MS
+    );
+    if (isApiError(result)) return [];
+    return result.data;
+  } catch {
+    return [];
+  }
+}
+
+export async function saveSession(session: WorkflowSession): Promise<void> {
+  try {
+    await apiFetch('/sessions', { method: 'POST', body: JSON.stringify(session) }, SESSIONS_TIMEOUT_MS);
+  } catch {
+    // best-effort — don't surface persistence errors to the user
+  }
+}
+
+export async function deleteSession(id: string): Promise<void> {
+  try {
+    await apiFetch(`/sessions/${id}`, { method: 'DELETE' }, SESSIONS_TIMEOUT_MS);
+  } catch {
+    // best-effort
+  }
+}
+
+export async function clearAllSessions(): Promise<void> {
+  try {
+    await apiFetch('/sessions', { method: 'DELETE' }, SESSIONS_TIMEOUT_MS);
+  } catch {
+    // best-effort
+  }
 }

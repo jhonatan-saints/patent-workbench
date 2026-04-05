@@ -5,7 +5,17 @@ import type {
   WorkflowSession,
   GeneratedOption,
 } from '@/types';
-import { generatePatentContent, getModels, getStatus, getModelContextLength, isApiError } from '@/api/client';
+import {
+  generatePatentContent,
+  getModels,
+  getStatus,
+  getModelContextLength,
+  isApiError,
+  fetchSessions,
+  saveSession,
+  deleteSession as apiDeleteSession,
+  clearAllSessions,
+} from '@/api/client';
 import { sanitizeOutput, generateId } from '@/utils/sanitize';
 import { WORKFLOW_MODULES, WORKFLOW_ORDER } from '@/utils/workflowTemplates';
 import { parseOptions } from '@/utils/optionParser';
@@ -233,6 +243,11 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     }
   },
 
+  initSessions: async () => {
+    const remote = await fetchSessions();
+    if (remote.length > 0) set({ sessions: remote.map((s) => ({ ...s, persisted: true })) });
+  },
+
   saveCurrentSession: () => {
     const { steps, artifact, selectedModel } = get();
     if (!artifact || Object.keys(artifact.sections).length === 0) return;
@@ -245,6 +260,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     }));
     set((state) => {
       const existingIndex = state.sessions.findIndex((s) => s.startedAt === artifact.startedAt);
+      // Preserve persisted flag if session already exists
+      const existingPersisted = existingIndex >= 0 ? state.sessions[existingIndex].persisted : false;
       const session: WorkflowSession = {
         id: existingIndex >= 0 ? state.sessions[existingIndex].id : generateId(),
         startedAt: artifact.startedAt,
@@ -253,11 +270,46 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
         artifact,
         model: selectedModel,
         totalTokens,
+        persisted: existingPersisted,
         stepInputStates,
       };
       if (existingIndex >= 0) {
         const updated = [...state.sessions];
         updated[existingIndex] = session;
+        return { sessions: updated };
+      }
+      return { sessions: [session, ...state.sessions].slice(0, 20) };
+    });
+  },
+
+  persistDraft: async () => {
+    const { steps, artifact, selectedModel, sessions } = get();
+    if (!artifact || Object.keys(artifact.sections).length === 0) return;
+    const totalTokens = steps.reduce((acc, s) => acc + s.promptTokens + s.completionTokens, 0);
+    const stepInputStates = steps.map((s) => ({
+      moduleId: s.moduleId,
+      inputMode: s.inputMode,
+      guidedFields: s.guidedFields,
+      manualDraft: s.manualDraft,
+    }));
+    const existingIndex = sessions.findIndex((s) => s.startedAt === artifact.startedAt);
+    const session: WorkflowSession = {
+      id: existingIndex >= 0 ? sessions[existingIndex].id : generateId(),
+      startedAt: artifact.startedAt,
+      completedAt: Date.now(),
+      baseIdea: artifact.baseIdea,
+      artifact,
+      model: selectedModel,
+      totalTokens,
+      persisted: true,
+      stepInputStates,
+    };
+    await saveSession(session);
+    set((state) => {
+      const idx = state.sessions.findIndex((s) => s.startedAt === artifact.startedAt);
+      if (idx >= 0) {
+        const updated = [...state.sessions];
+        updated[idx] = session;
         return { sessions: updated };
       }
       return { sessions: [session, ...state.sessions].slice(0, 20) };
@@ -456,8 +508,17 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     });
   },
 
-  clearSessions: () => set({ sessions: [] }),
+  clearSessions: () => {
+    // Only delete persisted ones from the server; cached ones just disappear from memory
+    const { sessions } = get();
+    if (sessions.some((s) => s.persisted)) void clearAllSessions();
+    set({ sessions: [] });
+  },
 
-  deleteSession: (id: string) =>
-    set((state) => ({ sessions: state.sessions.filter((s) => s.id !== id) })),
+  deleteSession: (id: string) => {
+    const { sessions } = get();
+    const target = sessions.find((s) => s.id === id);
+    if (target?.persisted) void apiDeleteSession(id);
+    set((state) => ({ sessions: state.sessions.filter((s) => s.id !== id) }));
+  },
 }));

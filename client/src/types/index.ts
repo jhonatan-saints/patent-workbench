@@ -127,6 +127,7 @@ export interface WorkflowSession {
   artifact: PatentArtifact;
   model: string;
   totalTokens: number;
+  persisted: boolean; // true = saved to SQLite; false = in-memory cache only
   stepInputStates?: Array<{
     moduleId: WorkflowModuleId;
     inputMode: InputMode;
@@ -152,7 +153,7 @@ export interface WorkbenchState {
   generationStatus: GenerationStatus;
   lastError: string | null;
 
-  // Sessions (in-memory only)
+  // Sessions (persisted via server SQLite)
   sessions: WorkflowSession[];
 
   // Actions
@@ -178,7 +179,9 @@ export interface WorkbenchState {
   updateSectionContent: (moduleId: WorkflowModuleId, content: string) => void;
   updateArtifactBase: (idea: string, domain: string, constraints: string | undefined) => void;
   updateContextFiles: (files: ContextFile[]) => void;
+  initSessions: () => Promise<void>;
   saveCurrentSession: () => void;
+  persistDraft: () => Promise<void>;
   loadSession: (session: WorkflowSession) => void;
   clearSessions: () => void;
   deleteSession: (id: string) => void;

@@ -26,7 +26,7 @@ import { ArtifactPreview } from '@/components/workflow/ArtifactPreview';
 import { PreviewPhase } from '@/components/workflow/PreviewPhase';
 import { InventorsStep } from '@/components/workflow/InventorsStep';
 import { FiguresStep } from '@/components/workflow/FiguresStep';
-import { SessionsPanel } from '@/components/workflow/SessionsPanel';
+import { DraftsPanel } from '@/components/workflow/DraftsPanel';
 import { useWorkbenchStore } from '@/store/workbench';
 import { AppLoader } from '@/components/AppLoader';
 import { useI18n } from '@/i18n';
@@ -148,7 +148,7 @@ function ThemeToggle() {
 }
 
 export function App() {
-  const { workflowPhase } = useWorkbenchStore();
+  const { workflowPhase, initSessions } = useWorkbenchStore();
   const { t } = useI18n();
   const isWorking = workflowPhase === 'working';
   const isFigures = workflowPhase === 'figures';
@@ -160,6 +160,10 @@ export function App() {
     const handle = setTimeout(() => setLoading(false), 3000);
     return () => clearTimeout(handle);
   }, []);
+
+  useEffect(() => {
+    void initSessions();
+  }, [initSessions]);
 
   const [navCollapsed, setNavCollapsed] = useState(
     () => localStorage.getItem('nav-collapsed') === 'true'
@@ -275,7 +279,7 @@ export function App() {
                 className="text-fg-muted hover:text-accent"
                 style={{ display: navCollapsed ? 'none' : undefined }}
               >
-                <IconBrandGithub size={13} />
+                <IconBrandGithub size={14} />
               </ActionIcon>
             </Tooltip>
             <Tooltip label={navCollapsed ? 'Expand' : 'Collapse'} position="right" withArrow>
@@ -286,7 +290,7 @@ export function App() {
                 aria-label={navCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 className="text-fg-muted hover:text-accent"
               >
-                {navCollapsed ? <IconChevronRight size={13} /> : <IconChevronLeft size={13} />}
+                {navCollapsed ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
               </ActionIcon>
             </Tooltip>
           </Box>
@@ -356,7 +360,7 @@ export function App() {
                 className="text-accent tracking-widest"
                 size="xs"
               >
-                {t('res_Sessions')}
+                {t('res_Drafts')}
               </Text>
             </Group>
             {/* Row 2: subtitle */}
@@ -367,7 +371,7 @@ export function App() {
 
           {/* Sessions list */}
           <Box className="flex-1 overflow-y-auto min-h-0 p-4">
-            <SessionsPanel />
+            <DraftsPanel />
           </Box>
 
           {/* Powered by */}

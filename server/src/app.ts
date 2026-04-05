@@ -9,6 +9,7 @@ import 'express-async-errors'
 import dotenv from 'dotenv'
 import { z } from 'zod'
 import { generate, checkLLM, listModels, getModelContextLength } from './services/llm.service'
+import sessionsRouter from './routes/sessions'
 import logger from './logger'
 import errorHandler from './middleware/errorHandler'
 import { validateBody } from './middleware/validate'
@@ -123,7 +124,11 @@ app.use(
 // Schema
 const generateSchema = z.object({
   prompt: z.string().min(1, 'Prompt is required').max(promptSchemaMax, 'Prompt too long'),
-  model: z.string().optional(),
+  model: z
+    .string()
+    .max(128)
+    .regex(/^[a-zA-Z0-9._:/-]+$/, 'Invalid model name')
+    .optional(),
 })
 
 type GenerateBody = z.infer<typeof generateSchema>
@@ -219,6 +224,9 @@ app.post(
     })
   }
 )
+
+// Sessions — larger body limit to accommodate base64 figure data URLs
+app.use('/sessions', express.json({ limit: '50mb' }), sessionsRouter)
 
 // Error handler (must be last middleware)
 app.use(errorHandler)
