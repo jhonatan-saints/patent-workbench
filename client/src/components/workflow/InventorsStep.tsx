@@ -129,7 +129,7 @@ export function InventorsStep() {
           <Button
             variant="subtle"
             size="xs"
-            leftSection={<IconArrowLeft size={12} />}
+            leftSection={<IconArrowLeft size={14} />}
             onClick={handleBack}
             className="uppercase font-mono text-[11px] text-fg-muted"
           >
@@ -145,7 +145,7 @@ export function InventorsStep() {
             {/* Filing metadata block (optional) */}
             <Box className="border border-stroke rounded-md px-4.5 py-4 bg-surface">
               <Group gap={6} mb={12}>
-                <IconFileDescription size={12} className="text-fg-muted" />
+                <IconFileDescription size={14} className="text-fg-muted" />
                 <Text size="xs" ff="monospace" fw={700} className="text-fg-muted tracking-[0.06em]">
                   {t('res_FilingInfo')}
                   <Text span size="xs" fw={400} className="ml-1.5 text-fg-muted italic">
@@ -170,7 +170,7 @@ export function InventorsStep() {
                       onClick={() => void handleGenerateTitle()}
                       className="text-fg-muted"
                     >
-                      {generatingTitle ? <Loader size={12} /> : <IconWand size={14} />}
+                      {generatingTitle ? <Loader size={14} /> : <IconWand size={14} />}
                     </ActionIcon>
                   </Tooltip>
                 }
@@ -198,7 +198,7 @@ export function InventorsStep() {
               <Box key={inv.id} className="border border-stroke rounded-md px-4.5 py-4 bg-surface">
                 <Group justify="space-between" mb={12}>
                   <Group gap={6}>
-                    <IconUser size={12} className="text-fg-muted" />
+                    <IconUser size={14} className="text-fg-muted" />
                     <Text
                       size="xs"
                       ff="monospace"
@@ -280,7 +280,7 @@ export function InventorsStep() {
               <Button
                 variant="outline"
                 size="xs"
-                leftSection={<IconPlus size={12} />}
+                leftSection={<IconPlus size={14} />}
                 onClick={addInventor}
                 className="uppercase border-stroke text-fg-secondary font-mono text-[11px] tracking-[0.06em]"
               >

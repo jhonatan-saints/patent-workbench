@@ -10,7 +10,7 @@ import {
   Divider,
   Textarea,
 } from '@mantine/core';
-import { IconArrowLeft, IconCircleCheck, IconPencil, IconCheck, IconX, IconCopy, IconClipboardCheck } from '@tabler/icons-react';
+import { IconArrowLeft, IconCircleCheck, IconPencil, IconCheck, IconX, IconCopy, IconClipboardCheck, IconHome } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n/useI18n';
 import { WORKFLOW_ORDER, SECTION_LABELS } from '@/utils/workflowTemplates';
@@ -206,7 +206,7 @@ export function PreviewPhase() {
               <Button
                 variant="subtle"
                 size="xs"
-                leftSection={<IconArrowLeft size={12} />}
+                leftSection={<IconArrowLeft size={14} />}
                 onClick={handleBackToWork}
                 className="font-mono text-[11px] text-fg-muted"
               >
@@ -216,7 +216,7 @@ export function PreviewPhase() {
             <Button
               variant="subtle"
               size="xs"
-              leftSection={<IconArrowLeft size={12} />}
+              leftSection={<IconHome size={14} />}
               onClick={resetWorkflow}
               className="font-mono text-[11px] text-fg-muted"
             >

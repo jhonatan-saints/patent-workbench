@@ -259,7 +259,7 @@ export function StepInputPanel({ moduleId }: Props) {
             value: 'auto',
             label: (
               <Group gap={5} justify="center">
-                <IconWand size={12} />
+                <IconWand size={14} />
                 <span>{t('res_Mode_Auto')}</span>
               </Group>
             ),
@@ -268,7 +268,7 @@ export function StepInputPanel({ moduleId }: Props) {
             value: 'guided',
             label: (
               <Group gap={5} justify="center">
-                <IconForms size={12} />
+                <IconForms size={14} />
                 <span>{t('res_Mode_Guided')}</span>
               </Group>
             ),
@@ -277,7 +277,7 @@ export function StepInputPanel({ moduleId }: Props) {
             value: 'manual',
             label: (
               <Group gap={5} justify="center">
-                <IconPencil size={12} />
+                <IconPencil size={14} />
                 <span>{t('res_Mode_Manual')}</span>
               </Group>
             ),
@@ -364,7 +364,7 @@ export function StepInputPanel({ moduleId }: Props) {
                       <Button
                         size="xs"
                         variant="subtle"
-                        leftSection={<IconPaperclip size={12} />}
+                        leftSection={<IconPaperclip size={14} />}
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isGenerating}
                         className="font-mono text-[11px] text-accent uppercase"
@@ -390,7 +390,7 @@ export function StepInputPanel({ moduleId }: Props) {
                             wrap="nowrap"
                             className="bg-surface-raised border border-stroke rounded py-1.25 px-2.5"
                           >
-                            <IconFile size={12} className="text-fg-muted shrink-0" />
+                            <IconFile size={14} className="text-fg-muted shrink-0" />
                             <Text size="xs" ff="monospace" className="flex-1 text-fg truncate">
                               {f.name}
                             </Text>

@@ -272,7 +272,7 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
         />
         <Button
           size="xs"
-          leftSection={<IconCheck size={12} />}
+          leftSection={<IconCheck size={14} />}
           onClick={() => void handleExport()}
           disabled={parsed === null}
           style={{
@@ -329,7 +329,7 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
           {error && (
             <Group gap={6} wrap="nowrap">
               <IconAlertCircle
-                size={12}
+                size={14}
                 style={{ color: 'var(--mantine-color-red-6)', flexShrink: 0 }}
               />
               <Text size="xs" c="red" ff="monospace">

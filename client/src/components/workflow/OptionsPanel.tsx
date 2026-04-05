@@ -82,7 +82,7 @@ export function OptionsPanel() {
             <Button
               variant="subtle"
               size="xs"
-              leftSection={isFirstStep ? <IconHome size={12} /> : <IconArrowLeft size={12} />}
+              leftSection={isFirstStep ? <IconHome size={14} /> : <IconArrowLeft size={14} />}
               onClick={handleBack}
               disabled={isGenerating}
               className="uppercase text-fg-muted font-mono text-[11px]"
@@ -95,7 +95,7 @@ export function OptionsPanel() {
                 variant="filled"
                 color="red"
                 size="xs"
-                leftSection={<IconPlayerStop size={12} />}
+                leftSection={<IconPlayerStop size={14} />}
                 onClick={cancelGeneration}
                 className="uppercase font-mono text-[11px]"
               >
@@ -107,7 +107,7 @@ export function OptionsPanel() {
               <Button
                 variant="outline"
                 size="xs"
-                leftSection={<IconRefresh size={12} />}
+                leftSection={<IconRefresh size={14} />}
                 onClick={regenerateOptions}
                 className="uppercase border-stroke text-fg-secondary font-mono text-[11px] tracking-[0.06em]"
               >
