@@ -263,6 +263,7 @@ export function App() {
                 size="sm"
                 aria-label="GitHub repository"
                 className="text-fg-muted hover:text-accent"
+                style={{ display: navCollapsed ? 'none' : undefined }}
               >
                 <IconBrandGithub size={13} />
               </ActionIcon>

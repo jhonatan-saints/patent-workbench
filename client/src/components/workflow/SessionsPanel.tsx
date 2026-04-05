@@ -266,25 +266,6 @@ export function SessionsPanel() {
           >
             {t('res_Sessions')}
           </Text>
-          <Box
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minWidth: 18,
-              height: 16,
-              padding: '0 5px',
-              borderRadius: 99,
-              background: 'var(--accent-glow)',
-              border: '1px solid var(--accent)',
-              fontSize: 11,
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--accent)',
-              fontWeight: 700,
-            }}
-          >
-            {sessions.length}
-          </Box>
         </Group>
 
         <Tooltip label={t('res_Clear')} position="left" withArrow>

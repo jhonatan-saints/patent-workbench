@@ -111,7 +111,7 @@ export function OptionCard({ option, onSelect, disabled }: OptionCardProps) {
               size="xs"
               onClick={handleSelect}
               disabled={!editedContent.trim() || disabled}
-              leftSection={<IconCheck size={12} />}
+              leftSection={<IconCheck size={14} />}
               style={editedContent.trim() ? BTN_PRIMARY : BTN_PRIMARY_DISABLED}
               className="uppercase"
             >
@@ -124,7 +124,7 @@ export function OptionCard({ option, onSelect, disabled }: OptionCardProps) {
             size="xs"
             onClick={handleSelect}
             disabled={disabled}
-            leftSection={<IconCheck size={12} />}
+            leftSection={<IconCheck size={14} />}
             style={BTN_PRIMARY}
             className="uppercase"
           >

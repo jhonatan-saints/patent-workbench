@@ -151,7 +151,7 @@ export function FiguresStep() {
           <Button
             variant="subtle"
             size="xs"
-            leftSection={<IconArrowLeft size={12} />}
+            leftSection={<IconArrowLeft size={14} />}
             onClick={handleBack}
             className="font-mono text-[11px] text-fg-muted"
           >
@@ -171,7 +171,7 @@ export function FiguresStep() {
               value: 'upload',
               label: (
                 <Group gap={6} px={6} wrap="nowrap">
-                  <IconUpload size={12} />
+                  <IconUpload size={14} />
                   <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em] uppercase">
                     {t('res_Image')}
                   </Text>
@@ -182,7 +182,7 @@ export function FiguresStep() {
               value: 'diagram',
               label: (
                 <Group gap={6} px={6} wrap="nowrap">
-                  <IconVectorTriangle size={12} />
+                  <IconVectorTriangle size={14} />
                   <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em] uppercase">
                     {t('res_Diagram')}
                   </Text>
@@ -193,7 +193,7 @@ export function FiguresStep() {
               value: 'json',
               label: (
                 <Group gap={6} px={6} wrap="nowrap">
-                  <IconBraces size={12} />
+                  <IconBraces size={14} />
                   <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em] uppercase">
                     {t('res_Json')}
                   </Text>

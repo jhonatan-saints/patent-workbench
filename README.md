@@ -6,13 +6,7 @@
 
 A local-first visual IDE for patent ideation, drafting, and iteration — powered by local LLMs via [Ollama](https://ollama.com). No cloud, no telemetry, no data leaving your machine.
 
----
-
-## Screenshot
-
-![Patent Workbench landing page](client/src/assets/prints/Landing%20page.png)
-
----
+![Patent Workbench — guided patent ideation interface](client/src/assets/screenshots/landing_page.png)
 
 ## What it does
 
@@ -21,8 +15,6 @@ Patent Workbench guides inventors through a structured, five-phase workflow that
 At every step the LLM generates **three distinct options** to compare. You pick the one that best fits your intent — or regenerate — before the workflow advances automatically.
 
 Context from earlier steps and any uploaded reference documents is injected into subsequent prompts via a **RAG** (Retrieval-Augmented Generation) mechanism, so later sections remain coherent with earlier ones without requiring the user to re-explain the invention.
-
----
 
 ## Workflow
 
@@ -62,8 +54,6 @@ An average creation using the "guided" method takes about: **~8 800 tokens**.
 | **Guided** | User fills structured form fields; fields are interpolated into the template before sending to the LLM |
 | **Manual** | User writes the section content directly; no LLM call is made |
 
----
-
 ## Key features
 
 - **Three-option selection** — every generation returns three distinct options to compare side-by-side.
@@ -78,8 +68,6 @@ An average creation using the "guided" method takes about: **~8 800 tokens**.
 - **Prompt injection protection** — server-side detection and rejection of jailbreak/override patterns.
 - **Cancellation** — abort an in-progress generation at any time via AbortController.
 - **Dark / light mode** and **resizable split view** (input + options on the left, live preview on the right).
-
----
 
 ## Supported languages
 
@@ -112,8 +100,6 @@ The REG system contexts are authored in English and instruct the model to reason
 
 Until the REG prompts are adapted, submitting the invention idea in a non-English language will work, but the generated options are likely to be returned in English regardless of the UI locale.
 
----
-
 ## Architecture
 
 ```text
@@ -128,15 +114,11 @@ The client talks exclusively to the Express backend via a typed API layer (`clie
 
 All prompt assembly — including REG system contexts, RAG context injection, and option-format enforcement — happens in the client before the request is sent to the server. The server is responsible for security, rate limiting, and transport; the client owns the prompt strategy.
 
----
-
 ## Prerequisites
 
 - Node.js 20+
 - [Ollama](https://ollama.com) installed and running locally
 - At least one model pulled, e.g. `ollama pull mistral`
-
----
 
 ## Ollama setup
 
@@ -174,8 +156,6 @@ Or per-model at run time:
 ollama run mistral --num_ctx 8192
 ```
 
----
-
 ## Getting started
 
 ```bash
@@ -194,8 +174,6 @@ npm run client       # Vite on localhost:3003/patent-workbench
 ```
 
 Open [http://localhost:3003/patent-workbench](http://localhost:3003/patent-workbench). The status badge in the header turns green once Ollama is reachable.
-
----
 
 ## Available scripts
 
@@ -216,15 +194,11 @@ For server-specific configuration (env vars, endpoints, rate limits) see [server
 For client architecture and component details see [client/README.md](client/README.md).
 For algorithm documentation see [docs/reg-rag-algorithms.md](docs/reg-rag-algorithms.md).
 
----
-
 ## Contributing
 
 - Open focused, small PRs.
 - Run `npm run lint` and `npm run format` before submitting.
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
-
----
 
 ## Licensing
 
@@ -236,8 +210,6 @@ This project uses a split-licensing model:
 If you plan to contribute code that depends on proprietary artifacts, open an issue first so the separation remains clean and public contributions stay license-compatible.
 
 For on-premise enterprise licenses, POC access, or private builds that include the REG algorithm and enterprise templates, contact the maintainers.
-
----
 
 ## Contact
 
