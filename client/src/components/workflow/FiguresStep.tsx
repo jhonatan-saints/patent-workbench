@@ -170,7 +170,7 @@ export function FiguresStep() {
             {
               value: 'upload',
               label: (
-                <Group gap={6} wrap="nowrap">
+                <Group gap={6} px={6} wrap="nowrap">
                   <IconUpload size={12} />
                   <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em] uppercase">
                     {t('res_Image')}
@@ -181,7 +181,7 @@ export function FiguresStep() {
             {
               value: 'diagram',
               label: (
-                <Group gap={6} wrap="nowrap">
+                <Group gap={6} px={6} wrap="nowrap">
                   <IconVectorTriangle size={12} />
                   <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em] uppercase">
                     {t('res_Diagram')}
@@ -192,7 +192,7 @@ export function FiguresStep() {
             {
               value: 'json',
               label: (
-                <Group gap={6} wrap="nowrap">
+                <Group gap={6} px={6} wrap="nowrap">
                   <IconBraces size={12} />
                   <Text ff="monospace" size="xs" fw={600} className="tracking-[0.05em] uppercase">
                     {t('res_Json')}
