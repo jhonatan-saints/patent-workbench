@@ -68,9 +68,9 @@ An average creation using the "guided" method takes about: **~8 800 tokens**.
 - **Model context length** — automatically fetches the `num_ctx` value from the model's Modelfile and shows it in the UI; context file upload is conditionally enabled for models with ≥ 16 384 tokens.
 - **Token meter** — live prompt + completion token counts per step, totalled across the session.
 - **LLM status indicator** — real-time connectivity check with latency; polls every 30 seconds.
-- **Session history** — in-memory record of up to 20 completed sessions; browse, restore, or delete.
-- **Diagram editor** — in-app flowchart creator (`@xyflow/react`); exports as PNG or JSON.
-- **Export** — save as `.txt`, `.pdf`, or `.docx` (Word document with embedded figures).
+- **Persistent sessions** — sessions are saved to a local SQLite database and survive page reload and browser restart; browse, restore, or delete from the Drafts sidebar.
+- **Diagram editor** — in-app flowchart creator (`@xyflow/react`); exports as PNG for embedding in figures.
+- **Export** — save as `.txt`, `.pdf` (print dialog), or `.docx` (Word document with embedded figures and inventors block).
 - **Prompt injection protection** — server-side detection and rejection of jailbreak/override patterns.
 - **Cancellation** — abort an in-progress generation at any time via AbortController.
 - **Dark / light mode** and **resizable split view** (input + options on the left, live preview on the right).
@@ -111,12 +111,14 @@ Until the REG prompts are adapted, submitting the invention idea in a non-Englis
 ```text
 patent-workbench/
 ├── client/          # React 18 + Vite + Mantine v7 + Tailwind CSS v4 frontend
-├── server/          # Express + TypeScript API (LLM proxy + validation)
+├── server/          # Express + TypeScript API (LLM proxy + validation + SQLite persistence)
 ├── docs/            # Algorithm and architecture documentation
 └── scripts/         # Setup and build utilities
 ```
 
 The client talks exclusively to the Express backend via a typed API layer (`client/src/api/client.ts`). The server validates, sanitizes, and forwards requests to Ollama running on `localhost:11434`. **The LLM never receives requests directly from the browser.**
+
+Session data (artifact content, figures, inventor details, diagram board state) is persisted in a SQLite database at `<DATA_DIR>/workbench.db` (default: `./data/workbench.db` relative to the server working directory). Figures are stored in a normalised `figures` table; the rest of the artifact is stored as JSON. The database uses WAL mode for safe concurrent access.
 
 All prompt assembly — including REG system contexts, RAG context injection, and option-format enforcement — happens in the client before the request is sent to the server. The server is responsible for security, rate limiting, and transport; the client owns the prompt strategy.
 

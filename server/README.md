@@ -122,6 +122,22 @@ curl -X POST http://localhost:3001/generate \
 
 ---
 
+### Sessions endpoints
+
+Session data is persisted in a local SQLite database (`<DATA_DIR>/workbench.db`, default `./data/workbench.db`). Figures are stored in a normalised `figures` table (keyed by `session_id`); everything else is stored as JSON columns on the `sessions` table.
+
+| Method | Route | Body / Params | Description |
+| --- | --- | --- | --- |
+| `GET` | `/sessions` | — | List all sessions newest-first (max 100); figures returned as **metadata only** (no `dataUrl`) for performance |
+| `GET` | `/sessions/:id` | — | Fetch one full session including figure `dataUrl`s |
+| `POST` | `/sessions` | `WorkflowSession` JSON | Upsert a session; figures are re-synced atomically in a transaction |
+| `DELETE` | `/sessions/:id` | — | Delete one session (cascades to its figures) |
+| `DELETE` | `/sessions` | — | Delete all sessions |
+
+All `POST /sessions` bodies are validated with Zod. The `dataUrl` field on each figure is validated against an allowlist of safe MIME types (`image/png`, `image/jpeg`, `image/gif`, `image/webp`, `application/json`); `text/html` and `text/javascript` are explicitly rejected to prevent stored XSS.
+
+---
+
 ## Request pipeline
 
 Every `POST /generate` request passes through the following middleware stack in order:
@@ -142,7 +158,7 @@ Configured via `CORS_ORIGIN` (default `http://localhost:5173`). Rejects requests
 
 ### 3. Body parser + Compression
 
-Parses JSON bodies up to `BODY_LIMIT` (default `512kb`). Response bodies are gzip-compressed.
+Parses JSON bodies up to `BODY_LIMIT` (default `512kb`). The `/sessions` routes use a separate `50mb` limit to accommodate base64-encoded figure data URLs. Response bodies are gzip-compressed.
 
 ### 4. Request ID
 
@@ -237,7 +253,8 @@ Copy `.env.example` to `.env`:
 | `OLLAMA_URL` | `http://localhost:11434` | Ollama base URL |
 | `DEFAULT_MODEL` | `qwen2.5:7b` | Fallback model when none is specified in the request. See [Recommended models](#recommended-models) |
 | `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
-| `BODY_LIMIT` | `512kb` | Max JSON body size |
+| `BODY_LIMIT` | `512kb` | Max JSON body size for all routes except `/sessions` (which always uses `50mb`) |
+| `DATA_DIR` | `./data` | Directory for the SQLite database (`workbench.db`); created automatically on first run |
 | `RATE_WINDOW_MS` | `900000` | Global rate-limit window in ms (15 min) |
 | `RATE_MAX` | `100` | Max requests per window (global) |
 | `GENERATE_RATE_WINDOW_MS` | `60000` | Rate-limit window for `/generate` (1 min) |
@@ -262,7 +279,10 @@ src/
 │   ├── errorHandler.ts     # Last-resort error handler
 │   ├── sanitize.ts         # Prompt trim, truncation, injection detection
 │   └── validate.ts         # Zod body validation factory
+├── routes/
+│   └── sessions.ts         # Sessions CRUD routes + Zod schema + figure XSS validation
 └── services/
+    ├── db.ts               # SQLite client (better-sqlite3); schema + versioned migrations via PRAGMA user_version
     └── llm.service.ts      # Ollama HTTP integration (generate, checkLLM, listModels, getModelContextLength)
 ```
 
