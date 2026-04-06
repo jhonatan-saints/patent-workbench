@@ -19,6 +19,7 @@ import {
 import { useRef, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { StatusIndicator } from '@/components/StatusIndicator';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { SettingsMenu } from '@/components/SettingsMenu';
 import { StepProgress } from '@/components/workflow/StepProgress';
 import { IdeaInputStep } from '@/components/workflow/IdeaInputStep';
 import { OptionsPanel } from '@/components/workflow/OptionsPanel';
@@ -148,7 +149,7 @@ function ThemeToggle() {
 }
 
 export function App() {
-  const { workflowPhase, initSessions } = useWorkbenchStore();
+  const { workflowPhase, initSessions, loadSettings } = useWorkbenchStore();
   const { t } = useI18n();
   const isWorking = workflowPhase === 'working';
   const isFigures = workflowPhase === 'figures';
@@ -163,7 +164,8 @@ export function App() {
 
   useEffect(() => {
     void initSessions();
-  }, [initSessions]);
+    void loadSettings();
+  }, [initSessions, loadSettings]);
 
   const [navCollapsed, setNavCollapsed] = useState(
     () => localStorage.getItem('nav-collapsed') === 'true'
@@ -247,6 +249,7 @@ export function App() {
           <Group gap={8} align="center" wrap="nowrap">
             <LanguageSwitcher />
             <ThemeToggle />
+            <SettingsMenu />
             <StatusIndicator />
           </Group>
         </Group>

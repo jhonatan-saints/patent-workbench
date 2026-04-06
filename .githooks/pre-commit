@@ -11,11 +11,16 @@ if [ "$branch" = "develop" ]; then
   exit 1
 fi
 
-# Prefer npm run lint at root
-if command -v npm > /dev/null 2>&1; then
-  npm run lint
+# Only lint if there are staged changes
+if git diff --cached --quiet; then
+  echo "No staged changes; skipping lint"
 else
-  echo "npm not found; skipping lint"
+  # Prefer npm run lint at root
+  if command -v npm > /dev/null 2>&1; then
+    npm run lint
+  else
+    echo "npm not found; skipping lint"
+  fi
 fi
 
 echo "Pre-commit checks passed"

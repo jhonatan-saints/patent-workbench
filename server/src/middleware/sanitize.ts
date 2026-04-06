@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import logger from '../logger'
-
-const DEFAULT_PROMPT_MAX = Number(process.env.PROMPT_MAX_LENGTH) || 16000
+import { getAppSettings } from '../services/db'
 
 /**
  * Normalise text before injection detection to defeat Unicode substitution,
@@ -39,11 +38,12 @@ const INJECTION_PATTERNS = [
   /no restrictions/,
 ]
 
-export const sanitizePrompt = (maxLen = DEFAULT_PROMPT_MAX) => (
+export const sanitizePrompt = () => (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
+  const maxLen = getAppSettings().prompt_max_length
   if (req.body && typeof req.body.prompt === 'string') {
     // Collapse runs of spaces/tabs — preserve newlines so structured prompts stay intact
     const prompt = req.body.prompt.trim().replaceAll(/ {2,}/g, ' ')

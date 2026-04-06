@@ -145,6 +145,18 @@ export interface WorkflowSession {
   lastStepIndex?: number;
 }
 
+export type LogLevel = 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+
+export interface AppSettings {
+  defaultModel: string;
+  llmTimeoutMs: number;
+  numOptions: number;
+  ollamaUrl: string;
+  promptMaxLength: number;
+  shutdownTimeoutMs: number;
+  logLevel: LogLevel;
+}
+
 // UI state
 export interface WorkbenchState {
   // LLM
@@ -199,4 +211,9 @@ export interface WorkbenchState {
   loadSession: (session: WorkflowSession) => Promise<void>;
   clearSessions: () => void;
   deleteSession: (id: string) => void;
+
+  // App settings
+  appSettings: AppSettings;
+  loadSettings: () => Promise<void>;
+  saveSettings: (patch: Partial<AppSettings>) => Promise<void>;
 }

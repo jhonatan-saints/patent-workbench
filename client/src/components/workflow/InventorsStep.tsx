@@ -174,7 +174,12 @@ export function InventorsStep() {
             <Box className="border border-stroke rounded-md px-4.5 py-4 bg-surface">
               <Group gap={6} mb={12}>
                 <IconFileDescription size={14} className="text-fg-muted" />
-                <Text size="xs" ff="monospace" fw={700} className="text-fg-muted tracking-[0.06em] uppercase">
+                <Text
+                  size="xs"
+                  ff="monospace"
+                  fw={700}
+                  className="text-fg-muted tracking-[0.06em] uppercase"
+                >
                   {t('res_FilingInfo')}
                 </Text>
               </Group>

@@ -50,7 +50,8 @@ function makeImageFigure(dataUrl: string, img: HTMLImageElement, figureNumber: n
 
 export function FiguresStep() {
   const { t } = useI18n();
-  const { artifact, updateFigures, goToInventors, goToStep, steps, resetWorkflow } = useWorkbenchStore();
+  const { artifact, updateFigures, goToInventors, goToStep, steps, resetWorkflow } =
+    useWorkbenchStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [figures, setFigures] = useState<FigureItem[]>(() => artifact?.figures ?? []);
@@ -366,7 +367,11 @@ export function FiguresStep() {
       <Box
         style={{ flex: 1, overflow: 'hidden', display: mode === 'diagram' ? undefined : 'none' }}
       >
-        <DiagramEditor visible={mode === 'diagram'} onAddFigure={handleAddFigureFromEditor} figureNumber={figures.length + 1} />
+        <DiagramEditor
+          visible={mode === 'diagram'}
+          onAddFigure={handleAddFigureFromEditor}
+          figureNumber={figures.length + 1}
+        />
       </Box>
 
       {/* Body — JSON viewer */}

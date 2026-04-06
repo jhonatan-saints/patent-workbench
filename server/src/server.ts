@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import app from './app';
 import logger from './logger';
+import { getAppSettings } from './services/db';
 
 dotenv.config();
 
@@ -35,7 +36,7 @@ const shutdown = (signal: string) => {
   setTimeout(() => {
     logger.warn('Forcing shutdown');
     process.exit(1);
-  }, Number(process.env.SHUTDOWN_TIMEOUT_MS) || 30_000);
+  }, getAppSettings().shutdown_timeout_ms);
 };
 
 process.on('SIGINT', () => shutdown('SIGINT'));

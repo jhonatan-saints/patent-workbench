@@ -6,6 +6,7 @@ import type {
   StatusResponse,
   ModelsResponse,
   WorkflowSession,
+  AppSettings,
 } from '@/types';
 
 interface ModelContextResponse {
@@ -13,9 +14,12 @@ interface ModelContextResponse {
   data: { contextLength: number | null };
 }
 
-const BASE_URL = '/api';
+// In dev, VITE_API_BASE is unset and Vite proxies /api → server.
+// In production or custom deployments, set VITE_API_BASE=http://your-server to bypass the proxy.
+const VITE_API_BASE = import.meta.env.VITE_API_BASE as string | undefined;
+const BASE_URL = VITE_API_BASE ?? '/api';
 
-const DEFAULT_TIMEOUT_MS = Number(import.meta.env.VITE_LLM_TIMEOUT_MS) || 120_000;
+const DEFAULT_TIMEOUT_MS = Number(import.meta.env.VITE_LLM_TIMEOUT_MS) || 300_000;
 
 // M-4: include API key when the server requires one (set via VITE_API_KEY env var)
 const API_KEY = import.meta.env.VITE_API_KEY as string | undefined;
@@ -77,12 +81,13 @@ async function apiFetch<T>(
 
 export async function generatePatentContent(
   req: GenerateRequest,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  timeoutMs = DEFAULT_TIMEOUT_MS
 ): Promise<ApiResult<GenerateResponse>> {
   return apiFetch<GenerateResponse>(
     '/generate',
     { method: 'POST', body: JSON.stringify(req) },
-    DEFAULT_TIMEOUT_MS,
+    timeoutMs,
     signal
   );
 }
@@ -176,5 +181,36 @@ export async function clearAllSessions(): Promise<void> {
     await apiFetch('/sessions', { method: 'DELETE' }, SESSIONS_TIMEOUT_MS);
   } catch {
     // best-effort
+  }
+}
+
+// Settings API
+const SETTINGS_TIMEOUT_MS = 5_000;
+
+export async function getSettings(): Promise<AppSettings | null> {
+  try {
+    const result = await apiFetch<{ success: true; data: AppSettings }>(
+      '/settings',
+      {},
+      SETTINGS_TIMEOUT_MS
+    );
+    if (isApiError(result)) return null;
+    return result.data;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateSettings(settings: AppSettings): Promise<AppSettings | null> {
+  try {
+    const result = await apiFetch<{ success: true; data: AppSettings }>(
+      '/settings',
+      { method: 'PUT', body: JSON.stringify(settings) },
+      SETTINGS_TIMEOUT_MS
+    );
+    if (isApiError(result)) return null;
+    return result.data;
+  } catch {
+    return null;
   }
 }

@@ -24,7 +24,7 @@ export function parseOptions(response: string): string[] {
     if (content) matches.push(content);
   }
 
-  if (matches.length >= 2) return matches.slice(0, 3);
+  if (matches.length >= 2) return matches;
 
   // Fallback: whole response as one option
   const trimmed = response.trim();

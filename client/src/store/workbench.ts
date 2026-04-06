@@ -4,6 +4,7 @@ import type {
   PatentArtifact,
   WorkflowSession,
   GeneratedOption,
+  AppSettings,
 } from '@/types';
 import {
   generatePatentContent,
@@ -16,12 +17,31 @@ import {
   saveSession,
   deleteSession as apiDeleteSession,
   clearAllSessions,
+  getSettings,
+  updateSettings as apiUpdateSettings,
 } from '@/api/client';
 import { sanitizeOutput, generateId } from '@/utils/sanitize';
 import { WORKFLOW_MODULES, WORKFLOW_ORDER } from '@/utils/workflowTemplates';
 import { parseOptions } from '@/utils/optionParser';
 
-const DEFAULT_MODEL = 'mistral';
+const DEFAULT_MODEL = (import.meta.env.VITE_DEFAULT_MODEL as string | undefined) || 'qwen2.5:7b';
+const DEFAULT_LLM_TIMEOUT_MS = Number(import.meta.env.VITE_LLM_TIMEOUT_MS) || 300_000;
+const DEFAULT_NUM_OPTIONS = Number(import.meta.env.VITE_NUM_OPTIONS) || 3;
+
+// Client-side defaults used only until loadSettings() resolves on app mount.
+// Values that matter before server responds (model, timeout, numOptions) come from VITE_ env vars
+// so they stay in sync with server/.env without hardcoding.
+// Server-only fields (ollamaUrl, promptMaxLength, shutdownTimeoutMs, logLevel) use sensible
+// placeholders — they're overwritten by the server response before any user action.
+const DEFAULT_SETTINGS: AppSettings = {
+  defaultModel: DEFAULT_MODEL,
+  llmTimeoutMs: DEFAULT_LLM_TIMEOUT_MS,
+  numOptions: DEFAULT_NUM_OPTIONS,
+  ollamaUrl: 'http://localhost:11434',
+  promptMaxLength: 16_000,
+  shutdownTimeoutMs: 3_600_000,
+  logLevel: 'info',
+};
 
 // Module-level abort controller — not in Zustand state to avoid re-renders
 let _abortController: AbortController | null = null;
@@ -41,7 +61,7 @@ const INITIAL_STEPS = WORKFLOW_ORDER.map((moduleId) => ({
 }));
 
 export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
-  // LLM
+  // LLM — selectedModel bootstrapped from VITE_DEFAULT_MODEL until loadSettings() resolves
   selectedModel: DEFAULT_MODEL,
   availableModels: [],
   modelContextLength: null,
@@ -61,6 +81,9 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
 
   // Figures workspace drafts
   figuresDraft: { diagramNodes: [], diagramEdges: [], jsonText: '' },
+
+  // App settings
+  appSettings: DEFAULT_SETTINGS,
 
   // Actions
 
@@ -126,7 +149,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   },
 
   generateStepOptions: async (overridePrompt?: string) => {
-    const { steps, currentStepIndex, artifact, selectedModel } = get();
+    const { steps, currentStepIndex, artifact, selectedModel, appSettings } = get();
     if (!artifact || currentStepIndex < 0 || currentStepIndex >= steps.length) return;
 
     const step = steps[currentStepIndex];
@@ -143,11 +166,13 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     }));
 
     const prompt =
-      overridePrompt ?? `${module.systemContext}\n\n---\n\n${module.buildPrompt(artifact)}`;
+      overridePrompt ??
+      `${module.systemContext(appSettings.numOptions)}\n\n---\n\n${module.buildPrompt(artifact, appSettings.numOptions)}`;
 
     const result = await generatePatentContent(
       { prompt, model: selectedModel },
-      _abortController.signal
+      _abortController.signal,
+      appSettings.llmTimeoutMs
     );
 
     // If cancelled, error message will be 'Generation cancelled.'
@@ -547,5 +572,23 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     const target = sessions.find((s) => s.id === id);
     if (target?.persisted) void apiDeleteSession(id);
     set((state) => ({ sessions: state.sessions.filter((s) => s.id !== id) }));
+  },
+
+  loadSettings: async () => {
+    const data = await getSettings();
+    if (!data) return;
+    set({ appSettings: data });
+    // Sync selectedModel with persisted default if no models have been loaded yet
+    set((state) => {
+      if (state.availableModels.length === 0) return { selectedModel: data.defaultModel };
+      return {};
+    });
+  },
+
+  saveSettings: async (patch) => {
+    const current = get().appSettings;
+    const next = { ...current, ...patch };
+    const confirmed = await apiUpdateSettings(next);
+    if (confirmed) set({ appSettings: confirmed });
   },
 }));
