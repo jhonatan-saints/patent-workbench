@@ -73,6 +73,7 @@ src/
 | --- | --- |
 | `StatusIndicator` | Header badge — LLM connection status and round-trip latency |
 | `LanguageSwitcher` | Button that allows you to change the app's language |
+| `SettingsMenu` | Header icon button that opens a modal for configuring runtime settings: default model, options per step, LLM timeout, max prompt length, Ollama URL, server log level, and shutdown timeout; persisted via `PUT /settings` |
 | `ExportPanel` | Export the artifact as `.txt`, `.pdf` (print dialog with embedded figures), or `.docx` (Word with inventors block and embedded figures); also supports `.md` with YAML frontmatter |
 | `AppLoader` | Splash screen shown while the app initialises |
 
@@ -151,8 +152,9 @@ The Zustand store manages the entire application state. It is divided into three
 | `modelContextLength` | `number \| null` | `num_ctx` from model's Modelfile (via `GET /models/:name/context`) |
 | `llmStatus` | `'ok' \| 'unavailable' \| 'checking'` | Connectivity to Ollama |
 | `llmLatency` | `number \| null` | Round-trip latency in ms |
+| `appSettings` | `AppSettings` | Persisted runtime configuration: `defaultModel`, `numOptions`, `llmTimeoutMs`, `promptMaxLength`, `ollamaUrl`, `shutdownTimeoutMs`, `logLevel`; loaded from `GET /settings` on boot, saved via `PUT /settings` |
 
-`checkStatus()` polls `GET /status` and `GET /models` every 30 seconds. When models change, `selectedModel` is updated to the closest match by base name.
+`checkStatus()` polls `GET /status` and `GET /models` every 30 seconds. When models change, `selectedModel` is updated to the closest match by base name. `loadSettings()` is called once on app mount and populates `appSettings` from the server; `saveSettings(patch)` merges the patch and persists it via `PUT /settings`.
 
 ### Workflow slice
 
@@ -271,6 +273,8 @@ All server communication is centralised in `client.ts`. Functions:
 | `saveSession(session)` | POST | `/sessions` |
 | `deleteSession(id)` | DELETE | `/sessions/:id` |
 | `clearAllSessions()` | DELETE | `/sessions` |
+| `getSettings()` | GET | `/settings` |
+| `updateSettings(settings)` | PUT | `/settings` |
 
 Requests are made relative to `/api` (proxied to `localhost:3001` by Vite during development). `isApiError(result)` is a type guard used across the store and components.
 

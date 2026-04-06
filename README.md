@@ -106,6 +106,7 @@ input → working (steps 1–7) → figures → inventors → preview / export
 - **Context files (RAG)** — attach reference documents (`.txt`, `.md`, `.csv`, `.json`, etc.) at the start; content is injected into prompts up to a 40 000-character budget.
 - **Model selector** — switch between any Ollama-compatible model (Mistral, Llama 3, Phi-3, Gemma 2, etc.).
 - **Model context length** — automatically fetches the `num_ctx` value from the model's Modelfile and shows it in the UI; context file upload is conditionally enabled for models with ≥ 16 384 tokens.
+- **Settings panel** — persistent runtime configuration accessible from the header: default model, options per step (1–5), LLM timeout, max prompt length, Ollama URL, server log level, and shutdown timeout; saved to the server and restored on every app boot.
 - **Token meter** — live prompt + completion token counts per step, totalled across the session.
 - **LLM status indicator** — real-time connectivity check with latency; polls every 30 seconds.
 - **Persistent sessions** — sessions are saved to a local SQLite database and survive page reload and browser restart; browse, restore, or delete from the Drafts sidebar.
