@@ -22,9 +22,8 @@ import {
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n/useI18n';
-import { WORKFLOW_ORDER, SECTION_LABELS } from '@/utils/workflowTemplates';
+import { WORKFLOW_ORDER, resolveLabel } from '@/utils/workflowTemplates';
 import { ExportPanel } from '@/components/ExportPanel';
-import type { WorkflowModuleId } from '@/types';
 
 // Document-level styles intentionally use print/IDF brand colors (not theme tokens)
 // so the on-screen preview matches the PDF/DOCX output exactly.
@@ -39,7 +38,7 @@ const DOC_UI_MUTED = '#888';
 const DOC_UI_LABEL = { borderColor: '#aaa', color: '#666' };
 
 interface EditableSectionProps {
-  readonly moduleId: WorkflowModuleId;
+  readonly moduleId: string;
   readonly content: string;
 }
 
@@ -76,7 +75,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
           style={DOC_UI_LABEL}
           className="font-mono text-[10px] tracking-[0.08em]"
         >
-          {t(SECTION_LABELS[moduleId])}
+          {resolveLabel(moduleId, t)}
         </Badge>
 
         {editing ? (
@@ -131,7 +130,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
 
       {editing ? (
         <Textarea
-          aria-label={`Edit content for ${t(SECTION_LABELS[moduleId])}`}
+          aria-label={`Edit content for ${resolveLabel(moduleId, t)}`}
           value={draft}
           onChange={(e) => setDraft(e.currentTarget.value)}
           minRows={4}

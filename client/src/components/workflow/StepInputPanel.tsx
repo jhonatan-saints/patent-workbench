@@ -20,14 +20,9 @@ import {
   IconFile,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
-import {
-  WORKFLOW_MODULES,
-  SECTION_LABELS,
-  WORKFLOW_ORDER,
-  MODULE_RESOURCE_KEYS,
-} from '@/utils/workflowTemplates';
+import { WORKFLOW_MODULES, WORKFLOW_ORDER, resolveLabel } from '@/utils/workflowTemplates';
 import { INPUT_STYLES, BTN_STOP, btnPrimary } from '@/theme/styles';
-import type { WorkflowModuleId, InputMode, PatentArtifact } from '@/types';
+import type { InputMode, PatentArtifact } from '@/types';
 import { generateId } from '@/utils/sanitize';
 import { useI18n } from '@/i18n/useI18n';
 
@@ -40,7 +35,7 @@ function ContextSummary({
   moduleId,
 }: Readonly<{
   artifact: PatentArtifact;
-  moduleId: WorkflowModuleId;
+  moduleId: string;
 }>) {
   const tr = (s: string, max: number) => (s.length > max ? `${s.slice(0, max)}…` : s);
   const { t } = useI18n();
@@ -121,7 +116,7 @@ function ContextSummary({
               {priorDone.map((m) => (
                 <Box key={m}>
                   <Text size="xs" ff="monospace" className="text-fg-muted mb-0.5">
-                    [{t(SECTION_LABELS[m])}]
+                    [{resolveLabel(m, t)}]
                   </Text>
                   <Text size="xs" className="text-fg leading-[1.4]">
                     {tr(artifact.sections[m]!.content, 200)}
@@ -156,7 +151,7 @@ function ContextSummary({
 }
 
 interface Props {
-  readonly moduleId: WorkflowModuleId;
+  readonly moduleId: string;
 }
 
 export function StepInputPanel({ moduleId }: Props) {
@@ -487,9 +482,9 @@ export function StepInputPanel({ moduleId }: Props) {
             {t('res_Manual_Instructions')}
           </Text>
           <Textarea
-            label={`${t(MODULE_RESOURCE_KEYS[moduleId])} — ${t('res_ManualEntry')}`}
+            label={`${resolveLabel(moduleId, t)} — ${t('res_ManualEntry')}`}
             placeholder={t('res_Manual_Placeholder', {
-              section: t(MODULE_RESOURCE_KEYS[moduleId]).toLowerCase(),
+              section: resolveLabel(moduleId, t).toLowerCase(),
             })}
             value={manualText}
             onChange={(e) => setManualText(e.currentTarget.value)}

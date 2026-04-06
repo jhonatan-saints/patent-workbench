@@ -6,7 +6,7 @@ export function LanguageSwitcher() {
   const { locale, setLocale, localeOptions } = useI18n();
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center' }}>
+    <div className="flex items-center">
       <Menu position="bottom-end" offset={6} withinPortal>
         <Menu.Target>
           <Tooltip label={LOCALE_LABELS[locale]} position="bottom">
@@ -21,23 +21,12 @@ export function LanguageSwitcher() {
           </Tooltip>
         </Menu.Target>
 
-        <Menu.Dropdown
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            minWidth: 160,
-          }}
-        >
+        <Menu.Dropdown className="bg-surface border border-stroke min-w-40">
           {localeOptions.map(({ value, label }) => (
             <Menu.Item
               key={value}
               onClick={() => setLocale(value)}
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 11,
-                color: value === locale ? 'var(--accent)' : 'var(--text-primary)',
-                fontWeight: value === locale ? 700 : 400,
-              }}
+              className={`font-mono text-[11px] ${value === locale ? 'text-accent font-bold' : 'text-fg font-normal'}`}
             >
               {label}
             </Menu.Item>

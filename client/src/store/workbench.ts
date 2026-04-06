@@ -524,9 +524,21 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       const full = await getSession(session.id);
       if (full) s = { ...full, persisted: true };
     }
+    // Warn about sections saved under IDs that no longer exist in the current template.
+    const orphaned = Object.keys(s.artifact.sections).filter((id) => !WORKFLOW_MODULES[id]);
+    if (orphaned.length > 0) {
+      console.warn('[loadSession] Session contains sections not in current workflow:', orphaned);
+    }
+
     const steps = WORKFLOW_ORDER.map((moduleId) => {
       const section = s.artifact.sections[moduleId];
       const mod = WORKFLOW_MODULES[moduleId];
+      if (!mod) {
+        // Should never happen (WORKFLOW_ORDER and WORKFLOW_MODULES share the same source),
+        // but guard defensively to avoid a crash on template mismatch.
+        console.error('[loadSession] moduleId in WORKFLOW_ORDER has no matching module:', moduleId);
+        return null;
+      }
       const selectedOption = section
         ? { id: generateId(), index: section.optionIndex, content: section.content }
         : null;
@@ -544,7 +556,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
         guidedFields: saved?.guidedFields ?? ({} as Record<string, string>),
         manualDraft: saved?.manualDraft ?? '',
       };
-    });
+    }).filter((step) => step !== null);
     set({
       artifact: {
         ...s.artifact,

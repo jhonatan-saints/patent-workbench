@@ -1,22 +1,261 @@
 {
   "meta": {
     "company": "Default",
-    "version": "1.0.0",
-    "description": "REG (Role + Examples + Goal) system contexts for each IDF workflow step. Edit this file to customize the patent assistant behaviour for your organisation. Use {{numOptions}} where the option count should appear — it is replaced at runtime with the value configured in Settings."
+    "domain": "patent",
+    "version": "2.0.0",
+    "description": "Full workflow configuration for the Patent Workbench. Edit this file to customise steps, labels, prompts, and RAG parameters without changing any source code. Duplicate the file to support multiple domains."
   },
-  "systemContexts": {
-    "problem": "You are a patent analyst writing the Problem Description section of an IDF (Invention Disclosure Form).\nGenerate {{numOptions}} options. Each must:\n- Clearly articulate the business or technical problem that motivated the invention\n- Explain why existing approaches fail or are inadequate\n- Be written in plain, clear language (not legal jargon)\n- Be 2–4 paragraphs\n\nReturn EXACTLY {{numOptions}} distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]",
 
-    "previous_solutions": "You are a patent analyst writing the Previous Solutions section of an IDF.\nGenerate {{numOptions}} options. Each must:\n- Describe current methods or technologies used to address the problem\n- Explain their limitations, gaps, or drawbacks\n- Be objective and factual (no disparagement)\n- Be 2–3 paragraphs\n\nReturn EXACTLY {{numOptions}} distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]",
+  "rag": {
+    "maxPriorSections": 3,
+    "maxContextFileChars": 40000,
+    "maxSectionChars": 200,
+    "maxIdeaChars": 200,
+    "maxConstraintsChars": 120
+  },
 
-    "differences": "You are a patent analyst writing the Differences with Previous Solutions section of an IDF.\nGenerate {{numOptions}} options. Each must:\n- Clearly articulate how this invention differs from prior approaches\n- Highlight novel technical elements or methods\n- Explain why these differences matter (the advantage they confer)\n- Be 2–3 paragraphs\n\nReturn EXACTLY {{numOptions}} distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]",
+  "workflow": {
+    "order": [
+      "problem",
+      "previous_solutions",
+      "differences",
+      "invention_summary",
+      "variations",
+      "other_applications",
+      "full_description"
+    ]
+  },
 
-    "invention_summary": "You are a patent analyst writing the Invention Summary section of an IDF.\nGenerate {{numOptions}} options. Each must:\n- Describe the invention at a high level using accessible language\n- Reference key technologies or standards used (e.g., ONNX, FER, etc.)\n- Include market context or scale if relevant\n- Be 2–4 paragraphs\n\nReturn EXACTLY {{numOptions}} distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]",
+  "steps": {
+    "problem": {
+      "label": "Problem Description",
+      "labelKey": "res_StepProblemDescription",
+      "description": "Describe the problem this invention solves",
+      "descriptionKey": "res_StepProblemDescription_Desc",
+      "sectionLabelEn": "Problem Description",
 
-    "variations": "You are a patent analyst writing the Possible Variations section of an IDF.\nGenerate {{numOptions}} options. Each must:\n- Describe alternative implementations or embodiments of the invention\n- Include variations that broaden patent scope\n- Suggest adjacent use cases or deployment scenarios\n- Be 2–3 paragraphs\n\nReturn EXACTLY {{numOptions}} distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]",
+      "systemContext": "You are a patent analyst writing the Problem Description section of an IDF (Invention Disclosure Form).\nGenerate {{numOptions}} option{{plural}}. Each must:\n- Clearly articulate the business or technical problem that motivated the invention\n- Explain why existing approaches fail or are inadequate\n- Be written in plain, clear language (not legal jargon)\n- Be 2–4 paragraphs",
 
-    "other_applications": "You are a patent analyst writing the Other Applications section of an IDF.\nGenerate {{numOptions}} options. Each must:\n- Identify other industries or domains where the invention could be applied\n- Be specific about how the technology transfers to each context\n- Be 2–3 paragraphs\n\nReturn EXACTLY {{numOptions}} distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]",
+      "promptSuffix": "Generate {{numOptions}} Problem Description option{{plural}} for this invention.",
 
-    "full_description": "You are a patent attorney writing the Full Description section of an IDF.\nGenerate {{numOptions}} options. Each must:\n- Provide a complete technical description enabling a person skilled in the art to practice the invention\n- Include background context, the core method, and implementation details\n- Reference figures where appropriate (e.g., \"Figure 1 illustrates...\")\n- Be 4–6 paragraphs\n\nReturn EXACTLY {{numOptions}} distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]"
+      "guidedFields": [
+        {
+          "key": "pain_point",
+          "label": "Core Pain Point",
+          "labelKey": "res_GuidedField_PainPoint",
+          "placeholder": "e.g., Agents cannot determine customer emotional state before a call...",
+          "placeholderKey": "res_GuidedField_PainPoint_Placeholder",
+          "type": "textarea"
+        },
+        {
+          "key": "impact",
+          "label": "Business / User Impact",
+          "labelKey": "res_GuidedField_Impact",
+          "placeholder": "e.g., Leads to suboptimal call routing and poor customer satisfaction...",
+          "placeholderKey": "res_GuidedField_Impact_Placeholder",
+          "type": "textarea"
+        }
+      ],
+
+      "guidedPromptSuffix": "Core pain point: {{fields.pain_point}}\nBusiness impact: {{fields.impact}}\n\nGenerate {{numOptions}} Problem Description option{{plural}} based on these specifics."
+    },
+
+    "previous_solutions": {
+      "label": "Previous Solutions",
+      "labelKey": "res_StepPreviousSolutions",
+      "description": "Describe existing approaches and their limitations",
+      "descriptionKey": "res_StepPreviousSolutions_Desc",
+      "sectionLabelEn": "Previous Solutions",
+
+      "systemContext": "You are a patent analyst writing the Previous Solutions section of an IDF.\nGenerate {{numOptions}} option{{plural}}. Each must:\n- Describe current methods or technologies used to address the problem\n- Explain their limitations, gaps, or drawbacks\n- Be objective and factual (no disparagement)\n- Be 2–3 paragraphs",
+
+      "promptSuffix": "Generate {{numOptions}} Previous Solutions option{{plural}} describing existing approaches and their limitations.",
+
+      "guidedFields": [
+        {
+          "key": "existing_methods",
+          "label": "Existing Methods / Technologies",
+          "labelKey": "res_GuidedField_ExistingMethods",
+          "placeholder": "e.g., IVR systems, caller-ID, customer forms, sentiment analysis...",
+          "placeholderKey": "res_GuidedField_ExistingMethods_Placeholder",
+          "type": "textarea"
+        },
+        {
+          "key": "limitations",
+          "label": "Key Limitations",
+          "labelKey": "res_GuidedField_Limitations",
+          "placeholder": "e.g., Relies on self-reporting, reactive not proactive, indirect detection...",
+          "placeholderKey": "res_GuidedField_Limitations_Placeholder",
+          "type": "textarea"
+        }
+      ],
+
+      "guidedPromptSuffix": "Existing methods: {{fields.existing_methods}}\nLimitations: {{fields.limitations}}\n\nGenerate {{numOptions}} Previous Solutions option{{plural}}."
+    },
+
+    "differences": {
+      "label": "Key Differences",
+      "labelKey": "res_StepKeyDifferences",
+      "description": "Explain what makes this invention novel",
+      "descriptionKey": "res_StepKeyDifferences_Desc",
+      "sectionLabelEn": "Key Differences",
+
+      "systemContext": "You are a patent analyst writing the Differences with Previous Solutions section of an IDF.\nGenerate {{numOptions}} option{{plural}}. Each must:\n- Clearly articulate how this invention differs from prior approaches\n- Highlight novel technical elements or methods\n- Explain why these differences matter (the advantage they confer)\n- Be 2–3 paragraphs",
+
+      "promptSuffix": "Generate {{numOptions}} option{{plural}} explaining how this invention differs from previous solutions.",
+
+      "guidedFields": [
+        {
+          "key": "novel_elements",
+          "label": "Novel Technical Elements",
+          "labelKey": "res_GuidedField_NovelElements",
+          "placeholder": "e.g., Real-time facial expression recognition using ONNX models...",
+          "placeholderKey": "res_GuidedField_NovelElements_Placeholder",
+          "type": "textarea"
+        },
+        {
+          "key": "advantage",
+          "label": "Key Advantage Over Prior Art",
+          "labelKey": "res_GuidedField_Advantage",
+          "placeholder": "e.g., Proactive emotional state detection before call connection...",
+          "placeholderKey": "res_GuidedField_Advantage_Placeholder",
+          "type": "textarea"
+        }
+      ],
+
+      "guidedPromptSuffix": "Novel elements: {{fields.novel_elements}}\nKey advantage: {{fields.advantage}}\n\nGenerate {{numOptions}} Differences with Previous Solutions option{{plural}}."
+    },
+
+    "invention_summary": {
+      "label": "Invention Summary",
+      "labelKey": "res_StepInventionSummary",
+      "description": "High-level overview of the invention",
+      "descriptionKey": "res_StepInventionSummary_Desc",
+      "sectionLabelEn": "Invention Summary",
+
+      "systemContext": "You are a patent analyst writing the Invention Summary section of an IDF.\nGenerate {{numOptions}} option{{plural}}. Each must:\n- Describe the invention at a high level using accessible language\n- Reference key technologies or standards used (e.g., ONNX, FER, etc.)\n- Include market context or scale if relevant\n- Be 2–4 paragraphs",
+
+      "promptSuffix": "Generate {{numOptions}} Invention Summary option{{plural}}.",
+
+      "guidedFields": [
+        {
+          "key": "core_method",
+          "label": "Core Method / Technology",
+          "labelKey": "res_GuidedField_CoreMethod",
+          "placeholder": "e.g., Facial Expression Recognition via ONNX deep learning models...",
+          "placeholderKey": "res_GuidedField_CoreMethod_Placeholder",
+          "type": "textarea"
+        },
+        {
+          "key": "market_context",
+          "label": "Market Context (optional)",
+          "labelKey": "res_GuidedField_MarketContext",
+          "placeholder": "e.g., Emotion recognition market projected at $91B by 2024...",
+          "placeholderKey": "res_GuidedField_MarketContext_Placeholder",
+          "type": "text"
+        }
+      ],
+
+      "guidedPromptSuffix": "Core method: {{fields.core_method}}\nMarket context: {{fields.market_context}}\n\nGenerate {{numOptions}} Invention Summary option{{plural}}."
+    },
+
+    "variations": {
+      "label": "Possible Variations",
+      "labelKey": "res_StepPossibleVariations",
+      "description": "Alternative implementations and embodiments",
+      "descriptionKey": "res_StepPossibleVariations_Desc",
+      "sectionLabelEn": "Possible Variations",
+
+      "systemContext": "You are a patent analyst writing the Possible Variations section of an IDF.\nGenerate {{numOptions}} option{{plural}}. Each must:\n- Describe alternative implementations or embodiments of the invention\n- Include variations that broaden patent scope\n- Suggest adjacent use cases or deployment scenarios\n- Be 2–3 paragraphs",
+
+      "promptSuffix": "Generate {{numOptions}} Possible Variations option{{plural}} for this invention.",
+
+      "guidedFields": [
+        {
+          "key": "alt_implementations",
+          "label": "Alternative Implementations",
+          "labelKey": "res_GuidedField_AltImplementations",
+          "placeholder": "e.g., Wearable devices, smart watch integration, server-side processing...",
+          "placeholderKey": "res_GuidedField_AltImplementations_Placeholder",
+          "type": "textarea"
+        },
+        {
+          "key": "embodiments",
+          "label": "Embodiment Variations",
+          "labelKey": "res_GuidedField_Embodiments",
+          "placeholder": "e.g., Real-time vs batch processing, single-user vs multi-user...",
+          "placeholderKey": "res_GuidedField_Embodiments_Placeholder",
+          "type": "text"
+        }
+      ],
+
+      "guidedPromptSuffix": "Alternative implementations: {{fields.alt_implementations}}\nEmbodiment variations: {{fields.embodiments}}\n\nGenerate {{numOptions}} Possible Variations option{{plural}}."
+    },
+
+    "other_applications": {
+      "label": "Other Applications",
+      "labelKey": "res_StepOtherApplications",
+      "description": "Additional use cases beyond the primary application",
+      "descriptionKey": "res_StepOtherApplications_Desc",
+      "sectionLabelEn": "Other Applications",
+
+      "systemContext": "You are a patent analyst writing the Other Applications section of an IDF.\nGenerate {{numOptions}} option{{plural}}. Each must:\n- Identify other industries or domains where the invention could be applied\n- Be specific about how the technology transfers to each context\n- Be 2–3 paragraphs",
+
+      "promptSuffix": "Generate {{numOptions}} Other Applications option{{plural}} for this invention.",
+
+      "guidedFields": [
+        {
+          "key": "industries",
+          "label": "Target Industries / Domains",
+          "labelKey": "res_GuidedField_Industries",
+          "placeholder": "e.g., Healthcare diagnostics, autonomous vehicles, retail analytics...",
+          "placeholderKey": "res_GuidedField_Industries_Placeholder",
+          "type": "textarea"
+        },
+        {
+          "key": "use_cases",
+          "label": "Specific Use Cases",
+          "labelKey": "res_GuidedField_UseCases",
+          "placeholder": "e.g., Detecting driver fatigue, measuring crowd mood in retail...",
+          "placeholderKey": "res_GuidedField_UseCases_Placeholder",
+          "type": "textarea"
+        }
+      ],
+
+      "guidedPromptSuffix": "Industries: {{fields.industries}}\nUse cases: {{fields.use_cases}}\n\nGenerate {{numOptions}} Other Applications option{{plural}}."
+    },
+
+    "full_description": {
+      "label": "Full Description",
+      "labelKey": "res_StepFullDescription",
+      "description": "Complete technical description of the invention",
+      "descriptionKey": "res_StepFullDescription_Desc",
+      "sectionLabelEn": "Full Description",
+
+      "systemContext": "You are a patent attorney writing the Full Description section of an IDF.\nGenerate {{numOptions}} option{{plural}}. Each must:\n- Provide a complete technical description enabling a person skilled in the art to practice the invention\n- Include background context, the core method, and implementation details\n- Reference figures where appropriate (e.g., \"Figure 1 illustrates...\")\n- Be 4–6 paragraphs",
+
+      "promptSuffix": "Generate {{numOptions}} Full Description option{{plural}} with complete technical detail.",
+
+      "guidedFields": [
+        {
+          "key": "components",
+          "label": "Key Technical Components",
+          "labelKey": "res_GuidedField_Components",
+          "placeholder": "e.g., Camera module, ONNX inference engine, FER classification layer, call router...",
+          "placeholderKey": "res_GuidedField_Components_Placeholder",
+          "type": "textarea"
+        },
+        {
+          "key": "process_flow",
+          "label": "Process / Data Flow",
+          "labelKey": "res_GuidedField_ProcessFlow",
+          "placeholder": "e.g., Capture → Pre-process → Keypoint detection → FER → Classification → Route...",
+          "placeholderKey": "res_GuidedField_ProcessFlow_Placeholder",
+          "type": "textarea"
+        }
+      ],
+
+      "guidedPromptSuffix": "Key components: {{fields.components}}\nProcess flow: {{fields.process_flow}}\n\nGenerate {{numOptions}} Full Description option{{plural}}."
+    }
   }
 }

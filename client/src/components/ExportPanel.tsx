@@ -4,7 +4,7 @@ import { IconFileText, IconFileTypePdf, IconFileWord, IconMarkdown } from '@tabl
 import { useState } from 'react';
 import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
 import { useWorkbenchStore } from '@/store/workbench';
-import { WORKFLOW_ORDER, MODULE_RESOURCE_KEYS } from '@/utils/workflowTemplates';
+import { WORKFLOW_ORDER, resolveLabel } from '@/utils/workflowTemplates';
 import { escapeHtml } from '@/utils/sanitize';
 import { useI18n } from '@/i18n';
 import type { PatentArtifact } from '@/types';
@@ -455,9 +455,7 @@ export function ExportPanel({
 
   const handleExport = async () => {
     if (!artifact) return;
-    const sectionLabels = Object.fromEntries(
-      WORKFLOW_ORDER.map((m) => [m, t(MODULE_RESOURCE_KEYS[m])])
-    );
+    const sectionLabels = Object.fromEntries(WORKFLOW_ORDER.map((m) => [m, resolveLabel(m, t)]));
     setExporting(true);
     saveCurrentSession();
     const date = new Date().toISOString().split('T')[0];

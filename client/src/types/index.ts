@@ -33,15 +33,6 @@ export interface ModelsResponse {
 }
 
 // Workflow domain types
-export type WorkflowModuleId =
-  | 'problem'
-  | 'previous_solutions'
-  | 'differences'
-  | 'invention_summary'
-  | 'variations'
-  | 'other_applications'
-  | 'full_description';
-
 export type WorkflowPhase = 'input' | 'working' | 'figures' | 'inventors' | 'preview';
 export type InputMode = 'auto' | 'guided' | 'manual';
 
@@ -57,7 +48,7 @@ export interface GeneratedOption {
 }
 
 export interface WorkflowStep {
-  moduleId: WorkflowModuleId;
+  moduleId: string;
   label: string;
   description: string;
   status: StepStatus;
@@ -71,7 +62,7 @@ export interface WorkflowStep {
 }
 
 export interface ArtifactSection {
-  moduleId: WorkflowModuleId;
+  moduleId: string;
   content: string;
   selectedAt: number;
   optionIndex: number;
@@ -114,7 +105,7 @@ export interface PatentArtifact {
   businessGroup?: string;
   inventors: InventorInfo[];
   figures: FigureItem[];
-  sections: Partial<Record<WorkflowModuleId, ArtifactSection>>;
+  sections: Partial<Record<string, ArtifactSection>>;
   model: string;
   startedAt: number;
 }
@@ -135,7 +126,7 @@ export interface WorkflowSession {
   totalTokens: number;
   persisted: boolean; // true = saved to SQLite; false = in-memory cache only
   stepInputStates?: Array<{
-    moduleId: WorkflowModuleId;
+    moduleId: string;
     inputMode: InputMode;
     guidedFields: Record<string, string>;
     manualDraft: string;
@@ -202,7 +193,7 @@ export interface WorkbenchState {
   goToStep: (index: number) => void;
   goToPreview: () => void;
   resetWorkflow: () => void;
-  updateSectionContent: (moduleId: WorkflowModuleId, content: string) => void;
+  updateSectionContent: (moduleId: string, content: string) => void;
   updateArtifactBase: (idea: string, domain: string, constraints: string | undefined) => void;
   updateContextFiles: (files: ContextFile[]) => void;
   initSessions: () => Promise<void>;

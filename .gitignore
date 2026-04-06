@@ -13,10 +13,13 @@ server/dist/
 .settings.local.json
 settings.local.json
 
-#Data
+# Data
 *.db
 *.db-shm
 *.db-wal
+
+# Docs
+reg-rag_algorithm.md
 
 # Environment files
 .env
