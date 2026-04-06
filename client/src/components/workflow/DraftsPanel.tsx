@@ -53,13 +53,11 @@ function DraftItem({
     <>
       <Box
         onClick={onLoad}
-        className="group relative cursor-pointer rounded-md overflow-hidden"
+        className="group relative cursor-pointer rounded-md overflow-hidden bg-surface-raised [transition:box-shadow_180ms_ease,border-color_180ms_ease,opacity_180ms_ease]"
         style={{
-          background: 'var(--surface-raised)',
           border: session.persisted ? '1px solid var(--border)' : '1px dashed var(--border)',
           borderLeft: `2px solid ${session.persisted ? 'var(--accent)' : 'var(--text-muted)'}`,
           opacity: session.persisted ? 1 : 0.75,
-          transition: 'box-shadow 180ms ease, border-color 180ms ease, opacity 180ms ease',
         }}
         onMouseEnter={(e) => {
           (e.currentTarget as HTMLElement).style.boxShadow =
@@ -69,20 +67,7 @@ function DraftItem({
           (e.currentTarget as HTMLElement).style.boxShadow = 'none';
         }}
       >
-        {/* Left ambient glow */}
-        <Box
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 48,
-            background: 'linear-gradient(90deg, var(--accent-glow) 0%, transparent 100%)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        <Box style={{ padding: '10px 12px', position: 'relative' }}>
+        <Box className="px-3 py-2.5 relative">
           {/* Title + delete */}
           <Group justify="space-between" wrap="nowrap" gap={6} align="flex-start">
             <Text
@@ -90,17 +75,17 @@ function DraftItem({
               fw={600}
               ff="var(--font-body)"
               lineClamp={2}
-              style={{ flex: 1, minWidth: 0, lineHeight: 1.45, color: 'var(--text-primary)' }}
+              className="flex-1 min-w-0 leading-[1.45] text-fg"
             >
               {session.artifact.inventionTitle ?? session.baseIdea}
             </Text>
-            <Group gap={4} wrap="nowrap" align="center" style={{ flexShrink: 0 }}>
+            <Group gap={4} wrap="nowrap" align="center" className="shrink-0">
               <Tooltip
                 label={session.persisted ? t('res_Saved') : t('res_Cached')}
                 position="left"
                 withArrow
               >
-                <Box style={{ lineHeight: 0 }}>
+                <Box className="leading-none">
                   {session.persisted ? (
                     <IconCloudCheck size={14} style={{ color: 'var(--accent)' }} />
                   ) : (
@@ -117,8 +102,7 @@ function DraftItem({
                     e.stopPropagation();
                     setConfirmOpen(true);
                   }}
-                  style={{ opacity: 0, transition: 'opacity 150ms ease' }}
-                  className="group-hover:opacity-100!"
+                  className="opacity-0 transition-opacity duration-150 group-hover:opacity-100!"
                 >
                   <IconX size={14} style={{ color: 'var(--danger)' }} />
                 </ActionIcon>
@@ -127,25 +111,15 @@ function DraftItem({
           </Group>
 
           {/* Progress bar */}
-          <Box
-            style={{
-              marginTop: 9,
-              height: 2,
-              borderRadius: 99,
-              background: 'var(--border)',
-              overflow: 'hidden',
-            }}
-          >
+          <Box className="mt-2.25 h-0.5 rounded-full bg-stroke overflow-hidden">
             <Box
+              className="h-full rounded-full [transition:width_600ms_cubic-bezier(0.4,0,0.2,1)]"
               style={{
                 width: `${progress}%`,
-                height: '100%',
-                borderRadius: 99,
                 background:
                   progress === 100
                     ? 'linear-gradient(90deg, var(--accent-dim), var(--accent))'
                     : 'var(--accent)',
-                transition: 'width 600ms cubic-bezier(0.4, 0, 0.2, 1)',
               }}
             />
           </Box>
@@ -153,73 +127,33 @@ function DraftItem({
           {/* Metadata chips row */}
           <Group gap={0} mt={8} wrap="nowrap" align="center">
             {/* Step badge */}
-            <Box
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '1px 6px',
-                borderRadius: 4,
-                border: '1px solid var(--accent)',
-                background: 'var(--accent-glow)',
-                fontSize: 11,
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--accent)',
-                fontWeight: 700,
-                letterSpacing: '0.05em',
-                lineHeight: 1.7,
-                flexShrink: 0,
-              }}
-            >
+            <Box className="inline-flex items-center px-1.5 py-px rounded border border-accent bg-accent-glow text-[11px] font-mono text-accent font-bold tracking-[0.05em] leading-[1.7] shrink-0">
               {completedCount}/{WORKFLOW_ORDER.length}
             </Box>
 
             {/* Separator */}
-            <Box
-              style={{
-                width: 1,
-                height: 10,
-                background: 'var(--border)',
-                margin: '0 7px',
-                flexShrink: 0,
-              }}
-            />
+            <Box className="w-px h-2.5 bg-stroke mx-1.75 shrink-0" />
 
             {/* Tokens */}
-            <Text
-              ff="monospace"
-              style={{ fontSize: 11, color: 'var(--text-secondary)', flexShrink: 0 }}
-            >
+            <Text ff="monospace" className="text-[11px] text-fg-secondary shrink-0">
               {tokensLabel}t
             </Text>
 
             {/* Dot */}
-            <Text
-              ff="monospace"
-              style={{ fontSize: 11, color: 'var(--border)', margin: '0 5px', flexShrink: 0 }}
-            >
+            <Text ff="monospace" className="text-[11px] text-stroke mx-1.25 shrink-0">
               ·
             </Text>
 
             {/* Model */}
             <Text
               ff="monospace"
-              style={{
-                fontSize: 11,
-                color: 'var(--text-secondary)',
-                flex: 1,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
+              className="text-[11px] text-fg-secondary flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
             >
               {shortenModel(session.model)}
             </Text>
 
             {/* Time */}
-            <Text
-              ff="monospace"
-              style={{ fontSize: 11, color: 'var(--text-secondary)', flexShrink: 0, marginLeft: 5 }}
-            >
+            <Text ff="monospace" className="text-[11px] text-fg-secondary shrink-0 ml-1.25">
               {formatTime(session.startedAt)}
             </Text>
           </Group>
@@ -265,42 +199,14 @@ export function DraftsPanel() {
 
   if (sessions.length === 0) {
     return (
-      <Box
-        style={{
-          padding: '28px 12px',
-          border: '1px dashed var(--border)',
-          borderRadius: 8,
-          background: 'var(--surface-raised)',
-          textAlign: 'center',
-        }}
-      >
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            background: 'var(--accent-glow)',
-            border: '1px solid var(--accent)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 12px',
-            boxSizing: 'border-box',
-            flexShrink: 0,
-            lineHeight: 0,
-          }}
-        >
-          <IconClock size={16} style={{ color: 'var(--accent)', display: 'block' }} />
+      <Box className="px-3 py-7 border border-dashed border-stroke rounded-lg bg-surface-raised text-center">
+        <div className="w-9 h-9 rounded-full bg-accent-glow border border-accent flex items-center justify-center mx-auto mb-3 shrink-0 leading-none">
+          <IconClock size={16} className="text-accent block" />
         </div>
-        <Text
-          size="xs"
-          fw={600}
-          ff="monospace"
-          style={{ color: 'var(--text-secondary)', letterSpacing: '0.04em' }}
-        >
+        <Text size="xs" fw={600} ff="monospace" className="text-fg-secondary tracking-[0.04em]">
           {t('res_NoDraftsYet')}
         </Text>
-        <Text size="xs" style={{ color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.7 }}>
+        <Text size="xs" className="text-fg-muted mt-1 leading-[1.7]">
           {t('res_CompletedWorkflowsHere')}
         </Text>
       </Box>
@@ -316,11 +222,7 @@ export function DraftsPanel() {
             ff="monospace"
             tt="uppercase"
             fw={700}
-            style={{
-              fontSize: 11,
-              color: 'var(--text-muted)',
-              letterSpacing: '0.12em',
-            }}
+            className="text-[11px] text-fg-muted tracking-[0.12em]"
           >
             {t('res_Drafts')}
           </Text>
@@ -332,9 +234,7 @@ export function DraftsPanel() {
             size="sm"
             onClick={() => setClearConfirmOpen(true)}
             aria-label={t('res_Clear')}
-            style={{ opacity: 0.55, transition: 'opacity 150ms ease' }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.opacity = '1')}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.opacity = '0.55')}
+            className="opacity-[0.55] transition-opacity duration-150 hover:opacity-100"
           >
             <IconTrash size={14} style={{ color: 'var(--danger)' }} />
           </ActionIcon>

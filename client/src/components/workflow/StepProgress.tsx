@@ -21,14 +21,12 @@ import type { ComponentType } from 'react';
 import { useState, useCallback } from 'react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n/useI18n';
-import { MODULE_RESOURCE_KEYS } from '@/utils/workflowTemplates';
+import { resolveLabel } from '@/utils/workflowTemplates';
 import { BTN_PRIMARY } from '@/theme/styles';
-import type { StepStatus, WorkflowModuleId } from '@/types';
-
-// Icon registry
+import type { StepStatus } from '@/types';
 
 const MODULE_ICONS: Record<
-  WorkflowModuleId,
+  string,
   ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>
 > = {
   problem: IconAlertTriangle,
@@ -84,21 +82,17 @@ function CollapsedItem({
     <Tooltip label={tooltipLabel} position="right" withArrow offset={6}>
       <Box
         onClick={() => canNavigate && onClick()}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 34,
-          height: 34,
-          margin: '0 auto',
-          borderRadius: 6,
-          cursor: canNavigate ? 'pointer' : 'default',
-          opacity: isFuture ? 0.4 : 1,
-          background: isActive ? 'var(--surface-active)' : undefined,
-          border: isActive ? '1px solid var(--accent)' : '1px solid transparent',
-          transition: 'background 150ms ease, border-color 150ms ease',
-        }}
-        className={`${isActive ? '' : 'hover:bg-surface-raised'}`}
+        className={[
+          'flex items-center justify-center w-8.5 h-8.5 mx-auto rounded-md',
+          '[transition:background_150ms_ease,border-color_150ms_ease]',
+          isActive
+            ? 'bg-surface-active border border-accent'
+            : 'border border-transparent hover:bg-surface-raised',
+          isFuture ? 'opacity-40' : '',
+          canNavigate ? 'cursor-pointer' : 'cursor-default',
+        ]
+          .filter(Boolean)
+          .join(' ')}
       >
         {icon}
       </Box>
@@ -147,7 +141,7 @@ function WorkflowStepItem({
     >
       <Group gap={7} wrap="nowrap" align="center">
         <StepStatusIcon status={isDone && !isActive ? 'done' : (step.status as StepStatus)} />
-        <Box style={{ flex: 1 }}>
+        <Box className="flex-1">
           <Text
             size="xs"
             fw={isActive ? 700 : 600}
@@ -155,7 +149,7 @@ function WorkflowStepItem({
             className={`text-[10.5px] tracking-[0.04em] leading-snug ${stepTextClass(isActive, isDone)}`}
             style={{ whiteSpace: 'nowrap' }}
           >
-            {t(MODULE_RESOURCE_KEYS[step.moduleId as WorkflowModuleId]).toUpperCase()}
+            {resolveLabel(step.moduleId, t).toUpperCase()}
           </Text>
           {isDone && totalTokens > 0 && (
             <Text
@@ -207,13 +201,12 @@ function SpecialStepItem({
       <Group gap={7} wrap="nowrap" align="center">
         {icon}
         {stepNumber ? (
-          <Group gap={4} wrap="nowrap" align="center" style={{ flex: 1 }}>
+          <Group gap={4} wrap="nowrap" align="center" className="flex-1">
             <Text
               size="xs"
               fw={isActive ? 700 : 600}
               ff="monospace"
-              className={`text-[10.5px] tracking-[0.04em] ${stepTextClass(isActive, hasDone)}`}
-              style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+              className={`text-[10.5px] tracking-[0.04em] shrink-0 whitespace-nowrap ${stepTextClass(isActive, hasDone)}`}
             >
               {stepNumber} ·
             </Text>
@@ -277,20 +270,7 @@ function SaveSection({
         >
           <Box
             onClick={() => !saving && onSave()}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 34,
-              height: 34,
-              margin: '0 auto',
-              borderRadius: 6,
-              cursor: saving ? 'default' : 'pointer',
-              border: '1px solid var(--accent)',
-              background: 'var(--accent-glow)',
-              transition: 'opacity 150ms ease',
-              opacity: saving ? 0.6 : 1,
-            }}
+            className={`flex items-center justify-center w-8.5 h-8.5 mx-auto rounded-md border border-accent bg-accent-glow transition-opacity duration-150 ${saving ? 'opacity-60 cursor-default' : 'cursor-pointer'}`}
           >
             <IconCloudUpload size={15} style={{ color: 'var(--accent)' }} />
           </Box>
@@ -302,7 +282,7 @@ function SaveSection({
   return (
     <Box style={animStyle}>
       <Divider mb={10} mt={6} className="border-stroke" />
-      <Box style={{ display: 'flex', justifyContent: 'center' }}>
+      <Box className="flex justify-center">
         <Button
           size="xs"
           leftSection={<IconCloudUpload size={14} />}
@@ -359,11 +339,11 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
           const isActive = i === currentStepIndex && workflowPhase === 'working';
           const isDone = step.selectedOption !== null;
           const isFuture = i > currentStepIndex && step.status === 'pending';
-          const Icon = MODULE_ICONS[step.moduleId];
+          const Icon = MODULE_ICONS[step.moduleId] ?? MODULE_ICONS['problem'];
           return (
             <CollapsedItem
               key={step.moduleId}
-              tooltipLabel={t(MODULE_RESOURCE_KEYS[step.moduleId])}
+              tooltipLabel={resolveLabel(step.moduleId, t)}
               isActive={isActive}
               isFuture={isFuture}
               canNavigate={step.status !== 'pending'}

@@ -28,7 +28,7 @@ Every IDF workflow step sends the LLM a two-part prompt:
 [system context]        ← defined by the REG template
 ---
 [artifact context]      ← assembled automatically from the invention data (RAG)
-Generate 3 [Section] options…
+Generate N [Section] options…
 ```
 
 The **system context** is the REG template. It tells the model:
@@ -47,28 +47,65 @@ Changing the system context changes everything: persona, industry terminology, p
 client/src/config/reg-templates.json
 ```
 
-The file has two top-level keys:
+The file has four top-level keys:
 
 ```jsonc
 {
   "meta": {
-    "company": "Acme Corp",          // Free text — informational only
-    "version": "1.0.0",              // Semantic version — increment on every change
-    "description": "..."             // One-line summary of the customisation intent
+    "company": "Acme Corp",      // Free text — informational only
+    "domain": "patent",          // Domain tag — informational only
+    "version": "1.0.0",          // Semantic version — increment on every change
+    "description": "..."         // One-line summary of the customisation intent
   },
-  "systemContexts": {
-    "problem":              "...",   // Step 1
-    "previous_solutions":   "...",   // Step 2
-    "differences":          "...",   // Step 3
-    "invention_summary":    "...",   // Step 4
-    "variations":           "...",   // Step 5
-    "other_applications":   "...",   // Step 6
-    "full_description":     "..."    // Step 7
+
+  "rag": {
+    "maxPriorSections": 3,        // How many prior sections to inject into each prompt
+    "maxContextFileChars": 40000, // Total character budget for uploaded reference documents
+    "maxSectionChars": 200,       // Max chars per prior section injected
+    "maxIdeaChars": 200,          // Max chars for the base idea field
+    "maxConstraintsChars": 120    // Max chars for the constraints/notes field
+  },
+
+  "workflow": {
+    "order": [                    // Controls step sequence — reorder or remove entries to change the flow
+      "problem",
+      "previous_solutions",
+      "differences",
+      "invention_summary",
+      "variations",
+      "other_applications",
+      "full_description"
+    ]
+  },
+
+  "steps": {
+    "problem": {
+      "label": "Problem Description",          // Display label (used when labelKey is absent)
+      "labelKey": "res_StepProblemDescription", // i18n key — prefix res_ enables translation
+      "description": "...",
+      "descriptionKey": "...",
+      "sectionLabelEn": "Problem Description",  // English label injected into RAG context
+      "systemContext": "...",                   // The REG template (Role + constraints)
+      "promptSuffix": "...",                    // Auto mode generation instruction
+      "guidedFields": [...],                    // Form fields shown in Guided mode
+      "guidedPromptSuffix": "..."               // Guided mode generation instruction
+    }
+    // ... same shape for every step
   }
 }
 ```
 
-All seven keys under `systemContexts` must be present. Each value is a plain string — the entire system context for that workflow step.
+All keys listed under `workflow.order` must have a matching entry in `steps`. The `rag` values apply globally across all steps.
+
+### Placeholders
+
+The following placeholders are supported in `systemContext`, `promptSuffix`, and `guidedPromptSuffix`:
+
+| Placeholder | Replaced with |
+| --- | --- |
+| `{{numOptions}}` | The number of options configured in Settings (default: 3) |
+| `{{plural}}` | `""` when numOptions is 1, `"s"` otherwise |
+| `{{fields.KEY}}` | Value entered by the user for guided field with key `KEY` (guided prompts only) |
 
 ---
 
@@ -119,7 +156,7 @@ A bullet list of **what each option must contain or avoid**. This is the most im
 
 **Example block:**
 ```
-Generate 3 options. Each must:
+Generate {{numOptions}} option{{plural}}. Each must:
 - Clearly articulate the business or technical problem that motivated the invention
 - Explain why existing approaches fail or are inadequate
 - Be written in plain, clear language suitable for a non-specialist review panel
@@ -131,22 +168,9 @@ Generate 3 options. Each must:
 
 ### Goal
 
-Close the system context with the **output format instructions**. This block must remain structurally identical across all templates — the option parser depends on it.
+The `systemContext` string ends after the constraints list. **Do not include the `OPTION N:` format block** — the engine appends it automatically based on the current `numOptions` setting. Adding it manually will cause it to appear twice and break option display.
 
-```
-Return EXACTLY 3 distinct options. Use this format with no other text:
-
-OPTION 1:
-[content]
-
-OPTION 2:
-[content]
-
-OPTION 3:
-[content]
-```
-
-> **Do not change the `OPTION N:` markers or their order.** The client-side parser uses these exact strings to split the response into three selectable cards. Altering them will break option display.
+The generation instruction ("`Generate N options for this invention.`") lives in the separate `promptSuffix` and `guidedPromptSuffix` fields, not in `systemContext`.
 
 ---
 
@@ -191,33 +215,33 @@ Always keep a backup before editing.
 ```json
 "meta": {
   "company": "Your Company Name",
+  "domain": "patent",
   "version": "1.0.0",
   "description": "Custom REG templates optimised for [industry] patent filings"
 }
 ```
 
-### 4. Edit each system context
+### 4. Edit each step
 
-For each of the seven modules, replace the string with your custom context following the REG anatomy described above. A minimal template for one module looks like:
+For each module in `steps`, the fields to customise are:
+
+| Field | What to change |
+| --- | --- |
+| `systemContext` | Role + constraint bullets. Use `{{numOptions}}` and `{{plural}}` placeholders. Do **not** add the format block — it is appended automatically. |
+| `promptSuffix` | The auto-mode generation instruction. Keep `{{numOptions}}` and `{{plural}}` so it adapts to Settings. |
+| `guidedFields` | Add, remove, or relabel form fields shown in Guided mode. Each entry needs `key`, `label`, `placeholder`, and `type` (`"text"` or `"textarea"`). |
+| `guidedPromptSuffix` | The guided-mode generation instruction. Reference guided field values via `{{fields.KEY}}` where `KEY` matches a `guidedFields[].key`. |
+| `sectionLabelEn` | The English label used in the RAG context injected into subsequent steps. Change this only if renaming the section. |
+
+A minimal `systemContext` for one module:
 
 ```
 You are a [persona] writing the [Section] section of an IDF (Invention Disclosure Form).
-Generate 3 options. Each must:
+Generate {{numOptions}} option{{plural}}. Each must:
 - [content requirement 1]
 - [content requirement 2]
 - [tone or audience requirement]
 - Be [N]–[M] paragraphs
-
-Return EXACTLY 3 distinct options. Use this format with no other text:
-
-OPTION 1:
-[content]
-
-OPTION 2:
-[content]
-
-OPTION 3:
-[content]
 ```
 
 ### 5. Validate the JSON
@@ -226,15 +250,15 @@ OPTION 3:
 node -e "JSON.parse(require('fs').readFileSync('client/src/config/reg-templates.json','utf8')); console.log('valid')"
 ```
 
-All seven keys must be present:
+Verify all required step keys are present:
 
 ```bash
 node -e "
 const t = JSON.parse(require('fs').readFileSync('client/src/config/reg-templates.json','utf8'));
 const required = ['problem','previous_solutions','differences','invention_summary','variations','other_applications','full_description'];
-const missing = required.filter(k => !t.systemContexts[k]);
-if (missing.length) { console.error('Missing:', missing); process.exit(1); }
-console.log('All modules present');
+const missing = required.filter(k => !t.steps[k]);
+if (missing.length) { console.error('Missing steps:', missing); process.exit(1); }
+console.log('All steps present');
 "
 ```
 
@@ -242,7 +266,7 @@ console.log('All modules present');
 
 Start the app in dev mode and run through a full workflow with a known invention concept. Check:
 
-- Do all three options appear for each step?
+- Do all options appear for each step?
 - Is the terminology and tone appropriate for the target organisation?
 - Are the options the right length?
 
@@ -259,16 +283,18 @@ The JSON is compiled into the client bundle at build time — no server-side cha
 
 ## Validation checklist
 
-Before shipping a custom template, verify each system context:
+Before shipping a custom template, verify each step:
 
-- [ ] Starts with a clear Role sentence (`You are a …`)
-- [ ] Contains a `Generate 3 options. Each must:` bullet list
-- [ ] Has a paragraph-count bullet (`Be N–M paragraphs`)
-- [ ] Ends with the exact `OPTION 1: / OPTION 2: / OPTION 3:` format block
+- [ ] `systemContext` starts with a clear Role sentence (`You are a …`)
+- [ ] `systemContext` contains a constraints bullet list (`Generate {{numOptions}} option{{plural}}. Each must:`)
+- [ ] `systemContext` has a paragraph-count bullet (`Be N–M paragraphs`)
+- [ ] `systemContext` does **not** include the `OPTION N:` format block (auto-appended)
+- [ ] `promptSuffix` and `guidedPromptSuffix` use `{{numOptions}}` and `{{plural}}` (not hardcoded `3`)
+- [ ] Each `{{fields.KEY}}` in `guidedPromptSuffix` has a matching entry in `guidedFields`
 - [ ] Uses `\n` (not `\r\n`) for line breaks inside the JSON string
-- [ ] Does not contain unescaped double-quotes inside the string (escape as `\"`)
+- [ ] Does not contain unescaped double-quotes inside strings (escape as `\"`)
 - [ ] The JSON file is valid (passes `JSON.parse`)
-- [ ] All seven module keys are present
+- [ ] All step keys in `workflow.order` are present in `steps`
 - [ ] `meta.version` has been incremented
 
 ---
@@ -277,10 +303,11 @@ Before shipping a custom template, verify each system context:
 
 | Mistake | Effect | Fix |
 | --- | --- | --- |
-| Removing or renaming `OPTION 1:` markers | Options panel shows a single block of text instead of three cards | Restore the exact format footer |
-| Leaving a module key empty (`""`) | The step sends a blank system context — output quality degrades significantly | Provide at least a minimal Role + format block |
+| Including the `OPTION N:` format block in `systemContext` | Format block appears twice; options may not parse correctly | Remove the format footer — it is appended automatically |
+| Hardcoding `3` in `promptSuffix` instead of `{{numOptions}}` | Step ignores the numOptions setting; always generates 3 regardless of config | Use `{{numOptions}} option{{plural}}` |
+| Using `{{fields.KEY}}` with a key not listed in `guidedFields` | Placeholder resolves to empty string silently | Ensure every `{{fields.KEY}}` has a matching `guidedFields[].key` |
+| Leaving a step's `systemContext` empty (`""`) | The step sends a blank system context — output quality degrades significantly | Provide at least a minimal Role + constraints block |
 | Trailing comma in JSON | `JSON.parse` throws; the app crashes at startup | Remove the trailing comma |
-| Using `\n` literally instead of as a newline | The model receives the backslash-n characters as text | Ensure the string uses actual newline characters or properly escaped `\n` |
 | Overly long constraints list (10+ bullets) | Model may ignore later bullets or produce inconsistent options | Keep to 4–6 bullets; prefer specificity over quantity |
 | Setting paragraph count very high (8+) for early steps | Slow generation, low variation between options | Keep early steps at 2–4 paragraphs; reserve detail for `full_description` |
 
@@ -294,27 +321,70 @@ Acme Corp operates in the **industrial IoT / predictive maintenance** space and 
 - Formal tone suitable for a European patent examiner
 - The `full_description` step should reference the PHOSITA standard explicitly
 
+The example below shows a single step (`problem`) with the full structure. The remaining six steps follow the same shape.
+
 ```json
 {
   "meta": {
     "company": "Acme Corp",
+    "domain": "patent",
     "version": "1.0.0",
     "description": "REG templates for Acme Corp industrial IoT patent filings (EPO focus)"
   },
-  "systemContexts": {
-    "problem": "You are a patent analyst at an industrial IoT company writing the Problem Description section of an IDF (Invention Disclosure Form). You specialise in predictive maintenance and sensor-driven automation systems.\nGenerate 3 options. Each must:\n- Clearly articulate the operational or technical problem that motivated the invention\n- Explain why existing IEC-compliant or proprietary approaches are insufficient\n- Use formal, precise language appropriate for a European patent filing\n- Avoid marketing language; be factual and measurable where possible\n- Be 2–4 paragraphs\n\nReturn EXACTLY 3 distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]",
 
-    "previous_solutions": "You are a patent analyst at an industrial IoT company writing the Previous Solutions section of an IDF.\nGenerate 3 options. Each must:\n- Describe existing methods, standards (e.g., IEC 61508, OPC-UA), or commercial systems used to address the problem\n- Explain their technical limitations or operational gaps objectively\n- Cite standards or well-known prior art categories where applicable\n- Be 2–3 paragraphs\n\nReturn EXACTLY 3 distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]",
+  "rag": {
+    "maxPriorSections": 3,
+    "maxContextFileChars": 40000,
+    "maxSectionChars": 200,
+    "maxIdeaChars": 200,
+    "maxConstraintsChars": 120
+  },
 
-    "differences": "You are a patent analyst at an industrial IoT company writing the Differences with Previous Solutions section of an IDF.\nGenerate 3 options. Each must:\n- Precisely articulate the technical novelty over cited prior art\n- Reference specific components, algorithms, or data flows that distinguish this invention\n- Explain the technical advantage in measurable or functional terms\n- Be 2–3 paragraphs\n\nReturn EXACTLY 3 distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]",
+  "workflow": {
+    "order": [
+      "problem",
+      "previous_solutions",
+      "differences",
+      "invention_summary",
+      "variations",
+      "other_applications",
+      "full_description"
+    ]
+  },
 
-    "invention_summary": "You are a patent analyst at an industrial IoT company writing the Invention Summary section of an IDF.\nGenerate 3 options. Each must:\n- Describe the invention at a high level using terminology familiar to an EPO examiner in the automation/IoT field\n- Reference key hardware components, communication protocols, or ML frameworks involved\n- Include quantitative performance claims where available\n- Be 2–4 paragraphs\n\nReturn EXACTLY 3 distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]",
+  "steps": {
+    "problem": {
+      "label": "Problem Description",
+      "labelKey": "res_StepProblemDescription",
+      "description": "Describe the problem this invention solves",
+      "descriptionKey": "res_StepProblemDescription_Desc",
+      "sectionLabelEn": "Problem Description",
 
-    "variations": "You are a patent analyst at an industrial IoT company writing the Possible Variations section of an IDF.\nGenerate 3 options. Each must:\n- Describe alternative hardware configurations, communication topologies, or algorithmic approaches\n- Include variations that would independently satisfy the inventive concept under Article 56 EPC\n- Be 2–3 paragraphs\n\nReturn EXACTLY 3 distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]",
+      "systemContext": "You are a patent analyst at an industrial IoT company writing the Problem Description section of an IDF (Invention Disclosure Form). You specialise in predictive maintenance and sensor-driven automation systems.\nGenerate {{numOptions}} option{{plural}}. Each must:\n- Clearly articulate the operational or technical problem that motivated the invention\n- Explain why existing IEC-compliant or proprietary approaches are insufficient\n- Use formal, precise language appropriate for a European patent filing\n- Avoid marketing language; be factual and measurable where possible\n- Be 2–4 paragraphs",
 
-    "other_applications": "You are a patent analyst at an industrial IoT company writing the Other Applications section of an IDF.\nGenerate 3 options. Each must:\n- Identify adjacent industries or application domains where this invention transfers (e.g., smart grid, automotive, medical devices)\n- Be specific about which aspect of the invention is reusable in each context\n- Be 2–3 paragraphs\n\nReturn EXACTLY 3 distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]",
+      "promptSuffix": "Generate {{numOptions}} Problem Description option{{plural}} for this invention.",
 
-    "full_description": "You are a patent attorney writing the Full Description section of an IDF for a European patent application.\nGenerate 3 options. Each must:\n- Provide a complete technical disclosure enabling a person skilled in the art (PHOSITA under Art. 83 EPC) to reproduce the invention without undue burden\n- Follow the structure: technical field → background → summary of invention → detailed description → reference to figures\n- Use the phrase \"according to the invention\" when introducing the core technical feature\n- Reference figures explicitly (e.g., \"As shown in Figure 1...\")\n- Be 4–6 paragraphs\n\nReturn EXACTLY 3 distinct options. Use this format with no other text:\n\nOPTION 1:\n[content]\n\nOPTION 2:\n[content]\n\nOPTION 3:\n[content]"
+      "guidedFields": [
+        {
+          "key": "pain_point",
+          "label": "Core Pain Point",
+          "labelKey": "res_GuidedField_PainPoint",
+          "placeholder": "e.g., Sensor arrays cannot detect bearing degradation below 5% wear threshold...",
+          "placeholderKey": "res_GuidedField_PainPoint_Placeholder",
+          "type": "textarea"
+        },
+        {
+          "key": "impact",
+          "label": "Business / Operational Impact",
+          "labelKey": "res_GuidedField_Impact",
+          "placeholder": "e.g., Unplanned downtime costs €40k/hour; current systems miss 30% of early failures...",
+          "placeholderKey": "res_GuidedField_Impact_Placeholder",
+          "type": "textarea"
+        }
+      ],
+
+      "guidedPromptSuffix": "Core pain point: {{fields.pain_point}}\nOperational impact: {{fields.impact}}\n\nGenerate {{numOptions}} Problem Description option{{plural}} based on these specifics."
+    }
   }
 }
 ```

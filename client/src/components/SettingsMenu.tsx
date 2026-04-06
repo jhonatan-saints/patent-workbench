@@ -39,7 +39,7 @@ function SectionLabel({ children }: { readonly children: string }) {
       ff="monospace"
       tt="uppercase"
       c="var(--text-muted)"
-      style={{ letterSpacing: '0.07em', borderBottom: '1px solid var(--border)', paddingBottom: 4 }}
+      className="tracking-[0.07em] border-b border-stroke pb-1"
     >
       {children}
     </Text>
@@ -200,7 +200,7 @@ export function SettingsMenu() {
               loading={saving}
               onClick={() => void handleSave()}
               ff="monospace"
-              style={{ background: 'var(--accent)', color: 'var(--bg)' }}
+              className="bg-accent text-bg"
             >
               {t('res_Save')}
             </Button>

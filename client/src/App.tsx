@@ -99,26 +99,14 @@ function LogoDots() {
   }, []);
 
   return (
-    <span
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 4px)',
-        gap: 3,
-        flexShrink: 0,
-        alignSelf: 'center',
-      }}
-    >
+    <span className="grid grid-cols-[repeat(3,4px)] gap-0.75 shrink-0 self-center">
       {Array.from({ length: 9 }, (_, i) => (
         <span
           key={i}
+          className="block w-1 h-1 bg-accent [transition:opacity_600ms_ease,box-shadow_600ms_ease]"
           style={{
-            display: 'block',
-            width: 4,
-            height: 4,
-            background: 'var(--accent)',
             opacity: active === i ? 1 : 0.2,
             boxShadow: active === i ? '0 0 5px var(--accent), 0 0 12px var(--accent)' : 'none',
-            transition: 'opacity 600ms ease, box-shadow 600ms ease',
           }}
         />
       ))}
@@ -216,31 +204,10 @@ export function App() {
           {/* Logo */}
           <Group gap={10} align="center" wrap="nowrap">
             <LogoDots />
-            <Text
-              fw={600}
-              size="sm"
-              ff="monospace"
-              className="text-fg tracking-widest uppercase"
-              style={{ letterSpacing: '0.1em' }}
-            >
+            <Text fw={600} size="sm" ff="monospace" className="text-fg tracking-widest uppercase">
               {t('res_PatentWorkbench')}
             </Text>
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                padding: '2px 8px',
-                borderRadius: 4,
-                border: '1px solid var(--border)',
-                fontSize: 10,
-                fontFamily: 'monospace',
-                color: 'var(--text-muted)',
-                letterSpacing: '0.06em',
-                lineHeight: 1.6,
-                textTransform: 'uppercase',
-                userSelect: 'none',
-              }}
-            >
+            <span className="inline-flex items-center px-2 py-0.5 rounded border border-stroke text-[10px] font-mono text-fg-muted tracking-[0.06em] leading-[1.6] uppercase select-none">
               {t('res_LocalFirstZeroTelemetry')}
             </span>
           </Group>
@@ -262,13 +229,7 @@ export function App() {
             <StepProgress collapsed={navCollapsed} />
           </Box>
           <Box
-            style={{
-              borderTop: '1px solid var(--border)',
-              padding: navCollapsed ? '8px 0' : '8px 10px',
-              display: 'flex',
-              justifyContent: navCollapsed ? 'center' : 'space-between',
-              alignItems: 'center',
-            }}
+            className={`border-t border-stroke flex items-center ${navCollapsed ? 'px-0 py-2 justify-center' : 'px-2.5 py-2 justify-between'}`}
           >
             <Tooltip label="GitHub" position="right" withArrow>
               <ActionIcon
@@ -279,8 +240,7 @@ export function App() {
                 variant="subtle"
                 size="sm"
                 aria-label="GitHub repository"
-                className="text-fg-muted hover:text-accent"
-                style={{ display: navCollapsed ? 'none' : undefined }}
+                className={`text-fg-muted hover:text-accent ${navCollapsed ? 'hidden' : ''}`}
               >
                 <IconBrandGithub size={14} />
               </ActionIcon>
@@ -337,25 +297,10 @@ export function App() {
       <AppShell.Aside>
         <Box className="h-full flex flex-col overflow-hidden">
           {/* Aside chrome header — mirrors ArtifactPreview header structure (px-4 py-3.5) */}
-          <Box
-            className="px-4 py-3.5 shrink-0"
-            style={{
-              borderBottom: '1px solid var(--border)',
-              background: 'var(--surface-raised)',
-            }}
-          >
+          <Box className="px-4 py-3.5 shrink-0 border-b border-stroke bg-surface-raised">
             {/* Row 1: icon + label */}
             <Group gap={8} mb={3} align="center" wrap="nowrap">
-              <Box
-                className="animate-pulse-glow"
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: 'var(--accent)',
-                  flexShrink: 0,
-                }}
-              />
+              <Box className="animate-pulse-glow w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
               <Text
                 ff="monospace"
                 fw={700}
@@ -378,17 +323,10 @@ export function App() {
           </Box>
 
           {/* Powered by */}
-          <Box
-            style={{
-              padding: '8px 0',
-              textAlign: 'center',
-              flexShrink: 0,
-            }}
-          >
+          <Box className="py-2 text-center shrink-0">
             <Text
               ff="monospace"
-              className="text-fg-muted"
-              style={{ fontSize: 9, letterSpacing: '0.07em', userSelect: 'none', opacity: 0.5 }}
+              className="text-fg-muted text-[9px] tracking-[0.07em] select-none opacity-50"
             >
               {t('res_PoweredByOllama')}
             </Text>

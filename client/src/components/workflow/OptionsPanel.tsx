@@ -7,7 +7,7 @@ import {
   IconPlayerStop,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
-import { MODULE_RESOURCE_KEYS, MODULE_DESCRIPTION_RESOURCE_KEYS } from '@/utils/workflowTemplates';
+import { resolveLabel, resolveDescription } from '@/utils/workflowTemplates';
 import { OptionCard } from '@/components/workflow/OptionCard';
 import { StepInputPanel } from '@/components/workflow/StepInputPanel';
 import { useI18n } from '@/i18n/useI18n';
@@ -70,10 +70,10 @@ export function OptionsPanel() {
               {t('res_Step')} {currentStepIndex + 1} {t('res_Of')} {steps.length}
             </Text>
             <Text fw={700} size="md" className="text-fg">
-              {t(MODULE_RESOURCE_KEYS[step.moduleId])}
+              {resolveLabel(step.moduleId, t)}
             </Text>
             <Text size="xs" c="var(--text-muted)">
-              {t(MODULE_DESCRIPTION_RESOURCE_KEYS[step.moduleId])}
+              {resolveDescription(step.moduleId, t)}
               {!showInputPanel && !isGenerating && ` · ${t('res_SelectOneOption')}`}
             </Text>
           </Stack>

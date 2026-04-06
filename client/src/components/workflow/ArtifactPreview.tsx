@@ -2,7 +2,7 @@ import { Box, Stack, Text, Group, ScrollArea, Badge, Divider } from '@mantine/co
 import { useI18n } from '@/i18n/useI18n';
 import { IconFileText } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
-import { WORKFLOW_ORDER, MODULE_RESOURCE_KEYS } from '@/utils/workflowTemplates';
+import { WORKFLOW_ORDER, resolveLabel } from '@/utils/workflowTemplates';
 
 export function ArtifactPreview() {
   const { artifact, steps } = useWorkbenchStore();
@@ -13,7 +13,7 @@ export function ArtifactPreview() {
   const { t } = useI18n();
 
   return (
-    <Stack gap={0} style={{ height: '100%' }}>
+    <Stack gap={0} className="h-full">
       {/* Header */}
       <Box className="px-4 py-3.5 border-b border-stroke bg-surface-raised shrink-0">
         <Group gap={8} mb={3}>
@@ -35,11 +35,11 @@ export function ArtifactPreview() {
       </Box>
 
       {/* Content */}
-      <ScrollArea style={{ flex: 1 }}>
+      <ScrollArea className="flex-1">
         <Box p={16}>
           {completedModules.length === 0 ? (
             <Box className="px-4 py-6 border border-dashed border-stroke rounded-md text-center">
-              <Text size="xs" c="var(--text-muted)" ff="monospace" style={{ lineHeight: 1.7 }}>
+              <Text size="xs" c="var(--text-muted)" ff="monospace" className="leading-[1.7]">
                 {t('res_ArtifactEmptyHint')}
               </Text>
             </Box>
@@ -56,7 +56,7 @@ export function ArtifactPreview() {
                       mb={6}
                       className="border-accent text-accent font-mono text-[11px] tracking-[0.06em]"
                     >
-                      {t(MODULE_RESOURCE_KEYS[moduleId])}
+                      {resolveLabel(moduleId, t)}
                     </Badge>
                     <Text className="text-fg font-serif text-[14px] leading-[1.7] whitespace-pre-wrap">
                       {section.content}

@@ -86,26 +86,16 @@ export function AppLoader() {
 
       {/* 3×3 grid logo */}
       <div className="animate-grid-in">
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '6px',
-            width: '72px',
-            height: '72px',
-          }}
-        >
+        <div className="grid grid-cols-3 gap-1.5 w-18 h-18">
           {Array.from({ length: GRID_SIZE }, (_, i) => (
             <div
               key={i}
+              className="rounded bg-accent [transition:opacity_220ms_ease-in-out,box-shadow_220ms_ease-in-out]"
               style={{
-                borderRadius: '4px',
-                background: 'var(--accent)',
                 opacity: active.has(i) ? 0.95 : 0.14,
                 boxShadow: active.has(i)
                   ? '0 0 6px 2px var(--accent), 0 0 18px 4px var(--accent-glow)'
                   : 'none',
-                transition: 'opacity 220ms ease-in-out, box-shadow 220ms ease-in-out',
               }}
             />
           ))}
@@ -117,8 +107,7 @@ export function AppLoader() {
         <Text
           fw={700}
           size="sm"
-          className="font-display tracking-[0.12em] text-fg uppercase"
-          style={{ opacity: 0.85 }}
+          className="font-display tracking-[0.12em] text-fg uppercase opacity-85"
         >
           Patent Workbench
         </Text>
