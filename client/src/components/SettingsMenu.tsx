@@ -14,7 +14,7 @@ import {
   Box,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconSettings } from '@tabler/icons-react';
+import { IconUserCog } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n';
 import type { AppSettings, LogLevel } from '@/types';
@@ -81,7 +81,7 @@ export function SettingsMenu() {
           onClick={open}
           className="text-fg-muted hover:text-accent"
         >
-          <IconSettings size={16} />
+          <IconUserCog size={16} />
         </ActionIcon>
       </Tooltip>
 
