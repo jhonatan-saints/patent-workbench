@@ -11,16 +11,16 @@ type GenerateResult = {
 };
 
 import logger from '../logger';
-
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
+import { getAppSettings } from './db';
 
 export async function generate({
   model,
   prompt,
   signal: clientSignal,
 }: GenerateParams): Promise<GenerateResult | null> {
+  const settings = getAppSettings();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), Number(process.env.LLM_TIMEOUT_MS) || 120_000);
+  const timeout = setTimeout(() => controller.abort(), settings.llm_timeout_ms);
 
   // Abort the Ollama request when the HTTP client disconnects
   if (clientSignal) {
@@ -32,7 +32,7 @@ export async function generate({
   }
 
   try {
-    const res = await fetch(`${OLLAMA_URL}/api/generate`, {
+    const res = await fetch(`${settings.ollama_url}/api/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
@@ -71,7 +71,8 @@ export async function generate({
 
 export async function checkLLM(): Promise<boolean> {
   try {
-    const res = await fetch(`${OLLAMA_URL}/api/tags`);
+    const { ollama_url } = getAppSettings();
+    const res = await fetch(`${ollama_url}/api/tags`);
     return res.ok;
   } catch {
     return false;
@@ -80,7 +81,8 @@ export async function checkLLM(): Promise<boolean> {
 
 export async function listModels(): Promise<string[]> {
   try {
-    const res = await fetch(`${OLLAMA_URL}/api/tags`);
+    const { ollama_url } = getAppSettings();
+    const res = await fetch(`${ollama_url}/api/tags`);
     if (!res.ok) return [];
     const data = await res.json();
     return (data?.models ?? []).map((m: { name: string }) => m.name);
@@ -91,7 +93,8 @@ export async function listModels(): Promise<string[]> {
 
 export async function getModelContextLength(name: string): Promise<number | null> {
   try {
-    const res = await fetch(`${OLLAMA_URL}/api/show`, {
+    const { ollama_url } = getAppSettings();
+    const res = await fetch(`${ollama_url}/api/show`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),

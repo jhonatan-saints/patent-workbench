@@ -172,6 +172,7 @@ export function StepInputPanel({ moduleId }: Props) {
     updateArtifactBase,
     updateContextFiles,
     llmStatus,
+    appSettings,
   } = useWorkbenchStore();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -203,7 +204,7 @@ export function StepInputPanel({ moduleId }: Props) {
     if (mode === 'auto') {
       generateStepOptions();
     } else if (mode === 'guided' && artifact) {
-      const guidedPrompt = `${module.systemContext}\n\n---\n\n${module.buildGuidedPrompt(artifact, guidedFields)}`;
+      const guidedPrompt = `${module.systemContext(appSettings.numOptions)}\n\n---\n\n${module.buildGuidedPrompt(artifact, guidedFields, appSettings.numOptions)}`;
       generateStepOptions(guidedPrompt);
     }
   };

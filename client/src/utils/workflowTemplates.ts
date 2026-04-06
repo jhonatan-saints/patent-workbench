@@ -1,17 +1,10 @@
 import type { WorkflowModuleId, PatentArtifact } from '@/types';
 
-const THREE_OPTIONS_FORMAT = `
-
-Return EXACTLY 3 distinct options. Use this format with no other text:
-
-OPTION 1:
-[content]
-
-OPTION 2:
-[content]
-
-OPTION 3:
-[content]`;
+function buildOptionsFormat(n: number): string {
+  const header = `\n\nReturn EXACTLY ${n} distinct option${n === 1 ? '' : 's'}. Use this format with no other text:\n`;
+  const blocks = Array.from({ length: n }, (_, i) => `OPTION ${i + 1}:\n[content]`).join('\n\n');
+  return header + '\n' + blocks;
+}
 
 export interface GuidedField {
   key: string;
@@ -126,26 +119,26 @@ export const MODULE_DESCRIPTION_RESOURCE_KEYS: Record<WorkflowModuleId, string> 
 export interface WorkflowModule {
   label: string;
   description: string;
-  systemContext: string;
-  buildPrompt: (artifact: PatentArtifact) => string;
+  systemContext: (numOptions: number) => string;
+  buildPrompt: (artifact: PatentArtifact, numOptions: number) => string;
   guidedFields: GuidedField[];
-  buildGuidedPrompt: (artifact: PatentArtifact, fields: Record<string, string>) => string;
+  buildGuidedPrompt: (artifact: PatentArtifact, fields: Record<string, string>, numOptions: number) => string;
 }
 
 export const WORKFLOW_MODULES: Record<WorkflowModuleId, WorkflowModule> = {
   problem: {
     label: 'Problem Description',
     description: 'Describe the problem this invention solves',
-    systemContext: `You are a patent analyst writing the Problem Description section of an IDF (Invention Disclosure Form).
-Generate 3 options. Each must:
+    systemContext: (numOptions) => `You are a patent analyst writing the Problem Description section of an IDF (Invention Disclosure Form).
+Generate ${numOptions} option${numOptions === 1 ? '' : 's'}. Each must:
 - Clearly articulate the business or technical problem that motivated the invention
 - Explain why existing approaches fail or are inadequate
 - Be written in plain, clear language (not legal jargon)
-- Be 2–4 paragraphs${THREE_OPTIONS_FORMAT}`,
-    buildPrompt: (artifact) =>
+- Be 2–4 paragraphs${buildOptionsFormat(numOptions)}`,
+    buildPrompt: (artifact, numOptions) =>
       `${buildArtifactContext(artifact, 'problem')}
 
-Generate 3 Problem Description options for this invention.`,
+Generate ${numOptions} Problem Description option${numOptions === 1 ? '' : 's'} for this invention.`,
     guidedFields: [
       {
         key: 'pain_point',
@@ -164,27 +157,27 @@ Generate 3 Problem Description options for this invention.`,
         type: 'textarea',
       },
     ],
-    buildGuidedPrompt: (artifact, fields) =>
+    buildGuidedPrompt: (artifact, fields, numOptions) =>
       `${buildArtifactContext(artifact, 'problem')}
 Core pain point: ${fields['pain_point'] || ''}
 Business impact: ${fields['impact'] || ''}
 
-Generate 3 Problem Description options based on these specifics.`,
+Generate ${numOptions} Problem Description option${numOptions === 1 ? '' : 's'} based on these specifics.`,
   },
 
   previous_solutions: {
     label: 'Previous Solutions',
     description: 'Describe existing approaches and their limitations',
-    systemContext: `You are a patent analyst writing the Previous Solutions section of an IDF.
-Generate 3 options. Each must:
+    systemContext: (numOptions) => `You are a patent analyst writing the Previous Solutions section of an IDF.
+Generate ${numOptions} option${numOptions === 1 ? '' : 's'}. Each must:
 - Describe current methods or technologies used to address the problem
 - Explain their limitations, gaps, or drawbacks
 - Be objective and factual (no disparagement)
-- Be 2–3 paragraphs${THREE_OPTIONS_FORMAT}`,
-    buildPrompt: (artifact) =>
+- Be 2–3 paragraphs${buildOptionsFormat(numOptions)}`,
+    buildPrompt: (artifact, numOptions) =>
       `${buildArtifactContext(artifact, 'previous_solutions')}
 
-Generate 3 Previous Solutions options describing existing approaches and their limitations.`,
+Generate ${numOptions} Previous Solutions option${numOptions === 1 ? '' : 's'} describing existing approaches and their limitations.`,
     guidedFields: [
       {
         key: 'existing_methods',
@@ -203,27 +196,27 @@ Generate 3 Previous Solutions options describing existing approaches and their l
         type: 'textarea',
       },
     ],
-    buildGuidedPrompt: (artifact, fields) =>
+    buildGuidedPrompt: (artifact, fields, numOptions) =>
       `${buildArtifactContext(artifact, 'previous_solutions')}
 Existing methods: ${fields['existing_methods'] || ''}
 Limitations: ${fields['limitations'] || ''}
 
-Generate 3 Previous Solutions options.`,
+Generate ${numOptions} Previous Solutions option${numOptions === 1 ? '' : 's'}.`,
   },
 
   differences: {
     label: 'Key Differences',
     description: 'Explain what makes this invention novel',
-    systemContext: `You are a patent analyst writing the Differences with Previous Solutions section of an IDF.
-Generate 3 options. Each must:
+    systemContext: (numOptions) => `You are a patent analyst writing the Differences with Previous Solutions section of an IDF.
+Generate ${numOptions} option${numOptions === 1 ? '' : 's'}. Each must:
 - Clearly articulate how this invention differs from prior approaches
 - Highlight novel technical elements or methods
 - Explain why these differences matter (the advantage they confer)
-- Be 2–3 paragraphs${THREE_OPTIONS_FORMAT}`,
-    buildPrompt: (artifact) =>
+- Be 2–3 paragraphs${buildOptionsFormat(numOptions)}`,
+    buildPrompt: (artifact, numOptions) =>
       `${buildArtifactContext(artifact, 'differences')}
 
-Generate 3 options explaining how this invention differs from previous solutions.`,
+Generate ${numOptions} option${numOptions === 1 ? '' : 's'} explaining how this invention differs from previous solutions.`,
     guidedFields: [
       {
         key: 'novel_elements',
@@ -242,27 +235,27 @@ Generate 3 options explaining how this invention differs from previous solutions
         type: 'textarea',
       },
     ],
-    buildGuidedPrompt: (artifact, fields) =>
+    buildGuidedPrompt: (artifact, fields, numOptions) =>
       `${buildArtifactContext(artifact, 'differences')}
 Novel elements: ${fields['novel_elements'] || ''}
 Key advantage: ${fields['advantage'] || ''}
 
-Generate 3 Differences with Previous Solutions options.`,
+Generate ${numOptions} Differences with Previous Solutions option${numOptions === 1 ? '' : 's'}.`,
   },
 
   invention_summary: {
     label: 'Invention Summary',
     description: 'High-level overview of the invention',
-    systemContext: `You are a patent analyst writing the Invention Summary section of an IDF.
-Generate 3 options. Each must:
+    systemContext: (numOptions) => `You are a patent analyst writing the Invention Summary section of an IDF.
+Generate ${numOptions} option${numOptions === 1 ? '' : 's'}. Each must:
 - Describe the invention at a high level using accessible language
 - Reference key technologies or standards used (e.g., ONNX, FER, etc.)
 - Include market context or scale if relevant
-- Be 2–4 paragraphs${THREE_OPTIONS_FORMAT}`,
-    buildPrompt: (artifact) =>
+- Be 2–4 paragraphs${buildOptionsFormat(numOptions)}`,
+    buildPrompt: (artifact, numOptions) =>
       `${buildArtifactContext(artifact, 'invention_summary')}
 
-Generate 3 Invention Summary options.`,
+Generate ${numOptions} Invention Summary option${numOptions === 1 ? '' : 's'}.`,
     guidedFields: [
       {
         key: 'core_method',
@@ -281,27 +274,27 @@ Generate 3 Invention Summary options.`,
         type: 'text',
       },
     ],
-    buildGuidedPrompt: (artifact, fields) =>
+    buildGuidedPrompt: (artifact, fields, numOptions) =>
       `${buildArtifactContext(artifact, 'invention_summary')}
 Core method: ${fields['core_method'] || ''}
 Market context: ${fields['market_context'] || ''}
 
-Generate 3 Invention Summary options.`,
+Generate ${numOptions} Invention Summary option${numOptions === 1 ? '' : 's'}.`,
   },
 
   variations: {
     label: 'Possible Variations',
     description: 'Alternative implementations and embodiments',
-    systemContext: `You are a patent analyst writing the Possible Variations section of an IDF.
-Generate 3 options. Each must:
+    systemContext: (numOptions) => `You are a patent analyst writing the Possible Variations section of an IDF.
+Generate ${numOptions} option${numOptions === 1 ? '' : 's'}. Each must:
 - Describe alternative implementations or embodiments of the invention
 - Include variations that broaden patent scope
 - Suggest adjacent use cases or deployment scenarios
-- Be 2–3 paragraphs${THREE_OPTIONS_FORMAT}`,
-    buildPrompt: (artifact) =>
+- Be 2–3 paragraphs${buildOptionsFormat(numOptions)}`,
+    buildPrompt: (artifact, numOptions) =>
       `${buildArtifactContext(artifact, 'variations')}
 
-Generate 3 Possible Variations options for this invention.`,
+Generate ${numOptions} Possible Variations option${numOptions === 1 ? '' : 's'} for this invention.`,
     guidedFields: [
       {
         key: 'alt_implementations',
@@ -320,26 +313,26 @@ Generate 3 Possible Variations options for this invention.`,
         type: 'text',
       },
     ],
-    buildGuidedPrompt: (artifact, fields) =>
+    buildGuidedPrompt: (artifact, fields, numOptions) =>
       `${buildArtifactContext(artifact, 'variations')}
 Alternative implementations: ${fields['alt_implementations'] || ''}
 Embodiment variations: ${fields['embodiments'] || ''}
 
-Generate 3 Possible Variations options.`,
+Generate ${numOptions} Possible Variations option${numOptions === 1 ? '' : 's'}.`,
   },
 
   other_applications: {
     label: 'Other Applications',
     description: 'Additional use cases beyond the primary application',
-    systemContext: `You are a patent analyst writing the Other Applications section of an IDF.
-Generate 3 options. Each must:
+    systemContext: (numOptions) => `You are a patent analyst writing the Other Applications section of an IDF.
+Generate ${numOptions} option${numOptions === 1 ? '' : 's'}. Each must:
 - Identify other industries or domains where the invention could be applied
 - Be specific about how the technology transfers to each context
-- Be 2–3 paragraphs${THREE_OPTIONS_FORMAT}`,
-    buildPrompt: (artifact) =>
+- Be 2–3 paragraphs${buildOptionsFormat(numOptions)}`,
+    buildPrompt: (artifact, numOptions) =>
       `${buildArtifactContext(artifact, 'other_applications')}
 
-Generate 3 Other Applications options for this invention.`,
+Generate ${numOptions} Other Applications option${numOptions === 1 ? '' : 's'} for this invention.`,
     guidedFields: [
       {
         key: 'industries',
@@ -358,27 +351,27 @@ Generate 3 Other Applications options for this invention.`,
         type: 'textarea',
       },
     ],
-    buildGuidedPrompt: (artifact, fields) =>
+    buildGuidedPrompt: (artifact, fields, numOptions) =>
       `${buildArtifactContext(artifact, 'other_applications')}
 Industries: ${fields['industries'] || ''}
 Use cases: ${fields['use_cases'] || ''}
 
-Generate 3 Other Applications options.`,
+Generate ${numOptions} Other Applications option${numOptions === 1 ? '' : 's'}.`,
   },
 
   full_description: {
     label: 'Full Description',
     description: 'Complete technical description of the invention',
-    systemContext: `You are a patent attorney writing the Full Description section of an IDF.
-Generate 3 options. Each must:
+    systemContext: (numOptions) => `You are a patent attorney writing the Full Description section of an IDF.
+Generate ${numOptions} option${numOptions === 1 ? '' : 's'}. Each must:
 - Provide a complete technical description enabling a person skilled in the art to practice the invention
 - Include background context, the core method, and implementation details
 - Reference figures where appropriate (e.g., "Figure 1 illustrates...")
-- Be 4–6 paragraphs${THREE_OPTIONS_FORMAT}`,
-    buildPrompt: (artifact) =>
+- Be 4–6 paragraphs${buildOptionsFormat(numOptions)}`,
+    buildPrompt: (artifact, numOptions) =>
       `${buildArtifactContext(artifact, 'full_description')}
 
-Generate 3 Full Description options with complete technical detail.`,
+Generate ${numOptions} Full Description option${numOptions === 1 ? '' : 's'} with complete technical detail.`,
     guidedFields: [
       {
         key: 'components',
@@ -397,11 +390,11 @@ Generate 3 Full Description options with complete technical detail.`,
         type: 'textarea',
       },
     ],
-    buildGuidedPrompt: (artifact, fields) =>
+    buildGuidedPrompt: (artifact, fields, numOptions) =>
       `${buildArtifactContext(artifact, 'full_description')}
 Key components: ${fields['components'] || ''}
 Process flow: ${fields['process_flow'] || ''}
 
-Generate 3 Full Description options.`,
+Generate ${numOptions} Full Description option${numOptions === 1 ? '' : 's'}.`,
   },
 };

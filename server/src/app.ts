@@ -9,7 +9,9 @@ import 'express-async-errors'
 import dotenv from 'dotenv'
 import { z } from 'zod'
 import { generate, checkLLM, listModels, getModelContextLength } from './services/llm.service'
+import { getAppSettings } from './services/db'
 import sessionsRouter from './routes/sessions'
+import settingsRouter from './routes/settings'
 import logger from './logger'
 import errorHandler from './middleware/errorHandler'
 import { validateBody } from './middleware/validate'
@@ -22,7 +24,6 @@ const app = express()
 const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173'
 const bodyLimit = process.env.BODY_LIMIT || '512kb'
 const promptSchemaMax = Number(process.env.PROMPT_MAX_LENGTH) || 64000
-const defaultModel = process.env.DEFAULT_MODEL || 'mistral'
 const generateRateWindowMs = Number(process.env.GENERATE_RATE_WINDOW_MS) || 60_000
 const generateRateMax = Number(process.env.GENERATE_RATE_MAX) || 20
 
@@ -190,7 +191,7 @@ app.post(
     req.on('close', () => clientController.abort())
 
     const result = await generate({
-      model: model || defaultModel,
+      model: model || getAppSettings().default_model,
       prompt,
       signal: clientController.signal,
     })
@@ -227,6 +228,9 @@ app.post(
 
 // Sessions — larger body limit to accommodate base64 figure data URLs
 app.use('/sessions', express.json({ limit: '50mb' }), sessionsRouter)
+
+// Settings
+app.use('/settings', settingsRouter)
 
 // Error handler (must be last middleware)
 app.use(errorHandler)
