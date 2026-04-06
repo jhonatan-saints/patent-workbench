@@ -266,3 +266,7 @@ For on-premise enterprise licenses, POC access, or private builds that include t
 
 </div>
 <br/>
+
+<p align="center">
+  <img src="client/src/assets/icons/mountain-footer.svg" width="100%" alt="Mountain footer pattern" />
+</p>
