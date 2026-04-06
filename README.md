@@ -95,7 +95,7 @@ input → working (steps 1–7) → figures → inventors → preview / export
 | **Guided** | User fills structured form fields; fields are interpolated into the template before sending to the LLM |
 | **Manual** | User writes the section content directly; no LLM call is made |
 
-[!NOTE]
+> [!NOTE]
 > An average creation using the "guided" method takes about: **~8 800 tokens**.
 
 ---
