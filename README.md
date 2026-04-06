@@ -133,7 +133,7 @@ The UI is fully translated into 16 locales:
 > [!IMPORTANT]  
 > The UI language and the **invention content language** are independent settings. Switching the locale translates all labels, buttons, and tooltips but does **not** change the language the REG algorithm prompts in.
 
-The REG system contexts are authored in English and instruct the model to reason as a USPTO patent analyst. They are defined in `client/src/config/reg-templates.json` — the primary customisation entry point — and mirrored as defaults in `client/src/utils/workflowTemplates.ts`. If you want the LLM to generate patent sections in another language, edit `reg-templates.json` without touching application code: append an explicit instruction such as `"Respond entirely in Portuguese."` to each `systemContexts` string. See [docs/customising-reg-templates.md](docs/customising-reg-templates.md) for a full authoring guide.
+The REG system contexts are authored in English and instruct the model to reason as a USPTO patent analyst. They are defined in `client/src/config/reg-templates.json` — the primary customisation entry point. If you want the LLM to generate patent sections in another language, edit `reg-templates.json` without touching application code: append an explicit instruction such as `"Respond entirely in Portuguese."` to each `systemContext` string. See [docs/customising-reg-templates.md](docs/customising-reg-templates.md) for a full authoring guide.
 
 Until the REG prompts are adapted, submitting the invention idea in a non-English language will work, but the generated options are likely to be returned in English regardless of the UI locale.
 
@@ -201,7 +201,7 @@ In the **Ollama desktop app settings**, ensure the following are **disabled**:
 npm run setup
 
 # Start both dev servers concurrently
-npm start
+npm run start
 ```
 
 Or run them separately:
@@ -221,7 +221,7 @@ npm run client       # Vite on localhost:3003/patent-workbench
 | Script | Description |
 | --- | --- |
 | `npm run setup` | Install all dependencies for both workspaces |
-| `npm start` | Generate i18n files, then run client and server concurrently |
+| `npm run start` | Generate i18n files, then run client and server concurrently |
 | `npm run server:dev` | Server in watch mode on `:3001` |
 | `npm run client` | Vite dev server on `:3003` |
 | `npm run client:build` | Build client to `client/dist/` |
@@ -234,7 +234,8 @@ npm run client       # Vite on localhost:3003/patent-workbench
 > [!NOTE] 
 > - For server-specific configuration (env vars, endpoints, rate limits) see [server/README.md](server/README.md).
 > - For client architecture and component details see [client/README.md](client/README.md).
-> - For algorithm documentation see [docs/reg-rag-algorithms.md](docs/reg-rag-algorithms.md).
+> - For algorithm documentation see [docs/reg-rag_algorithm.md](docs/reg-rag_algorithm.md).
+> - For deploying on an internal lab server (VPN / shared URL) see [docs/lab-deployment.md](docs/lab-deployment.md).
 
 ---
 
