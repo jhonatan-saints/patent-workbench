@@ -22,8 +22,8 @@ import type { AppSettings, LogLevel } from '@/types';
 const LOG_LEVEL_OPTIONS: { value: LogLevel; label: string }[] = [
   { value: 'fatal', label: 'fatal' },
   { value: 'error', label: 'error' },
-  { value: 'warn',  label: 'warn' },
-  { value: 'info',  label: 'info' },
+  { value: 'warn', label: 'warn' },
+  { value: 'info', label: 'info' },
   { value: 'debug', label: 'debug' },
   { value: 'trace', label: 'trace' },
 ];
@@ -69,11 +69,7 @@ export function SettingsMenu() {
   };
 
   const modelOptions =
-    availableModels.length > 0
-      ? availableModels
-      : form.defaultModel
-        ? [form.defaultModel]
-        : [];
+    availableModels.length > 0 ? availableModels : form.defaultModel ? [form.defaultModel] : [];
 
   return (
     <>
@@ -93,19 +89,28 @@ export function SettingsMenu() {
         opened={opened}
         onClose={close}
         title={
-          <Text ff="monospace" fw={700} tt="uppercase" size="xs" className="text-accent tracking-widest">
+          <Text
+            ff="monospace"
+            fw={700}
+            tt="uppercase"
+            size="xs"
+            className="text-accent tracking-widest"
+          >
             {t('res_Settings')}
           </Text>
         }
         size="md"
         styles={{
           content: { background: 'var(--surface-raised)', border: '1px solid var(--border)' },
-          header: { background: 'var(--surface-raised)', borderBottom: '1px solid var(--border)', paddingBottom: 8 },
+          header: {
+            background: 'var(--surface-raised)',
+            borderBottom: '1px solid var(--border)',
+            paddingBottom: 8,
+          },
           body: { paddingTop: 12 },
         }}
       >
         <Stack gap="sm">
-
           {/* LLM */}
           <Box>
             <SectionLabel>{t('res_SettingsSectionLLM')}</SectionLabel>
