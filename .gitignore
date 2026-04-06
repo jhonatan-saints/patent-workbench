@@ -8,7 +8,8 @@ build/
 client/dist/
 server/dist/
 
-#Claude
+# Claude
+.claude/
 .settings.local.json
 settings.local.json
 
