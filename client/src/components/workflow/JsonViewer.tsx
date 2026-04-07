@@ -58,7 +58,7 @@ const DARK_COLORS = {
   key: '#90caf9',
   punct: '#bdbdbd',
   text: '#e0e0e0',
-  placeholder: '#777',
+  placeholder: '#a8a8a8',
 };
 
 const LIGHT_COLORS = {
@@ -327,6 +327,7 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
             {t('res_JSONInput')}
           </Text>
           <Textarea
+            aria-label={t('res_JSONInput')}
             value={jsonText}
             onChange={(e) => handleJsonChange(e.currentTarget.value)}
             placeholder={'{\n  "key": "value",\n  "items": [1, 2, 3]\n}'}
@@ -411,7 +412,7 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
           flexShrink: 0,
         }}
       >
-        <Text size="xs" c="var(--text-muted)" ff="monospace">
+        <Text size="xs" c="var(text-accent)" ff="monospace">
           {t('res_JsonViewer_Hint')}
         </Text>
       </Box>

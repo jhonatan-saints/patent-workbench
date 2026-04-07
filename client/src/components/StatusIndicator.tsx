@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Group, Badge, Text, Tooltip, ActionIcon } from '@mantine/core';
+import { Group, Badge, Tooltip, ActionIcon } from '@mantine/core';
 import { IconRefresh, IconCircleFilled } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n';
@@ -24,6 +24,18 @@ export function StatusIndicator() {
 
   return (
     <Group gap={6} align="center" wrap="nowrap">
+      <Tooltip label={t('res_RefreshStatus')} position="bottom">
+        <ActionIcon
+          variant="subtle"
+          size="md"
+          onClick={checkStatus}
+          title={t('res_RefreshStatus')}
+          className="text-fg-muted hover:text-accent"
+        >
+          <IconRefresh size={18} />
+        </ActionIcon>
+      </Tooltip>
+
       <Tooltip
         label={
           llmLatency === null ? t('res_CheckingConnection') : t('res_LatencyMs', { ms: llmLatency })
@@ -46,20 +58,6 @@ export function StatusIndicator() {
           {label}
         </Badge>
       </Tooltip>
-
-      {llmLatency != null && llmStatus === 'ok' && (
-        <Text className="text-[11px] text-fg-muted font-mono">{llmLatency}ms</Text>
-      )}
-
-      <ActionIcon
-        variant="subtle"
-        size="md"
-        onClick={checkStatus}
-        title={t('res_RefreshStatus')}
-        className="text-fg-muted hover:text-accent"
-      >
-        <IconRefresh size={16} />
-      </ActionIcon>
     </Group>
   );
 }

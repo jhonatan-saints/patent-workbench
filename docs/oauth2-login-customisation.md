@@ -1,10 +1,68 @@
 # OAuth2 Login Screen Customisation — Patent Workbench
 
-This guide explains how to replace `oauth2-proxy`'s default login page with a branded screen that matches the Patent Workbench visual identity. No changes to the application code are required.
+This guide covers two related but distinct things:
+
+1. **The in-app demo component** (`OAuthLoginDemo.tsx`) — a React screen that lives inside the app and previews the login flow during development or stakeholder demos. It is **not** the real authentication mechanism.
+2. **The oauth2-proxy HTML templates** (`sign_in.html`, `error.html`) — the actual branded pages served by `oauth2-proxy` in production. The app itself never handles auth logic; the proxy intercepts unauthenticated requests before they reach the frontend.
 
 ---
 
-## Table of contents
+## The in-app demo component
+
+### What it is
+
+`client/src/components/OAuthLoginDemo.tsx` is a fully-designed React component that renders a two-panel login screen matching the Patent Workbench visual identity. It is gated behind the `VITE_DEMO_OAUTH` build flag and is never compiled into a production bundle unless that flag is set.
+
+It is useful for:
+
+- **Stakeholder demos** — shows the complete login → loader → app flow without any infrastructure.
+- **Design iteration** — the login UI can be developed and refined independently of oauth2-proxy or Authelia.
+
+### How to enable it
+
+In `client/.env` (or `client/.env.local`), set:
+
+```dotenv
+VITE_DEMO_OAUTH=true
+```
+
+Restart the dev server. The app will now start on the login screen and transition through the AppLoader into the workbench after a successful "sign in" (any non-empty username and password are accepted).
+
+To disable it and skip directly to the app (the default for production builds):
+
+```dotenv
+VITE_DEMO_OAUTH=false
+# or remove the line entirely
+```
+
+### What the component does today
+
+| Behaviour | Detail |
+| --- | --- |
+| Form submission | Validates that username and password are non-empty, then calls the `onAuthenticated` callback — no HTTP request is made |
+| Authelia SSO button | Triggers the same local callback — no OAuth2 redirect |
+| Logout button (header) | Resets the app phase to `'login'` in local React state — no server-side session invalidation |
+| Theme | Always rendered in dark mode regardless of the app's global theme setting |
+
+### What is missing for a real deployment
+
+The component provides the full visual shell and UX flow, but all authentication logic would need to be implemented before it could replace an actual auth proxy:
+
+| Missing piece | What is needed |
+| --- | --- |
+| **Credential authentication** | `POST` the form to a real endpoint (backend or Authelia directly); handle 401/403 responses from the server |
+| **OAuth2/OIDC SSO flow** | Redirect to the Authelia authorisation URL (`/oauth2/authorize?client_id=…&redirect_uri=…&response_type=code`); handle the callback and exchange the code for tokens |
+| **Session / token management** | Store the access token (preferably in an HttpOnly cookie set by the server), include it in every API request, handle token refresh and expiry |
+| **Route protection** | On app init, check whether a valid session exists; redirect to login if not |
+| **Real logout** | Call the server's token revocation or Authelia logout endpoint to invalidate the session before resetting local state |
+| **Server error messages** | Surface error strings returned by the auth backend ("invalid credentials", "account locked", etc.) |
+
+> [!NOTE]
+> For a lab deployment using oauth2-proxy, none of the above needs to be implemented in the React app. The proxy handles everything — the app only ever sees already-authenticated requests. The demo component exists purely for visual preview and is bypassed entirely in production.
+
+---
+
+## oauth2-proxy templates — table of contents
 
 1. [How oauth2-proxy templates work](#how-oauth2-proxy-templates-work)
 2. [Directory setup](#directory-setup)

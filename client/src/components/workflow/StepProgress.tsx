@@ -1,4 +1,4 @@
-import { Box, Stack, Text, Group, Tooltip, Divider, Button } from '@mantine/core';
+import { Box, Stack, Text, Group, Tooltip, Divider, Button, ActionIcon } from '@mantine/core';
 import {
   IconCircleCheck,
   IconCircleDot,
@@ -15,7 +15,8 @@ import {
   IconWorld,
   IconAlignLeft,
   IconEdit,
-  IconCloudUpload,
+  IconFileUploadFilled,
+  IconRestore,
 } from '@tabler/icons-react';
 import type { ComponentType } from 'react';
 import { useState, useCallback } from 'react';
@@ -133,7 +134,7 @@ function WorkflowStepItem({
     <Box
       onClick={() => canNavigate && onNavigate()}
       className={[
-        'px-2.5 py-1.75 rounded border transition-all duration-150',
+        'px-2.5 py-2 rounded border transition-all duration-150',
         isActive ? 'border-accent bg-surface-active' : 'border-transparent',
         isFuture ? 'opacity-40' : '',
         canNavigate ? 'cursor-pointer hover:bg-surface-raised' : 'cursor-default',
@@ -146,17 +147,13 @@ function WorkflowStepItem({
             size="xs"
             fw={isActive ? 700 : 600}
             ff="monospace"
-            className={`text-[10.5px] tracking-[0.04em] leading-snug ${stepTextClass(isActive, isDone)}`}
+            className={`tracking-[0.04em] leading-snug ${stepTextClass(isActive, isDone)}`}
             style={{ whiteSpace: 'nowrap' }}
           >
             {resolveLabel(step.moduleId, t).toUpperCase()}
           </Text>
           {isDone && totalTokens > 0 && (
-            <Text
-              size="xs"
-              ff="monospace"
-              className="text-fg-muted text-[9.5px] mt-px leading-none"
-            >
+            <Text size="xs" ff="monospace" className="text-fg-muted mt-px leading-none">
               {totalTokens >= 1000 ? `${(totalTokens / 1000).toFixed(1)}k` : totalTokens}t
             </Text>
           )}
@@ -193,7 +190,7 @@ function SpecialStepItem({
       onClick={() => unlocked && onClick()}
       style={isLocked ? { opacity: 0.35 } : undefined}
       className={[
-        'px-2.5 py-1.75 rounded border transition-all duration-150',
+        'px-2.5 py-2 rounded border transition-all duration-150',
         isActive ? 'border-accent bg-surface-active' : 'border-transparent',
         unlocked ? 'cursor-pointer hover:bg-surface-raised' : 'cursor-default',
       ].join(' ')}
@@ -206,7 +203,7 @@ function SpecialStepItem({
               size="xs"
               fw={isActive ? 700 : 600}
               ff="monospace"
-              className={`text-[10.5px] tracking-[0.04em] shrink-0 whitespace-nowrap ${stepTextClass(isActive, hasDone)}`}
+              className={`tracking-[0.04em] shrink-0 whitespace-nowrap ${stepTextClass(isActive, hasDone)}`}
             >
               {stepNumber} ·
             </Text>
@@ -214,7 +211,7 @@ function SpecialStepItem({
               size="xs"
               fw={isActive ? 700 : 600}
               ff="monospace"
-              className={`text-[10.5px] tracking-[0.04em] leading-snug ${stepTextClass(isActive, hasDone)}`}
+              className={`tracking-[0.04em] leading-snug ${stepTextClass(isActive, hasDone)}`}
             >
               {stepLabel}
             </Text>
@@ -224,7 +221,7 @@ function SpecialStepItem({
             size="xs"
             fw={isActive ? 700 : 600}
             ff="monospace"
-            className={`text-[10.5px] tracking-[0.04em] leading-snug ${stepTextClass(isActive, hasDone)}`}
+            className={`tracking-[0.04em] leading-snug ${stepTextClass(isActive, hasDone)}`}
           >
             {stepLabel}
           </Text>
@@ -272,7 +269,7 @@ function SaveSection({
             onClick={() => !saving && onSave()}
             className={`flex items-center justify-center w-8.5 h-8.5 mx-auto rounded-md border border-accent bg-accent-glow transition-opacity duration-150 ${saving ? 'opacity-60 cursor-default' : 'cursor-pointer'}`}
           >
-            <IconCloudUpload size={15} style={{ color: 'var(--accent)' }} />
+            <IconFileUploadFilled size={15} style={{ color: 'var(--accent)' }} />
           </Box>
         </Tooltip>
       </Box>
@@ -281,11 +278,11 @@ function SaveSection({
 
   return (
     <Box style={animStyle}>
-      <Divider mb={10} mt={6} className="border-stroke" />
+      <Divider mb={10} mt={6} pt={6} className="border-stroke" />
       <Box className="flex justify-center">
         <Button
           size="xs"
-          leftSection={<IconCloudUpload size={14} />}
+          leftSection={<IconFileUploadFilled size={15} />}
           loading={saving}
           onClick={onSave}
           style={{ ...BTN_PRIMARY, width: '80%', justifyContent: 'center' }}
@@ -314,6 +311,7 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
     goToFigures,
     artifact,
     persistDraft,
+    resetWorkflow,
   } = useWorkbenchStore();
   const { t } = useI18n();
 
@@ -403,17 +401,31 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
 
   // Expanded
   return (
-    <Stack gap={2} p={14}>
-      <Text
-        size="xs"
-        fw={700}
-        tt="uppercase"
-        ff="monospace"
-        mb={8}
-        className="text-fg-muted tracking-widest text-[10px]"
-      >
-        {t('res_Workflow')}
-      </Text>
+    <Stack gap={4} p={14}>
+      <Group justify="space-between" align="center" mb={8}>
+        <Text
+          size="xs"
+          fw={700}
+          tt="uppercase"
+          ff="monospace"
+          className="text-fg-muted tracking-widest border-l-2 border-accent pl-2"
+        >
+          {t('res_Workflow')}
+        </Text>
+        {workflowPhase !== 'input' && (
+          <Tooltip label={t('res_StartOver')} position="right" withArrow>
+            <ActionIcon
+              variant="subtle"
+              size="xs"
+              onClick={resetWorkflow}
+              aria-label={t('res_StartOver')}
+              className="text-fg-muted hover:text-accent"
+            >
+              <IconRestore size={18} />
+            </ActionIcon>
+          </Tooltip>
+        )}
+      </Group>
 
       {steps.map((step, i) => {
         const isActive = i === currentStepIndex && workflowPhase === 'working';

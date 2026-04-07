@@ -16,7 +16,7 @@ export function LanguageSwitcher() {
               aria-label="Select language"
               className="text-fg-muted hover:text-accent"
             >
-              <IconLanguage size={16} />
+              <IconLanguage size={18} />
             </ActionIcon>
           </Tooltip>
         </Menu.Target>

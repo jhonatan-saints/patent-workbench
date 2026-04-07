@@ -16,7 +16,11 @@ function pickRandom(exclude: number): number {
   return next;
 }
 
-export function AppLoader() {
+interface AppLoaderProps {
+  readonly onDone?: () => void;
+}
+
+export function AppLoader({ onDone }: AppLoaderProps = {}) {
   const [active, setActive] = useState<ReadonlySet<number>>(new Set());
   const [fading, setFading] = useState(false);
   const lastRef = useRef<number>(-1);
@@ -55,6 +59,13 @@ export function AppLoader() {
       clearTimeout(clearGlowRef.current);
     };
   }, []);
+
+  /* Notify parent after the fade-out transition completes (450ms) */
+  useEffect(() => {
+    if (!fading || !onDone) return;
+    const t = setTimeout(onDone, 450);
+    return () => clearTimeout(t);
+  }, [fading, onDone]);
 
   return (
     <div

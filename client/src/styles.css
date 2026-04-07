@@ -105,6 +105,7 @@
   --font-body: "IBM Plex Sans", sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
   --font-serif: "IBM Plex Serif", serif;
+  --mantine-font-size-xs: max(11px, 0.75rem);
 }
 
 /* Dark scheme (default) */
@@ -451,8 +452,6 @@ body {
   animation: shimmer-sweep 0.5s ease-in-out;
 }
 
-/* Mantine Overrides */
-
 /* stylelint-disable selector-class-pattern */
 
 .mantine-Textarea-input:focus,
@@ -461,7 +460,8 @@ body {
   box-shadow: 0 0 0 2px var(--accent-glow) !important;
 }
 
-.mantine-Textarea-required {
+.mantine-Textarea-required,
+.mantine-TextInput-required {
   color: var(--danger) !important;
 }
 
@@ -480,12 +480,14 @@ body {
 
 .mantine-AppShell-main {
   background: var(--bg) !important;
+  overflow: hidden !important;
 }
 
-/* SegmentedControl active label — text must use accent-text over the accent bg */
+/* SegmentedControl active label — white text over accent bg */
 .step-seg [data-active] {
   color: var(--accent-text) !important;
   font-weight: 700;
+  background-color: var(--accent);
 }
 
 /* stylelint-enable selector-class-pattern */

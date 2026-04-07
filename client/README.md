@@ -139,6 +139,19 @@ All figures are embedded as base64 in the exported `.docx`.
 
 ---
 
+## Keyboard shortcuts
+
+Global shortcuts registered via `useHotkeys` (`@mantine/hooks`). Active on all phases.
+
+| Shortcut | Action |
+| --- | --- |
+| `Alt+W` | Move focus to the first focusable item in the workflow sidebar |
+| `Alt+D` | Move focus to the first draft in the drafts panel |
+| `Alt+S` | Save the current workflow state as a draft (`persistDraft`) |
+| `Alt+L` | Logout — only available when `VITE_DEMO_OAUTH=true` |
+
+---
+
 ## State management (`store/workbench.ts`)
 
 The Zustand store manages the entire application state. It is divided into three logical slices:

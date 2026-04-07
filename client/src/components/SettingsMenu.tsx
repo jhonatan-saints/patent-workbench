@@ -12,9 +12,10 @@ import {
   Button,
   Text,
   Box,
+  useComputedColorScheme,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconUserCog } from '@tabler/icons-react';
+import { IconUserFilled, IconUser } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n';
 import type { AppSettings, LogLevel } from '@/types';
@@ -47,6 +48,7 @@ function SectionLabel({ children }: { readonly children: string }) {
 }
 
 export function SettingsMenu() {
+  const scheme = useComputedColorScheme('dark');
   const [opened, { open, close }] = useDisclosure(false);
   const { appSettings, saveSettings, availableModels } = useWorkbenchStore();
 
@@ -68,8 +70,12 @@ export function SettingsMenu() {
     close();
   };
 
-  const modelOptions =
-    availableModels.length > 0 ? availableModels : form.defaultModel ? [form.defaultModel] : [];
+  let modelOptions = [] as string[];
+  if (availableModels.length > 0) {
+    modelOptions = availableModels;
+  } else if (form.defaultModel) {
+    modelOptions = [form.defaultModel];
+  }
 
   return (
     <>
@@ -81,7 +87,7 @@ export function SettingsMenu() {
           onClick={open}
           className="text-fg-muted hover:text-accent"
         >
-          <IconUserCog size={16} />
+          {scheme === 'dark' ? <IconUserFilled size={18} /> : <IconUser size={18} />}
         </ActionIcon>
       </Tooltip>
 

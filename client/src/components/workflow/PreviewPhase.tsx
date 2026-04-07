@@ -11,7 +11,7 @@ import {
   Textarea,
 } from '@mantine/core';
 import {
-  IconArrowLeft,
+  IconArrowBackUp,
   IconCircleCheck,
   IconPencil,
   IconCheck,
@@ -34,7 +34,7 @@ const DOC_BLACK = '#111';
 // EditableSection UI chrome sits on the beige document background (#f4f0e8),
 // which is always light regardless of the app color scheme. Use fixed neutral
 // grays here instead of theme tokens so they're always legible on that surface.
-const DOC_UI_MUTED = '#888';
+const DOC_UI_MUTED = '#666)';
 const DOC_UI_LABEL = { borderColor: '#aaa', color: '#666' };
 
 interface EditableSectionProps {
@@ -73,7 +73,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
           size="sm"
           variant="outline"
           style={DOC_UI_LABEL}
-          className="font-mono text-[10px] tracking-[0.08em]"
+          className="font-mono text-[11px] tracking-[0.08em]"
         >
           {resolveLabel(moduleId, t)}
         </Badge>
@@ -86,7 +86,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
               leftSection={<IconX size={11} />}
               onClick={handleCancel}
               style={{ color: DOC_UI_MUTED }}
-              className="font-mono text-[10px]"
+              className="font-mono text-[11px]"
             >
               <span className="uppercase">{t('res_Cancel')}</span>
             </Button>
@@ -94,7 +94,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
               size="xs"
               leftSection={<IconCheck size={11} />}
               onClick={handleSave}
-              className="font-mono text-[10px] font-bold border-none bg-accent text-accent-text"
+              className="font-mono text-[11px] font-bold border-none bg-accent text-accent-text"
             >
               <span className="uppercase">{t('res_Save')}</span>
             </Button>
@@ -107,7 +107,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
               leftSection={copied ? <IconClipboardCheck size={11} /> : <IconCopy size={11} />}
               onClick={handleCopy}
               style={{ color: copied ? '#4caf50' : DOC_UI_MUTED }}
-              className="font-mono text-[10px]"
+              className="font-mono text-[11px]"
             >
               <span className="uppercase">{copied ? t('res_Copied') : t('res_Copy')}</span>
             </Button>
@@ -120,7 +120,7 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
                 setEditing(true);
               }}
               style={{ color: DOC_UI_MUTED }}
-              className="font-mono text-[10px]"
+              className="font-mono text-[11px]"
             >
               <span className="uppercase">{t('res_Edit')}</span>
             </Button>
@@ -214,7 +214,7 @@ export function PreviewPhase() {
               <Button
                 variant="subtle"
                 size="xs"
-                leftSection={<IconArrowLeft size={14} />}
+                leftSection={<IconArrowBackUp size={16} />}
                 onClick={handleBackToWork}
                 className="font-mono text-[11px] text-fg-muted"
               >

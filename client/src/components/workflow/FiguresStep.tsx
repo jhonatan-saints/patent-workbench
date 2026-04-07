@@ -16,12 +16,11 @@ import {
   IconPhoto,
   IconUpload,
   IconTrash,
-  IconArrowLeft,
+  IconArrowBackUp,
   IconArrowRight,
   IconVectorTriangle,
   IconBraces,
   IconDownload,
-  IconHome,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { INPUT_STYLES, BTN_PRIMARY } from '@/theme/styles';
@@ -50,8 +49,7 @@ function makeImageFigure(dataUrl: string, img: HTMLImageElement, figureNumber: n
 
 export function FiguresStep() {
   const { t } = useI18n();
-  const { artifact, updateFigures, goToInventors, goToStep, steps, resetWorkflow } =
-    useWorkbenchStore();
+  const { artifact, updateFigures, goToInventors, goToStep, steps } = useWorkbenchStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [figures, setFigures] = useState<FigureItem[]>(() => artifact?.figures ?? []);
@@ -162,20 +160,11 @@ export function FiguresStep() {
             <Button
               variant="subtle"
               size="xs"
-              leftSection={<IconArrowLeft size={14} />}
+              leftSection={<IconArrowBackUp size={16} />}
               onClick={handleBack}
               className="font-mono text-[11px] text-fg-muted uppercase"
             >
               {t('res_BackToSteps')}
-            </Button>
-            <Button
-              variant="subtle"
-              size="xs"
-              leftSection={<IconHome size={14} />}
-              onClick={resetWorkflow}
-              className="font-mono text-[11px] text-fg-muted uppercase"
-            >
-              {t('res_StartOver')}
             </Button>
           </Group>
         </Group>
@@ -246,6 +235,7 @@ export function FiguresStep() {
               className="border-2 border-dashed border-stroke rounded-lg px-6 py-8 text-center cursor-pointer transition-colors duration-150 bg-surface hover:border-accent hover:bg-surface-raised"
             >
               <input
+                aria-label={t('res_ClickToUploadImages')}
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"

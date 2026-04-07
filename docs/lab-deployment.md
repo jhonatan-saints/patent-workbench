@@ -26,10 +26,20 @@ No cloud services are involved. Ollama, the Express server, and the client bundl
    - [Authentication layers](#authentication-layers)
    - [Credential rotation](#credential-rotation)
    - [Audit logging](#audit-logging)
-6. [Enhancements](#enhancements)
+6. [SSO Authentication (OAuth2/OIDC)](#sso-authentication-oauth2oidc)
+   - [How it works](#how-it-works)
+   - [Updated architecture](#updated-architecture)
+   - [Option A — Authelia (self-hosted, no corporate IdP)](#option-a--authelia-self-hosted-no-corporate-idp)
+   - [Option B — Corporate IdP (Azure AD, Okta, Google Workspace…)](#option-b--corporate-idp-azure-ad-okta-google-workspace)
+   - [Install oauth2-proxy](#install-oauth2-proxy)
+   - [Configure oauth2-proxy](#configure-oauth2-proxy)
+   - [Update nginx](#update-nginx)
+   - [Branded login page](#branded-login-page)
+   - [Logout](#logout)
+7. [Enhancements](#enhancements)
    - [MVP](#mvp)
    - [Idea scenario](#idea-scenario)
-7. [Troubleshooting](#troubleshooting)
+8. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -473,6 +483,9 @@ The deployment uses two independent authentication layers. Both must be in place
 
 Layer 1 gives individual user control (add/revoke per person). Layer 2 ensures that even if someone discovers the server's IP and port 3001, they cannot call the API without the shared secret.
 
+> [!TIP]
+> When you upgrade Layer 1 from Basic Auth to OAuth2/OIDC via `oauth2-proxy`, the Patent Workbench login screen shown to users can be replaced with a fully branded page that matches the app's visual identity. Drop the ready-made templates from [docs/oauth2-login-customisation.md](oauth2-login-customisation.md) into `/opt/oauth2-proxy/templates/` and point `custom-templates-path` at that directory — no app code changes required. The in-app demo component (`VITE_DEMO_OAUTH`) is a separate development tool and plays no role in this flow.
+
 ### Credential rotation
 
 ```bash
@@ -508,6 +521,395 @@ pm2 logs patent-workbench --lines 500
 
 ---
 
+## SSO Authentication (OAuth2/OIDC)
+
+This section describes how to replace nginx Basic Auth (Layer 1) with a proper SSO login backed by OAuth2/OIDC. Layer 2 (the `x-api-key` API secret) remains unchanged — only the user-facing authentication mechanism changes.
+
+**The Patent Workbench application code requires no modifications.** The app never handles auth logic itself; it only ever sees requests that have already been authenticated and forwarded by the proxy.
+
+---
+
+### How it works
+
+`oauth2-proxy` is placed between nginx and the rest of the stack. nginx delegates every request to oauth2-proxy via the `auth_request` directive before serving it. The flow is:
+
+1. User navigates to `https://patent-workbench.lab/patent-workbench`.
+2. nginx calls `oauth2-proxy` to check whether the request carries a valid session cookie.
+3. If no valid session: oauth2-proxy redirects the browser to the IdP login page (Authelia or corporate IdP).
+4. User authenticates at the IdP.
+5. IdP redirects back to `oauth2-proxy`'s callback URL with an authorization code.
+6. oauth2-proxy exchanges the code for tokens, sets an encrypted session cookie, and redirects the user to the original URL.
+7. Subsequent requests carry the session cookie — oauth2-proxy validates it and passes the request through with `X-Forwarded-User` / `X-Forwarded-Email` headers.
+8. nginx forwards the request (with the `x-api-key` injected) to Express. The app receives it as an already-authenticated request.
+
+---
+
+### Updated architecture
+
+```
+[ VPN / internal network ]
+         │
+         ▼
+  ┌────────────────────────────────────────────────┐
+  │  Lab server  (e.g., 10.0.1.50)                 │
+  │                                                │
+  │  nginx :443                                    │
+  │    auth_request → oauth2-proxy :4180           │
+  │    /patent-workbench  → static files           │
+  │    /api/*             → Express :3001          │
+  │    /oauth2/*          → oauth2-proxy :4180     │
+  │                                                │
+  │  oauth2-proxy :4180   (loopback only)          │
+  │    ↕ OIDC / OAuth2                             │
+  │  Authelia :9091       (loopback only)    ─┐    │
+  │    or corporate IdP (external)            │    │
+  │                                           └─── │
+  │  Express :3001        (loopback only)          │
+  │    ↕ LLM proxy                                 │
+  │  Ollama :11434        (loopback only)          │
+  │                                                │
+  │  SQLite  ./data/workbench.db                   │
+  └────────────────────────────────────────────────┘
+```
+
+---
+
+### Option A — Authelia (self-hosted, no corporate IdP)
+
+Use this when the lab has no existing identity provider. Authelia is a self-hosted authentication and authorisation server that supports local users, LDAP, TOTP, and WebAuthn, and exposes a standards-compliant OIDC endpoint that oauth2-proxy can consume.
+
+**Install Authelia:**
+
+```bash
+# Download the latest release binary
+AUTHELIA_VERSION=4.38.9
+wget https://github.com/authelia/authelia/releases/download/v${AUTHELIA_VERSION}/authelia-linux-amd64.tar.gz
+tar xf authelia-linux-amd64.tar.gz
+sudo mv authelia /usr/local/bin/authelia
+sudo chmod +x /usr/local/bin/authelia
+
+# Create config and data directories
+sudo mkdir -p /etc/authelia /var/lib/authelia
+sudo chown $USER:$USER /etc/authelia /var/lib/authelia
+```
+
+**Minimal `/etc/authelia/configuration.yml`:**
+
+```yaml
+server:
+  host: 127.0.0.1
+  port: 9091
+
+log:
+  level: info
+
+jwt_secret: replace-with-openssl-rand-hex-32
+
+default_redirection_url: https://patent-workbench.lab/patent-workbench
+
+authentication_backend:
+  file:
+    path: /var/lib/authelia/users.yml
+
+session:
+  secret: replace-with-openssl-rand-hex-32
+  domain: patent-workbench.lab
+  expiration: 8h
+  inactivity: 1h
+
+storage:
+  local:
+    path: /var/lib/authelia/authelia.db
+
+notifier:
+  filesystem:
+    filename: /var/lib/authelia/notifications.txt   # replace with SMTP in production
+
+identity_providers:
+  oidc:
+    hmac_secret: replace-with-openssl-rand-hex-32
+    issuer_private_key: /etc/authelia/oidc.pem      # generate below
+    clients:
+      - id: patent-workbench
+        secret: replace-with-openssl-rand-hex-32    # bcrypt hash in production
+        redirect_uris:
+          - https://patent-workbench.lab/oauth2/callback
+        scopes: [openid, profile, email]
+        grant_types: [authorization_code]
+        response_types: [code]
+```
+
+**Generate the OIDC signing key:**
+
+```bash
+openssl genrsa -out /etc/authelia/oidc.pem 4096
+```
+
+**Create user accounts** in `/var/lib/authelia/users.yml`:
+
+```yaml
+users:
+  alice:
+    displayname: Alice Researcher
+    password: "$argon2id$..."   # generate with: authelia crypto hash generate argon2
+    email: alice@lab.internal
+    groups: [lab-users]
+  bob:
+    displayname: Bob Engineer
+    password: "$argon2id$..."
+    email: bob@lab.internal
+    groups: [lab-users]
+```
+
+**Run Authelia as a systemd service:**
+
+```bash
+sudo tee /etc/systemd/system/authelia.service > /dev/null <<'EOF'
+[Unit]
+Description=Authelia authentication server
+After=network.target
+
+[Service]
+User=www-data
+ExecStart=/usr/local/bin/authelia --config /etc/authelia/configuration.yml
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now authelia
+sudo systemctl status authelia
+```
+
+---
+
+### Option B — Corporate IdP (Azure AD, Okta, Google Workspace…)
+
+If the organisation already has an OIDC-capable IdP, skip Authelia entirely. Register a new application in the IdP's admin console and obtain:
+
+- **Client ID**
+- **Client secret**
+- **Issuer URL** (e.g., `https://login.microsoftonline.com/{tenant-id}/v2.0` for Azure AD)
+
+Set the redirect URI to `https://patent-workbench.lab/oauth2/callback`.
+
+Everything else (oauth2-proxy config, nginx config) is identical to Option A — only the `--provider` and `--oidc-issuer-url` values change.
+
+| IdP | `--provider` | `--oidc-issuer-url` |
+| --- | --- | --- |
+| Azure AD | `oidc` | `https://login.microsoftonline.com/{tenant-id}/v2.0` |
+| Google Workspace | `google` | *(not needed — provider handles discovery)* |
+| Okta | `oidc` | `https://{your-domain}.okta.com` |
+| Generic OIDC | `oidc` | Your IdP's discovery URL |
+
+> [!NOTE]
+> For Azure AD, also pass `--allowed-group` with the object ID of the AD group that should have access, so that users outside the group cannot log in even if they have valid Azure credentials.
+
+---
+
+### Install oauth2-proxy
+
+```bash
+VERSION=7.6.0
+wget https://github.com/oauth2-proxy/oauth2-proxy/releases/download/v${VERSION}/oauth2-proxy-v${VERSION}.linux-amd64.tar.gz
+tar xf oauth2-proxy-v${VERSION}.linux-amd64.tar.gz
+sudo mv oauth2-proxy-v${VERSION}.linux-amd64/oauth2-proxy /usr/local/bin/
+sudo chmod +x /usr/local/bin/oauth2-proxy
+```
+
+---
+
+### Configure oauth2-proxy
+
+Create `/etc/oauth2-proxy/oauth2-proxy.cfg`:
+
+```ini
+# --- Provider (Option A: Authelia) ---
+provider = "oidc"
+oidc-issuer-url = "https://patent-workbench.lab/authelia"
+# For Option B, replace with your IdP's issuer URL
+
+# --- Application credentials ---
+client-id = "patent-workbench"
+client-secret = "replace-with-your-oidc-client-secret"
+
+# --- Session ---
+cookie-secret = "replace-with-openssl-rand-base64-32"   # must be 16, 24, or 32 bytes
+cookie-secure = true
+cookie-domain = ".patent-workbench.lab"
+cookie-expire = "8h"
+
+# --- Upstream (what to protect) ---
+# oauth2-proxy sits in front of nginx's auth_request — no upstream needed here
+upstreams = ["http://127.0.0.1:4181"]   # dummy; actual proxying is done by nginx
+
+# --- Network ---
+http-address = "127.0.0.1:4180"
+
+# --- Access control ---
+# Restrict by email domain (remove if using Authelia with explicit user list)
+# email-domain = "lab.internal"
+
+# --- Callbacks ---
+redirect-url = "https://patent-workbench.lab/oauth2/callback"
+
+# --- Branded login page ---
+custom-templates-path = "/opt/oauth2-proxy/templates"
+# See docs/oauth2-login-customisation.md for the ready-made templates
+
+# --- Optional labels shown on the login page ---
+banner = "Lab access only — contact your administrator to request an account."
+footer = "Patent Workbench · Internal use only"
+provider-display-name = "Authelia"   # shown as "Sign in with Authelia"
+```
+
+Generate the cookie secret:
+
+```bash
+openssl rand -base64 32
+```
+
+**Run oauth2-proxy as a systemd service:**
+
+```bash
+sudo mkdir -p /etc/oauth2-proxy
+sudo tee /etc/systemd/system/oauth2-proxy.service > /dev/null <<'EOF'
+[Unit]
+Description=oauth2-proxy
+After=network.target
+
+[Service]
+User=www-data
+ExecStart=/usr/local/bin/oauth2-proxy --config /etc/oauth2-proxy/oauth2-proxy.cfg
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now oauth2-proxy
+sudo systemctl status oauth2-proxy
+```
+
+---
+
+### Update nginx
+
+Replace the `auth_basic` directives in the nginx site config with `auth_request` delegation to oauth2-proxy. The `x-api-key` injection on `/api/` remains unchanged.
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name patent-workbench.lab;
+
+    ssl_certificate     /etc/ssl/certs/patent-workbench.crt;
+    ssl_certificate_key /etc/ssl/private/patent-workbench.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options DENY always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy no-referrer always;
+
+    # ── oauth2-proxy internal endpoint ──────────────────────────────────────
+    location /oauth2/ {
+        proxy_pass       http://127.0.0.1:4180;
+        proxy_set_header Host                    $host;
+        proxy_set_header X-Real-IP               $remote_addr;
+        proxy_set_header X-Forwarded-For         $proxy_add_x_forwarded_for;
+        proxy_set_header X-Auth-Request-Redirect $scheme://$host$request_uri;
+    }
+
+    # Internal auth check called by auth_request — must return 2xx or 4xx only
+    location = /oauth2/auth {
+        proxy_pass       http://127.0.0.1:4180;
+        proxy_set_header Host             $host;
+        proxy_set_header X-Real-IP        $remote_addr;
+        proxy_set_header X-Forwarded-For  $proxy_add_x_forwarded_for;
+        proxy_set_header Content-Length   "";
+        proxy_pass_request_body           off;
+    }
+
+    # ── Client bundle (protected) ────────────────────────────────────────────
+    location /patent-workbench {
+        auth_request /oauth2/auth;
+        # On 401, redirect to the oauth2-proxy sign-in page
+        error_page 401 = /oauth2/sign_in;
+        # Forward identity headers set by oauth2-proxy into the app (optional)
+        auth_request_set $user  $upstream_http_x_auth_request_user;
+        auth_request_set $email $upstream_http_x_auth_request_email;
+        proxy_set_header X-Forwarded-User  $user;
+        proxy_set_header X-Forwarded-Email $email;
+
+        alias /opt/patent-workbench/client/dist;
+        try_files $uri $uri/ /patent-workbench/index.html;
+        expires 1h;
+        add_header Cache-Control "public, must-revalidate";
+    }
+
+    # ── API (protected) ──────────────────────────────────────────────────────
+    location /api/ {
+        auth_request /oauth2/auth;
+        error_page 401 = /oauth2/sign_in;
+
+        proxy_pass         http://127.0.0.1:3001/;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_read_timeout 360s;
+
+        # Layer 2 API secret — unchanged from the Basic Auth setup
+        proxy_set_header   x-api-key         "replace-with-your-API_KEY-value";
+    }
+}
+```
+
+Reload nginx:
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+---
+
+### Branded login page
+
+Patent Workbench ships ready-made `sign_in.html` and `error.html` templates that replace oauth2-proxy's default pages with the app's visual identity. To apply them:
+
+```bash
+sudo mkdir -p /opt/oauth2-proxy/templates
+# Copy the templates from docs/oauth2-login-customisation.md into this directory
+sudo systemctl restart oauth2-proxy
+```
+
+Full instructions, variable reference, and the complete template HTML are in [docs/oauth2-login-customisation.md](oauth2-login-customisation.md).
+
+> [!NOTE]
+> The in-app React component (`VITE_DEMO_OAUTH=true`) is a separate development tool that previews the login UI inside the Vite dev server. It plays no role in the production auth flow — the page users actually see is the `sign_in.html` template served by oauth2-proxy.
+
+---
+
+### Logout
+
+oauth2-proxy provides a `/oauth2/sign_out` endpoint that clears the session cookie. To give users a logout link:
+
+1. Add a logout URL to the app (or simply tell users to navigate there directly):
+   `https://patent-workbench.lab/oauth2/sign_out?rd=https://patent-workbench.lab/oauth2/sign_in`
+
+2. After clearing the cookie, oauth2-proxy redirects to the `rd` URL, which triggers re-authentication.
+
+3. To also invalidate the session at the IdP level (full SSO logout), configure `--oidc-extra-audience` and use the IdP's end-session endpoint as the redirect destination. For Authelia this is:
+   `https://patent-workbench.lab/authelia/api/oidc/end-session`
+
+---
+
 ## Enhancements
 
 ### MVP
@@ -516,7 +918,7 @@ Items that should be in place before the lab is considered stable and ready for 
 
 | Enhancement | Why it matters | Approach |
 | --- | --- | --- |
-| **OAuth2/OIDC authentication** | Basic Auth has no sessions, no logout, and no MFA. OAuth integrates with the corporate IdP so users log in with existing credentials and access is revoked centrally when someone leaves. | Deploy [`oauth2-proxy`](https://oauth2-proxy.github.io/oauth2-proxy/) in front of nginx. `oauth2-proxy` serves its own login page and handles the full auth flow — unauthenticated users are redirected to it automatically before any request reaches Patent Workbench. **The Patent Workbench app itself requires no login screen or auth code changes** — it only ever sees already-authenticated requests forwarded by the proxy. If no corporate IdP exists, use [Authelia](https://www.authelia.com/) as a self-hosted OIDC provider with its own login portal. For branding the login screen, see [docs/oauth2-login-customisation.md](oauth2-login-customisation.md). |
+| **OAuth2/OIDC authentication** | Basic Auth has no sessions, no logout, and no MFA. OAuth integrates with the corporate IdP so users log in with existing credentials and access is revoked centrally when someone leaves. | Deploy [`oauth2-proxy`](https://oauth2-proxy.github.io/oauth2-proxy/) in front of nginx. `oauth2-proxy` serves its own login page and handles the full auth flow — unauthenticated users are redirected to it automatically before any request reaches Patent Workbench. **The Patent Workbench app itself requires no login screen or auth code changes** — it only ever sees already-authenticated requests forwarded by the proxy. If no corporate IdP exists, use [Authelia](https://www.authelia.com/) as a self-hosted OIDC provider with its own login portal. Patent Workbench ships a branded `sign_in.html` / `error.html` template pair that replaces oauth2-proxy's default pages with the app's visual identity; see [docs/oauth2-login-customisation.md](oauth2-login-customisation.md) for the full setup. The app also includes an in-app demo component (`VITE_DEMO_OAUTH=true`) for previewing the login flow during development — this is unrelated to the proxy and is never active in production. |
 | **Automated SQLite backups** | The database holds every user's draft history. Disk failure or an accidental `rm` means permanent data loss with no recovery path. | Cron job: `sqlite3 /var/lib/patent-workbench/workbench.db ".backup '/backups/workbench-$(date +%F).db'"` — run nightly, keep 7 days, store on a separate volume or NAS. |
 | **PM2 log rotation** | PM2 logs grow unbounded and will fill the disk, causing the server to crash silently after weeks of use. | `pm2 install pm2-logrotate` then `pm2 set pm2-logrotate:max_size 50M` and `pm2 set pm2-logrotate:retain 14`. |
 | **Health monitoring** | When Ollama or the Express process dies, users see a red status badge with no explanation. There is no alerting mechanism by default. | Use `uptime-kuma` (lightweight, self-hosted) or a simple cron that calls `GET /status` and sends an email/Slack alert on failure. |
@@ -556,3 +958,10 @@ Longer-term improvements that go beyond the initial lab setup. These would incre
 | VRAM OOM — Ollama crashes under load | `OLLAMA_NUM_PARALLEL` too high for the chosen model and context length | Reduce `OLLAMA_NUM_PARALLEL` or lower `num_ctx` in the Modelfile; check with `nvidia-smi` during inference |
 | Slow generation despite GPU | Model KV cache spilling to system RAM | Lower `num_ctx` or `OLLAMA_NUM_PARALLEL`; confirm `nvidia-smi` shows high GPU utilisation (not close to 0%) |
 | `ENOENT` on database path | `DATA_DIR` does not exist or wrong permissions | `mkdir -p /var/lib/patent-workbench && chown $USER /var/lib/patent-workbench` |
+| oauth2-proxy redirects to login on every request | Session cookie domain mismatch | Ensure `cookie-domain` in `oauth2-proxy.cfg` matches the nginx `server_name` exactly (including the leading dot for subdomains) |
+| `502 Bad Gateway` on `/oauth2/` | oauth2-proxy not running or bound to wrong address | `systemctl status oauth2-proxy`; confirm `http-address = "127.0.0.1:4180"` and nginx `proxy_pass` point to the same port |
+| OIDC discovery fails at startup | Authelia not reachable when oauth2-proxy starts | Check `systemctl status authelia`; ensure Authelia starts before oauth2-proxy (add `After=authelia.service` to the oauth2-proxy unit) |
+| Login page shows oauth2-proxy defaults, not the branded template | `custom-templates-path` path wrong or files not readable | `ls -la /opt/oauth2-proxy/templates/` — confirm `sign_in.html` and `error.html` exist and are readable by `www-data` |
+| `{{.ProviderName}}` shows empty on the login page | `provider-display-name` not set in oauth2-proxy config | Add `provider-display-name = "Authelia"` (or your IdP name) to `oauth2-proxy.cfg` and restart |
+| Users from outside the allowed group can log in | `email-domain` or `--allowed-group` not configured | Set `email-domain` in `oauth2-proxy.cfg` to restrict by domain, or use `--allowed-group` for group-based access (Azure AD, Okta) |
+| Authelia OIDC token signing fails | OIDC private key missing or wrong path | Confirm `openssl genrsa -out /etc/authelia/oidc.pem 4096` was run and the path matches `issuer_private_key` in `configuration.yml` |
