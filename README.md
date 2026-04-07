@@ -102,7 +102,6 @@ input → working (steps 1–7) → figures → inventors → preview / export
 
 ## Key features
 
-- **Three-option selection** — every generation returns three distinct options to compare side-by-side.
 - **Context files (RAG)** — attach reference documents (`.txt`, `.md`, `.csv`, `.json`, etc.) at the start; content is injected into prompts up to a 40 000-character budget.
 - **Model selector** — switch between any Ollama-compatible model (Mistral, Llama 3, Phi-3, Gemma 2, etc.).
 - **Model context length** — automatically fetches the `num_ctx` value from the model's Modelfile and shows it in the UI; context file upload is conditionally enabled for models with ≥ 16 384 tokens.
@@ -162,7 +161,7 @@ All prompt assembly — including REG system contexts, RAG context injection, an
 > [!NOTE]  
 > - Node.js 20+
 > - [Ollama](https://ollama.com) installed and running locally.
-> - At least one model pulled, e.g. `ollama pull mistral`
+> - At least one model pulled, e.g. `ollama pull qwen2.5:7b`
 
 ---
 
