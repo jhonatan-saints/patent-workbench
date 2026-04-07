@@ -379,6 +379,7 @@ export function StepInputPanel({ moduleId }: Props) {
                         {t('res_Attach')}
                       </Button>
                       <input
+                        aria-label={t('res_Attach')}
                         ref={fileInputRef}
                         type="file"
                         accept={ACCEPTED_TEXT_TYPES}

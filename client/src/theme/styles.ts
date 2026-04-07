@@ -13,13 +13,12 @@
 export const INPUT_STYLES = {
   label: {
     fontFamily: 'var(--font-mono)',
-    fontSize: 11,
+    fontSize: 'var(--mantine-font-size-xs)',
     fontWeight: 700,
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase' as const,
+    letterSpacing: '0.02em',
     color: 'var(--text-secondary)',
   },
-  description: { color: 'var(--text-muted)', fontSize: 12 },
+  description: { color: 'var(--text-muted)', fontSize: 'var(--mantine-font-size-xs)' },
   input: {
     background: 'var(--surface-raised)',
     border: '1px solid var(--border)',
@@ -33,7 +32,7 @@ export const BTN_PRIMARY = {
   color: 'var(--accent-text)',
   fontFamily: 'var(--font-mono)',
   fontWeight: 700,
-  fontSize: 12,
+  fontSize: 'var(--mantine-font-size-xs)',
   letterSpacing: '0.08em',
   border: 'none',
 } as const;
@@ -44,7 +43,7 @@ export const BTN_PRIMARY_DISABLED = {
   color: 'var(--text-muted)',
   fontFamily: 'var(--font-mono)',
   fontWeight: 700,
-  fontSize: 12,
+  fontSize: 'var(--mantine-font-size-xs)',
   letterSpacing: '0.08em',
   border: 'none',
 } as const;
@@ -55,7 +54,7 @@ export const BTN_STOP = {
   color: '#fff',
   fontFamily: 'var(--font-mono)',
   fontWeight: 700,
-  fontSize: 12,
+  fontSize: 'var(--mantine-font-size-xs)',
   letterSpacing: '0.08em',
   border: 'none',
 } as const;

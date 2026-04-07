@@ -1,11 +1,5 @@
 import { Box, Stack, Text, Group, Button, Skeleton, Alert } from '@mantine/core';
-import {
-  IconArrowLeft,
-  IconAlertCircle,
-  IconHome,
-  IconRefresh,
-  IconPlayerStop,
-} from '@tabler/icons-react';
+import { IconArrowBackUp, IconAlertCircle, IconRefresh, IconPlayerStop } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { resolveLabel, resolveDescription } from '@/utils/workflowTemplates';
 import { OptionCard } from '@/components/workflow/OptionCard';
@@ -82,33 +76,20 @@ export function OptionsPanel() {
             <Button
               variant="subtle"
               size="xs"
-              leftSection={isFirstStep ? <IconHome size={14} /> : <IconArrowLeft size={14} />}
+              leftSection={<IconArrowBackUp size={16} />}
               onClick={handleBack}
               disabled={isGenerating}
               className="uppercase text-fg-muted font-mono text-[11px]"
             >
-              {isFirstStep ? t('res_StartOver') : t('res_Back')}
+              {t('res_Back')}
             </Button>
-
-            {!isFirstStep && !isGenerating && (
-              <Button
-                variant="subtle"
-                size="xs"
-                leftSection={<IconHome size={14} />}
-                onClick={resetWorkflow}
-                disabled={isGenerating}
-                className="uppercase text-fg-muted font-mono text-[11px]"
-              >
-                {t('res_StartOver')}
-              </Button>
-            )}
 
             {isGenerating && (
               <Button
                 variant="filled"
                 color="red"
                 size="xs"
-                leftSection={<IconPlayerStop size={14} />}
+                leftSection={<IconPlayerStop size={16} />}
                 onClick={cancelGeneration}
                 className="uppercase font-mono text-[11px]"
               >

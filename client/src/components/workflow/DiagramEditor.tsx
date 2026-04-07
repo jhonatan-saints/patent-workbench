@@ -534,13 +534,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
       >
         {/* Row 1: node type buttons */}
         <Group gap={4} wrap="nowrap" mb={4}>
-          <Text
-            size="xs"
-            ff="monospace"
-            c="dimmed"
-            style={{ flexShrink: 0, fontSize: 10 }}
-            className="uppercase"
-          >
+          <Text size="xs" ff="monospace" c="dimmed" style={{ flexShrink: 0 }} className="uppercase">
             {t('res_DiagramAddLabel')}
           </Text>
           <Button

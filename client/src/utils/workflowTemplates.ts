@@ -5,8 +5,8 @@ export interface GuidedField {
   key: string;
   label: string;
   placeholder: string;
-  labelKey?: string;
-  placeholderKey?: string;
+  labelKey: string;
+  placeholderKey: string;
   type: 'text' | 'textarea';
 }
 

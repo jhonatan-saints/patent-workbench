@@ -3465,6 +3465,12 @@
     "zh-CN": "共"
   },
   {
+    "key": "res_OnPremZeroTelemetry",
+    "UI Element Type": "Label",
+    "Usage Description": "Header subtitle tag shown when VITE_DEMO_OAUTH=true (lab/SSO deployment mode)",
+    "en-US": "on-prem · zero telemetry"
+  },
+  {
     "key": "res_Option",
     "UI Element Type": "Label",
     "Usage Description": "Option prefix in option cards",

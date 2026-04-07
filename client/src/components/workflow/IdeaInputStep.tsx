@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Stack, Textarea, TextInput, Button, Text, Group, Box, Select } from '@mantine/core';
-import { IconWand, IconFileDescription } from '@tabler/icons-react';
+import { IconWand, IconFileTextFilled } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { INPUT_STYLES, btnPrimary } from '@/theme/styles';
 import { useI18n } from '@/i18n/useI18n';
@@ -95,7 +95,7 @@ export function IdeaInputStep() {
           {/* Header */}
           <div className="animate-fade-up mb-8" style={{ animationDelay: '0ms' }}>
             <Group gap={10} mb={8}>
-              <IconFileDescription size={28} className="text-accent" strokeWidth={1.5} />
+              <IconFileTextFilled size={28} className="text-accent" strokeWidth={1.5} />
               <Text
                 component="h2"
                 fw={700}

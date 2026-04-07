@@ -18,9 +18,8 @@ import {
   IconPlus,
   IconTrash,
   IconCheck,
-  IconArrowLeft,
+  IconArrowBackUp,
   IconWand,
-  IconHome,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { INPUT_STYLES, btnPrimary } from '@/theme/styles';
@@ -51,7 +50,6 @@ export function InventorsStep() {
     updateInventionTitle,
     goToPreview,
     goToFigures,
-    resetWorkflow,
   } = useWorkbenchStore();
 
   const [inventionTitle, setInventionTitle] = useState(artifact?.inventionTitle ?? '');
@@ -147,20 +145,11 @@ export function InventorsStep() {
             <Button
               variant="subtle"
               size="xs"
-              leftSection={<IconArrowLeft size={14} />}
+              leftSection={<IconArrowBackUp size={16} />}
               onClick={handleBack}
               className="uppercase font-mono text-[11px] text-fg-muted"
             >
               {t('res_BackToFigures')}
-            </Button>
-            <Button
-              variant="subtle"
-              size="xs"
-              leftSection={<IconHome size={14} />}
-              onClick={resetWorkflow}
-              className="uppercase font-mono text-[11px] text-fg-muted"
-            >
-              {t('res_StartOver')}
             </Button>
           </Group>
         </Group>

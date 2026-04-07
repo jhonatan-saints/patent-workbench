@@ -5,18 +5,24 @@ import {
   Box,
   ActionIcon,
   Tooltip,
+  Divider,
   ScrollArea,
+  Modal,
+  Button,
   useMantineColorScheme,
   useComputedColorScheme,
 } from '@mantine/core';
 import {
-  IconSun,
+  IconSunFilled,
   IconMoon,
   IconChevronLeft,
   IconChevronRight,
   IconBrandGithub,
+  IconLogout,
+  IconTrash,
 } from '@tabler/icons-react';
 import { useRef, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useHotkeys } from '@mantine/hooks';
 import { StatusIndicator } from '@/components/StatusIndicator';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SettingsMenu } from '@/components/SettingsMenu';
@@ -30,7 +36,13 @@ import { FiguresStep } from '@/components/workflow/FiguresStep';
 import { DraftsPanel } from '@/components/workflow/DraftsPanel';
 import { useWorkbenchStore } from '@/store/workbench';
 import { AppLoader } from '@/components/AppLoader';
+import { OAuthLoginDemo } from '@/components/OAuthLoginDemo';
 import { useI18n } from '@/i18n';
+
+// Set VITE_DEMO_OAUTH=true to preview the OAuth2 login -> loader -> app flow
+const DEMO_OAUTH = import.meta.env.VITE_DEMO_OAUTH === 'true';
+
+type AppPhase = 'login' | 'loading' | 'ready';
 
 function ResizableSplit({ left, right }: { readonly left: ReactNode; readonly right: ReactNode }) {
   const [leftPct, setLeftPct] = useState(40);
@@ -130,25 +142,26 @@ function ThemeToggle() {
         onClick={() => setColorScheme(scheme === 'dark' ? 'light' : 'dark')}
         className="text-fg-muted hover:text-accent"
       >
-        {scheme === 'dark' ? <IconSun size={16} /> : <IconMoon size={16} />}
+        {scheme === 'dark' ? <IconSunFilled size={18} /> : <IconMoon size={18} />}
       </ActionIcon>
     </Tooltip>
   );
 }
 
 export function App() {
-  const { workflowPhase, initSessions, loadSettings } = useWorkbenchStore();
+  const { workflowPhase, initSessions, loadSettings, clearSessions, sessions, persistDraft } =
+    useWorkbenchStore();
+  const [clearDraftsOpen, setClearDraftsOpen] = useState(false);
+  const logoutBtnRef = useRef<HTMLButtonElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  const draftsRef = useRef<HTMLDivElement>(null);
   const { t } = useI18n();
   const isWorking = workflowPhase === 'working';
   const isFigures = workflowPhase === 'figures';
   const isInventors = workflowPhase === 'inventors';
   const isPreview = workflowPhase === 'preview';
 
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const handle = setTimeout(() => setLoading(false), 3000);
-    return () => clearTimeout(handle);
-  }, []);
+  const [phase, setPhase] = useState<AppPhase>(DEMO_OAUTH ? 'login' : 'loading');
 
   useEffect(() => {
     void initSessions();
@@ -166,7 +179,40 @@ export function App() {
     });
   }, []);
 
-  if (loading) return <AppLoader />;
+  useHotkeys([
+    [
+      'alt+W',
+      () => {
+        const first = navRef.current?.querySelector<HTMLElement>(
+          '[tabindex="0"], button, a, [role="button"]'
+        );
+        first?.focus();
+      },
+    ],
+    [
+      'alt+D',
+      () => {
+        const first = draftsRef.current?.querySelector<HTMLButtonElement>('button');
+        first?.focus();
+      },
+    ],
+    [
+      'alt+S',
+      () => {
+        void persistDraft();
+      },
+    ],
+    [
+      'alt+L',
+      () => {
+        if (DEMO_OAUTH) logoutBtnRef.current?.click();
+      },
+    ],
+  ]);
+
+  if (phase === 'login') return <OAuthLoginDemo onAuthenticated={() => setPhase('loading')} />;
+
+  if (phase === 'loading') return <AppLoader onDone={() => setPhase('ready')} />;
 
   return (
     <AppShell
@@ -202,13 +248,19 @@ export function App() {
       <AppShell.Header>
         <Group h="100%" px={20} justify="space-between" align="center" wrap="nowrap">
           {/* Logo */}
-          <Group gap={10} align="center" wrap="nowrap">
+          <Group gap={8} align="center" wrap="nowrap">
             <LogoDots />
-            <Text fw={600} size="sm" ff="monospace" className="text-fg tracking-widest uppercase">
+            <Text
+              fw={600}
+              size="md"
+              ff="monospace"
+              className="text-fg tracking-widest uppercase"
+              style={{ margin: 0 }}
+            >
               {t('res_PatentWorkbench')}
             </Text>
-            <span className="inline-flex items-center px-2 py-0.5 rounded border border-stroke text-[10px] font-mono text-fg-muted tracking-[0.06em] leading-[1.6] uppercase select-none">
-              {t('res_LocalFirstZeroTelemetry')}
+            <span className="inline-flex items-center px-2 py-0.5 rounded border border-stroke bg-surface-raised text-[11px] font-mono text-fg-muted tracking-[0.06em] leading-[1.6] uppercase select-none">
+              {t(DEMO_OAUTH ? 'res_OnPremZeroTelemetry' : 'res_LocalFirstZeroTelemetry')}
             </span>
           </Group>
 
@@ -216,15 +268,35 @@ export function App() {
           <Group gap={8} align="center" wrap="nowrap">
             <LanguageSwitcher />
             <ThemeToggle />
-            <SettingsMenu />
+            {!DEMO_OAUTH && <SettingsMenu />}
             <StatusIndicator />
+            {DEMO_OAUTH && (
+              <>
+                <Divider
+                  orientation="vertical"
+                  style={{ height: 16, alignSelf: 'center', marginLeft: 6 }}
+                />
+                <Tooltip label={`Logout (Alt+L)`} position="bottom">
+                  <ActionIcon
+                    ref={logoutBtnRef}
+                    variant="subtle"
+                    size="md"
+                    onClick={() => setPhase('login')}
+                    aria-label="Logout"
+                    className="text-fg-muted hover:text-accent"
+                  >
+                    <IconLogout size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              </>
+            )}
           </Group>
         </Group>
       </AppShell.Header>
 
       {/* LEFT NAV */}
       <AppShell.Navbar>
-        <Box className="h-full flex flex-col overflow-hidden">
+        <Box ref={navRef} className="h-full flex flex-col overflow-hidden">
           <Box className="flex-1 overflow-y-auto min-h-0">
             <StepProgress collapsed={navCollapsed} />
           </Box>
@@ -298,27 +370,45 @@ export function App() {
         <Box className="h-full flex flex-col overflow-hidden">
           {/* Aside chrome header — mirrors ArtifactPreview header structure (px-4 py-3.5) */}
           <Box className="px-4 py-3.5 shrink-0 border-b border-stroke bg-surface-raised">
-            {/* Row 1: icon + label */}
-            <Group gap={8} mb={3} align="center" wrap="nowrap">
-              <Box className="animate-pulse-glow w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-              <Text
-                ff="monospace"
-                fw={700}
-                tt="uppercase"
-                className="text-accent tracking-widest"
-                size="xs"
-              >
-                {t('res_Drafts')}
-              </Text>
+            <Group justify="space-between" align="center" wrap="nowrap">
+              {/* Left: label block */}
+              <Box>
+                <Group gap={8} align="center" wrap="nowrap" mb={3}>
+                  <Box className="animate-pulse-glow w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                  <Text
+                    ff="monospace"
+                    fw={700}
+                    tt="uppercase"
+                    className="text-accent tracking-widest"
+                    size="xs"
+                  >
+                    {t('res_Drafts')}
+                  </Text>
+                </Group>
+                <Text size="xs" ff="monospace" c="var(--text-muted)">
+                  {t('res_InMemoryOnly')}
+                </Text>
+              </Box>
+
+              {/* Right: clear button */}
+              {sessions.length > 0 && (
+                <Tooltip label={t('res_Clear')} position="left" withArrow>
+                  <ActionIcon
+                    variant="subtle"
+                    size="sm"
+                    onClick={() => setClearDraftsOpen(true)}
+                    aria-label={t('res_Clear')}
+                    className="text-fg-muted hover:text-accent"
+                  >
+                    <IconTrash size={13} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
             </Group>
-            {/* Row 2: subtitle */}
-            <Text size="xs" ff="monospace" c="var(--text-muted)">
-              {t('res_InMemoryOnly')}
-            </Text>
           </Box>
 
           {/* Sessions list */}
-          <Box className="flex-1 overflow-y-auto min-h-0 p-4">
+          <Box ref={draftsRef} className="flex-1 overflow-y-auto min-h-0 px-4 py-2.5">
             <DraftsPanel />
           </Box>
 
@@ -326,13 +416,40 @@ export function App() {
           <Box className="py-2 text-center shrink-0">
             <Text
               ff="monospace"
-              className="text-fg-muted text-[9px] tracking-[0.07em] select-none opacity-50"
+              className="text-muted text-[11px] tracking-[0.07em] select-none opacity-75"
             >
               {t('res_PoweredByOllama')}
             </Text>
           </Box>
         </Box>
       </AppShell.Aside>
+
+      <Modal
+        opened={clearDraftsOpen}
+        onClose={() => setClearDraftsOpen(false)}
+        title={t('res_ClearAllDraftsConfirmTitle')}
+        centered
+        size="sm"
+      >
+        <Text size="sm" mb="lg">
+          {t('res_ClearAllDraftsConfirmMessage')}
+        </Text>
+        <Group justify="flex-end" gap={8}>
+          <Button variant="default" size="xs" onClick={() => setClearDraftsOpen(false)}>
+            {t('res_Cancel')}
+          </Button>
+          <Button
+            color="red"
+            size="xs"
+            onClick={() => {
+              setClearDraftsOpen(false);
+              clearSessions();
+            }}
+          >
+            {t('res_Delete')}
+          </Button>
+        </Group>
+      </Modal>
     </AppShell>
   );
 }

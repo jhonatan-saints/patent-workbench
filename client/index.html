@@ -11,11 +11,25 @@
       sizes="192x192"
       href="/src/assets/icons/favicon-192x192.png"
     />
-    <title>Patent Workbench</title>
+    <title content="h1">Patent Workbench</title>
+    <style>
+      .accessibility-hidden {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0 0 0 0) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+      }
+    </style>
     <meta name="description" content="Local-first patent ideation workbench powered by Ollama" />
     <!-- Fonts are served locally from /src/assets/fonts/ibm-plex -->
   </head>
   <body>
+    <h1 class="accessibility-hidden">Patent Workbench</h1>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
