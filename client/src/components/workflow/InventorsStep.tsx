@@ -234,7 +234,7 @@ export function InventorsStep() {
                       color="red"
                       leftSection={<IconTrash size={11} />}
                       onClick={() => removeInventor(inv.id)}
-                      className="uppercase font-mono text-[10px]"
+                      className="uppercase font-mono text-[11px]"
                     >
                       {t('res_Remove')}
                     </Button>
