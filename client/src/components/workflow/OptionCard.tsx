@@ -50,7 +50,7 @@ export function OptionCard({ option, onSelect, disabled }: OptionCardProps) {
             size="xs"
             leftSection={<IconX size={11} />}
             onClick={handleCancelEdit}
-            className="uppercase text-fg-muted font-mono text-[10px] h-6 px-1.5"
+            className="uppercase text-fg-muted font-mono text-[11px] h-6 px-1.5"
           >
             {t('res_Cancel')}
           </Button>
@@ -61,7 +61,7 @@ export function OptionCard({ option, onSelect, disabled }: OptionCardProps) {
             leftSection={<IconPencil size={11} />}
             onClick={handleEdit}
             disabled={disabled}
-            className="uppercase text-fg-muted font-mono text-[10px] h-6 px-1.5"
+            className="uppercase text-fg-muted font-mono text-[11px] h-6 px-1.5"
           >
             {t('res_Edit')}
           </Button>

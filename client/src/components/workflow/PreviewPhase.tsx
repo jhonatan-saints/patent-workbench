@@ -34,7 +34,7 @@ const DOC_BLACK = '#111';
 // EditableSection UI chrome sits on the beige document background (#f4f0e8),
 // which is always light regardless of the app color scheme. Use fixed neutral
 // grays here instead of theme tokens so they're always legible on that surface.
-const DOC_UI_MUTED = '#666)';
+const DOC_UI_MUTED = '#666666';
 const DOC_UI_LABEL = { borderColor: '#aaa', color: '#666' };
 
 interface EditableSectionProps {

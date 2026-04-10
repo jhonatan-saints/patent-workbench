@@ -274,7 +274,7 @@ export function FiguresStep() {
                       <Text
                         size="xs"
                         ff="monospace"
-                        className="text-accent text-[10px] bg-surface-active px-1.5 py-px rounded border border-accent"
+                        className="text-accent text-[11px] bg-surface-active px-1.5 py-px rounded border border-accent"
                       >
                         {figureTypeLabel(fig.type)}
                       </Text>
