@@ -57,6 +57,44 @@ function getLogsDir() {
   return path.join(app.getPath('userData'), 'logs')
 }
 
+function getBackupsDir() {
+  return path.join(app.getPath('userData'), 'backups')
+}
+
+const MAX_BACKUPS = 5
+
+function backupDatabase() {
+  try {
+    const dbFile = path.join(getDataDir(), 'workbench.db')
+    if (!fs.existsSync(dbFile)) return
+
+    const backupsDir = getBackupsDir()
+    fs.mkdirSync(backupsDir, { recursive: true })
+
+    const stamp = new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-').slice(0, 19)
+    const destBase = path.join(backupsDir, `workbench-${stamp}.db`)
+
+    fs.copyFileSync(dbFile, destBase)
+    for (const ext of ['-wal', '-shm']) {
+      const src = `${dbFile}${ext}`
+      if (fs.existsSync(src)) fs.copyFileSync(src, `${destBase}${ext}`)
+    }
+
+    const all = fs.readdirSync(backupsDir)
+      .filter((f) => f.startsWith('workbench-') && f.endsWith('.db'))
+      .sort((a, b) => a.localeCompare(b))
+    for (const old of all.slice(0, Math.max(0, all.length - MAX_BACKUPS))) {
+      for (const ext of ['', '-wal', '-shm']) {
+        try { fs.unlinkSync(path.join(backupsDir, old + ext)) } catch { /* already gone */ }
+      }
+    }
+
+    writeMainLog(`backup created: ${destBase}`)
+  } catch (err) {
+    writeMainLog(`backup failed: ${err?.message}`)
+  }
+}
+
 // State
 let mainWindow = null
 let serverProcess = null
@@ -192,6 +230,8 @@ function createTray() {
     Menu.buildFromTemplate([
       { label: 'Open Patent Workbench', click: () => { mainWindow?.show(); mainWindow?.focus() } },
       { type: 'separator' },
+      { label: 'Open Backup Folder', click: () => { shell.openPath(getBackupsDir()) } },
+      { type: 'separator' },
       { label: 'Quit', click: () => { app.isQuitting = true; app.quit() } },
     ])
   )
@@ -251,4 +291,5 @@ app.on('activate', () => {
 app.on('before-quit', () => {
   app.isQuitting = true
   if (serverProcess) serverProcess.kill()
+  backupDatabase()
 })
