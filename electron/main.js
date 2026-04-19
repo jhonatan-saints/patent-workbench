@@ -7,18 +7,16 @@ const { spawn } = require('node:child_process')
 const fs = require('node:fs')
 const http = require('node:http')
 
-// ── Constants ──────────────────────────────────────────────────────────────────
+// Constants
 const SERVER_PORT = 3001
 const SERVER_HOST = '127.0.0.1'
 const VITE_DEV_PORT = 3003
-// How long to keep polling before giving up.
-const READY_TIMEOUT_MS = 60_000
-// Poll interval between health-check attempts.
-const POLL_INTERVAL_MS = 400
+const READY_TIMEOUT_MS = 60_000 // How long to keep polling before giving up.
+const POLL_INTERVAL_MS = 400 // Poll interval between health-check attempts.
 
 const IS_DEV = !app.isPackaged
 
-// ── Path helpers ───────────────────────────────────────────────────────────────
+// Path helpers
 
 function resourcePath(...segments) {
   if (IS_DEV) return path.join(__dirname, '..', ...segments)
@@ -33,13 +31,13 @@ function getLogsDir() {
   return path.join(app.getPath('userData'), 'logs')
 }
 
-// ── State ──────────────────────────────────────────────────────────────────────
+// State
 let mainWindow = null
 let serverProcess = null
 let tray = null
 app.isQuitting = false
 
-// ── Server lifecycle ───────────────────────────────────────────────────────────
+// Server lifecycle
 
 function startServer() {
   const serverEntry = resourcePath('server', 'server.js')
@@ -111,7 +109,7 @@ function applyFirstRunConfig() {
   try { fs.unlinkSync(configPath) } catch {}
 }
 
-// ── Window ─────────────────────────────────────────────────────────────────────
+// Window
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -151,7 +149,7 @@ function createWindow() {
   })
 }
 
-// ── Tray ───────────────────────────────────────────────────────────────────────
+// Tray
 
 function createTray() {
   const iconCandidates = [
@@ -175,7 +173,7 @@ function createTray() {
   tray.on('double-click', () => { mainWindow?.show(); mainWindow?.focus() })
 }
 
-// ── IPC ────────────────────────────────────────────────────────────────────────
+// IPC
 
 ipcMain.handle('get-version',        () => app.getVersion())
 ipcMain.handle('window-minimize',    () => mainWindow?.minimize())
@@ -183,7 +181,7 @@ ipcMain.handle('window-maximize',    () => mainWindow?.isMaximized() ? mainWindo
 ipcMain.handle('window-close',       () => { app.isQuitting = true; app.quit() })
 ipcMain.handle('window-is-maximized',() => mainWindow?.isMaximized() ?? false)
 
-// ── App events ─────────────────────────────────────────────────────────────────
+// App events
 
 app.on('ready', async () => {
   createWindow()
