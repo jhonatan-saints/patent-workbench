@@ -35,7 +35,6 @@ DefaultGroupName={#AppName}
 PrivilegesRequired=lowest
 OutputDir=output
 OutputBaseFilename=PatentWorkbench-setup
-UninstallFilename=PatentWorkbench-uninstall
 SetupIconFile={#SrcDir}\{#AppExeName}
 Compression=lzma2/ultra64
 SolidCompression=yes
