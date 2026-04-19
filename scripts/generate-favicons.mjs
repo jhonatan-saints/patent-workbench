@@ -9,7 +9,7 @@
  *   192x192 — Android / PWA home screen
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -37,5 +37,12 @@ for (const size of sizes) {
     .toFile(outPath);
   console.log(`favicon-${size}x${size}.png`);
 }
+
+// build/icon.png — used by electron-builder as the Windows app icon source.
+// electron-builder converts it to .ico internally during the build.
+const buildDir = join(root, 'build');
+mkdirSync(buildDir, { recursive: true });
+await sharp(svgBuffer).resize(256, 256).png().toFile(join(buildDir, 'icon.png'));
+console.log('build/icon.png');
 
 console.log('Done.');

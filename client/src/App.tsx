@@ -36,13 +36,17 @@ import { FiguresStep } from '@/components/workflow/FiguresStep';
 import { DraftsPanel } from '@/components/workflow/DraftsPanel';
 import { useWorkbenchStore } from '@/store/workbench';
 import { AppLoader } from '@/components/AppLoader';
+import { BrandSplash } from '@/components/BrandSplash';
 import { OAuthLoginDemo } from '@/components/OAuthLoginDemo';
+import { WindowControls } from '@/components/WindowControls';
 import { useI18n } from '@/i18n';
 
 // Set VITE_DEMO_OAUTH=true to preview the OAuth2 login -> loader -> app flow
 const DEMO_OAUTH = import.meta.env.VITE_DEMO_OAUTH === 'true';
 
-type AppPhase = 'login' | 'loading' | 'ready';
+const IS_ELECTRON = window.electronAPI?.isElectron === true;
+
+type AppPhase = 'splash' | 'login' | 'loading' | 'ready';
 
 function ResizableSplit({ left, right }: { readonly left: ReactNode; readonly right: ReactNode }) {
   const [leftPct, setLeftPct] = useState(40);
@@ -168,7 +172,9 @@ export function App() {
   const isInventors = workflowPhase === 'inventors';
   const isPreview = workflowPhase === 'preview';
 
-  const [phase, setPhase] = useState<AppPhase>(DEMO_OAUTH ? 'login' : 'loading');
+  const [phase, setPhase] = useState<AppPhase>(
+    IS_ELECTRON ? 'splash' : DEMO_OAUTH ? 'login' : 'loading'
+  );
 
   useEffect(() => {
     void initSessions();
@@ -223,241 +229,257 @@ export function App() {
   if (phase === 'loading') return <AppLoader onDone={() => setPhase('ready')} />;
 
   return (
-    <AppShell
-      header={{ height: 44 }}
-      navbar={{ width: navCollapsed ? 52 : 240, breakpoint: 'sm' }}
-      aside={{ width: 300, breakpoint: 'lg' }}
-      padding={0}
-      styles={{
-        root: { background: 'var(--bg)', minHeight: '100vh' },
-        header: {
-          background: 'color-mix(in srgb, var(--surface-raised) 80%, transparent)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          borderBottom: 'none',
-          boxShadow: '0 1px 0 var(--border)',
-          zIndex: 200,
-        },
-        navbar: {
-          background: 'var(--surface)',
-          borderRight: '1px solid var(--border)',
-          zIndex: 100,
-          transition: 'width 220ms cubic-bezier(0.4, 0, 0.2, 1)',
-          overflow: 'hidden',
-        },
-        aside: { background: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 100 },
-        main: {
-          background: 'var(--bg)',
-          transition: 'margin-left 220ms cubic-bezier(0.4, 0, 0.2, 1)',
-        },
-      }}
-    >
-      {/* HEADER */}
-      <AppShell.Header>
-        <Group h="100%" px={20} justify="space-between" align="center" wrap="nowrap">
-          {/* Logo */}
-          <Group gap={8} align="center" wrap="nowrap">
-            <LogoDots />
-            <Text
-              fw={600}
-              size="md"
-              ff="monospace"
-              className="text-fg tracking-widest uppercase"
-              style={{ margin: 0 }}
-            >
-              {t('res_PatentWorkbench')}
-            </Text>
-            <span className="inline-flex items-center px-2 py-0.5 rounded border border-stroke bg-surface-raised text-[11px] font-mono text-fg-muted tracking-[0.06em] leading-[1.6] uppercase select-none">
-              {t(DEMO_OAUTH ? 'res_OnPremZeroTelemetry' : 'res_LocalFirstZeroTelemetry')}
-            </span>
-          </Group>
-
-          {/* Right actions */}
-          <Group gap={8} align="center" wrap="nowrap">
-            <LanguageSwitcher />
-            <ThemeToggle />
-            {!DEMO_OAUTH && <SettingsMenu />}
-            <StatusIndicator />
-            {DEMO_OAUTH && (
-              <>
-                <Divider
-                  orientation="vertical"
-                  style={{ height: 16, alignSelf: 'center', marginLeft: 6 }}
-                />
-                <Tooltip label={`Logout (Alt+L)`} position="bottom">
-                  <ActionIcon
-                    ref={logoutBtnRef}
-                    variant="subtle"
-                    size="md"
-                    onClick={() => setPhase('login')}
-                    aria-label="Logout"
-                    className="text-fg-muted hover:text-accent"
-                  >
-                    <IconLogout size={18} />
-                  </ActionIcon>
-                </Tooltip>
-              </>
-            )}
-          </Group>
-        </Group>
-      </AppShell.Header>
-
-      {/* LEFT NAV */}
-      <AppShell.Navbar>
-        <Box ref={navRef} className="h-full flex flex-col overflow-hidden">
-          <Box className="flex-1 overflow-y-auto min-h-0">
-            <StepProgress collapsed={navCollapsed} />
-          </Box>
-          <Box
-            className={`border-t border-stroke flex items-center ${navCollapsed ? 'px-0 py-2 justify-center' : 'px-2.5 py-2 justify-between'}`}
-          >
-            <Tooltip label="GitHub" position="right" withArrow>
-              <ActionIcon
-                component="a"
-                href="https://github.com/jhonatan-saints/patent-workbench"
-                target="_blank"
-                rel="noopener noreferrer"
-                variant="subtle"
-                size="sm"
-                aria-label="GitHub repository"
-                className={`text-fg-muted hover:text-accent ${navCollapsed ? 'hidden' : ''}`}
+    <>
+      {phase === 'splash' && <BrandSplash onDone={() => setPhase('ready')} />}
+      <AppShell
+        header={{ height: 44 }}
+        navbar={{ width: navCollapsed ? 52 : 240, breakpoint: 'sm' }}
+        aside={{ width: 300, breakpoint: 'lg' }}
+        padding={0}
+        styles={{
+          root: { background: 'var(--bg)', minHeight: '100vh' },
+          header: {
+            background: 'color-mix(in srgb, var(--surface-raised) 80%, transparent)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderBottom: 'none',
+            boxShadow: '0 1px 0 var(--border)',
+            zIndex: 200,
+          },
+          navbar: {
+            background: 'var(--surface)',
+            borderRight: '1px solid var(--border)',
+            zIndex: 100,
+            transition: 'width 220ms cubic-bezier(0.4, 0, 0.2, 1)',
+            overflow: 'hidden',
+          },
+          aside: {
+            background: 'var(--surface)',
+            borderLeft: '1px solid var(--border)',
+            zIndex: 100,
+          },
+          main: {
+            background: 'var(--bg)',
+            transition: 'margin-left 220ms cubic-bezier(0.4, 0, 0.2, 1)',
+          },
+        }}
+      >
+        {/* HEADER */}
+        <AppShell.Header>
+          <Group h="100%" px={20} justify="space-between" align="center" wrap="nowrap">
+            {/* Logo */}
+            <Group gap={8} align="center" wrap="nowrap">
+              <LogoDots />
+              <Text
+                fw={600}
+                size="md"
+                ff="monospace"
+                className="text-fg tracking-widest uppercase"
+                style={{ margin: 0 }}
               >
-                <IconBrandGithub size={14} />
-              </ActionIcon>
-            </Tooltip>
-            <Tooltip label={navCollapsed ? 'Expand' : 'Collapse'} position="right" withArrow>
-              <ActionIcon
-                variant="subtle"
-                size="sm"
-                onClick={toggleNav}
-                aria-label={navCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                className="text-fg-muted hover:text-accent"
-              >
-                {navCollapsed ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
-              </ActionIcon>
-            </Tooltip>
-          </Box>
-        </Box>
-      </AppShell.Navbar>
+                {t('res_PatentWorkbench')}
+              </Text>
+              <span className="inline-flex items-center px-2 py-0.5 rounded border border-stroke bg-surface-raised text-[11px] font-mono text-fg-muted tracking-[0.06em] leading-[1.6] uppercase select-none">
+                {t(DEMO_OAUTH ? 'res_OnPremZeroTelemetry' : 'res_LocalFirstZeroTelemetry')}
+              </span>
+            </Group>
 
-      {/* MAIN */}
-      <AppShell.Main>
-        {workflowPhase === 'input' && (
-          <ScrollArea style={{ height: 'calc(100vh - 44px)' }}>
-            <IdeaInputStep />
-          </ScrollArea>
-        )}
-
-        {isWorking && (
-          <Box style={{ height: 'calc(100vh - 44px)', overflow: 'hidden' }}>
-            <ResizableSplit left={<OptionsPanel />} right={<ArtifactPreview />} />
-          </Box>
-        )}
-
-        {isFigures && (
-          <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 44px)' }}>
-            <FiguresStep />
-          </Box>
-        )}
-
-        {isInventors && (
-          <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 44px)' }}>
-            <InventorsStep />
-          </Box>
-        )}
-
-        {isPreview && (
-          <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 44px)' }}>
-            <PreviewPhase />
-          </Box>
-        )}
-      </AppShell.Main>
-
-      {/* RIGHT ASIDE */}
-      <AppShell.Aside>
-        <Box className="h-full flex flex-col overflow-hidden">
-          {/* Aside chrome header — mirrors ArtifactPreview header structure (px-4 py-3.5) */}
-          <Box className="px-4 py-3.5 shrink-0 border-b border-stroke bg-surface-raised">
-            <Group justify="space-between" align="center" wrap="nowrap">
-              {/* Left: label block */}
-              <Box>
-                <Group gap={8} align="center" wrap="nowrap" mb={3}>
-                  <Box className="animate-pulse-glow w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-                  <Text
-                    ff="monospace"
-                    fw={700}
-                    tt="uppercase"
-                    className="text-accent tracking-widest"
-                    size="xs"
-                  >
-                    {t('res_Drafts')}
-                  </Text>
-                </Group>
-                <Text size="xs" ff="monospace" c="var(--text-muted)">
-                  {t('res_InMemoryOnly')}
-                </Text>
-              </Box>
-
-              {/* Right: clear button */}
-              {sessions.length > 0 && (
-                <Tooltip label={t('res_Clear')} position="left" withArrow>
-                  <ActionIcon
-                    variant="subtle"
-                    size="sm"
-                    onClick={() => setClearDraftsOpen(true)}
-                    aria-label={t('res_Clear')}
-                    className="text-fg-muted hover:text-accent"
-                  >
-                    <IconTrash size={13} />
-                  </ActionIcon>
-                </Tooltip>
+            {/* Right actions */}
+            <Group gap={8} align="center" wrap="nowrap">
+              <LanguageSwitcher />
+              <ThemeToggle />
+              {!DEMO_OAUTH && <SettingsMenu />}
+              <StatusIndicator />
+              {IS_ELECTRON && (
+                <>
+                  <Divider
+                    orientation="vertical"
+                    style={{ height: 16, alignSelf: 'center', marginLeft: 4 }}
+                  />
+                  <WindowControls />
+                </>
+              )}
+              {DEMO_OAUTH && (
+                <>
+                  <Divider
+                    orientation="vertical"
+                    style={{ height: 16, alignSelf: 'center', marginLeft: 6 }}
+                  />
+                  <Tooltip label={`Logout (Alt+L)`} position="bottom">
+                    <ActionIcon
+                      ref={logoutBtnRef}
+                      variant="subtle"
+                      size="md"
+                      onClick={() => setPhase('login')}
+                      aria-label="Logout"
+                      className="text-fg-muted hover:text-accent"
+                    >
+                      <IconLogout size={18} />
+                    </ActionIcon>
+                  </Tooltip>
+                </>
               )}
             </Group>
-          </Box>
+          </Group>
+        </AppShell.Header>
 
-          {/* Sessions list */}
-          <Box ref={draftsRef} className="flex-1 overflow-y-auto min-h-0 px-4 py-2.5">
-            <DraftsPanel />
-          </Box>
-
-          {/* Powered by */}
-          <Box className="py-2 text-center shrink-0">
-            <Text
-              ff="monospace"
-              className="text-muted text-[11px] tracking-[0.07em] select-none opacity-75"
+        {/* LEFT NAV */}
+        <AppShell.Navbar>
+          <Box ref={navRef} className="h-full flex flex-col overflow-hidden">
+            <Box className="flex-1 overflow-y-auto min-h-0">
+              <StepProgress collapsed={navCollapsed} />
+            </Box>
+            <Box
+              className={`border-t border-stroke flex items-center ${navCollapsed ? 'px-0 py-2 justify-center' : 'px-2.5 py-2 justify-between'}`}
             >
-              {t('res_PoweredByOllama')}
-            </Text>
+              <Tooltip label="GitHub" position="right" withArrow>
+                <ActionIcon
+                  component="a"
+                  href="https://github.com/jhonatan-saints/patent-workbench"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="subtle"
+                  size="sm"
+                  aria-label="GitHub repository"
+                  className={`text-fg-muted hover:text-accent ${navCollapsed ? 'hidden' : ''}`}
+                >
+                  <IconBrandGithub size={14} />
+                </ActionIcon>
+              </Tooltip>
+              <Tooltip label={navCollapsed ? 'Expand' : 'Collapse'} position="right" withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  size="sm"
+                  onClick={toggleNav}
+                  aria-label={navCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  className="text-fg-muted hover:text-accent"
+                >
+                  {navCollapsed ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
+                </ActionIcon>
+              </Tooltip>
+            </Box>
           </Box>
-        </Box>
-      </AppShell.Aside>
+        </AppShell.Navbar>
 
-      <Modal
-        opened={clearDraftsOpen}
-        onClose={() => setClearDraftsOpen(false)}
-        title={t('res_ClearAllDraftsConfirmTitle')}
-        centered
-        size="sm"
-      >
-        <Text size="sm" mb="lg">
-          {t('res_ClearAllDraftsConfirmMessage')}
-        </Text>
-        <Group justify="flex-end" gap={8}>
-          <Button variant="default" size="xs" onClick={() => setClearDraftsOpen(false)}>
-            {t('res_Cancel')}
-          </Button>
-          <Button
-            color="red"
-            size="xs"
-            onClick={() => {
-              setClearDraftsOpen(false);
-              clearSessions();
-            }}
-          >
-            {t('res_Delete')}
-          </Button>
-        </Group>
-      </Modal>
-    </AppShell>
+        {/* MAIN */}
+        <AppShell.Main>
+          {workflowPhase === 'input' && (
+            <ScrollArea style={{ height: 'calc(100vh - 44px)' }}>
+              <IdeaInputStep />
+            </ScrollArea>
+          )}
+
+          {isWorking && (
+            <Box style={{ height: 'calc(100vh - 44px)', overflow: 'hidden' }}>
+              <ResizableSplit left={<OptionsPanel />} right={<ArtifactPreview />} />
+            </Box>
+          )}
+
+          {isFigures && (
+            <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 44px)' }}>
+              <FiguresStep />
+            </Box>
+          )}
+
+          {isInventors && (
+            <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 44px)' }}>
+              <InventorsStep />
+            </Box>
+          )}
+
+          {isPreview && (
+            <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 44px)' }}>
+              <PreviewPhase />
+            </Box>
+          )}
+        </AppShell.Main>
+
+        {/* RIGHT ASIDE */}
+        <AppShell.Aside>
+          <Box className="h-full flex flex-col overflow-hidden">
+            {/* Aside chrome header — mirrors ArtifactPreview header structure (px-4 py-3.5) */}
+            <Box className="px-4 py-3.5 shrink-0 border-b border-stroke bg-surface-raised">
+              <Group justify="space-between" align="center" wrap="nowrap">
+                {/* Left: label block */}
+                <Box>
+                  <Group gap={8} align="center" wrap="nowrap" mb={3}>
+                    <Box className="animate-pulse-glow w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                    <Text
+                      ff="monospace"
+                      fw={700}
+                      tt="uppercase"
+                      className="text-accent tracking-widest"
+                      size="xs"
+                    >
+                      {t('res_Drafts')}
+                    </Text>
+                  </Group>
+                  <Text size="xs" ff="monospace" c="var(--text-muted)">
+                    {t('res_InMemoryOnly')}
+                  </Text>
+                </Box>
+
+                {/* Right: clear button */}
+                {sessions.length > 0 && (
+                  <Tooltip label={t('res_Clear')} position="left" withArrow>
+                    <ActionIcon
+                      variant="subtle"
+                      size="sm"
+                      onClick={() => setClearDraftsOpen(true)}
+                      aria-label={t('res_Clear')}
+                      className="text-fg-muted hover:text-accent"
+                    >
+                      <IconTrash size={13} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+              </Group>
+            </Box>
+
+            {/* Sessions list */}
+            <Box ref={draftsRef} className="flex-1 overflow-y-auto min-h-0 px-4 py-2.5">
+              <DraftsPanel />
+            </Box>
+
+            {/* Powered by */}
+            <Box className="py-2 text-center shrink-0">
+              <Text
+                ff="monospace"
+                className="text-muted text-[11px] tracking-[0.07em] select-none opacity-75"
+              >
+                {t('res_PoweredByOllama')}
+              </Text>
+            </Box>
+          </Box>
+        </AppShell.Aside>
+
+        <Modal
+          opened={clearDraftsOpen}
+          onClose={() => setClearDraftsOpen(false)}
+          title={t('res_ClearAllDraftsConfirmTitle')}
+          centered
+          size="sm"
+        >
+          <Text size="sm" mb="lg">
+            {t('res_ClearAllDraftsConfirmMessage')}
+          </Text>
+          <Group justify="flex-end" gap={8}>
+            <Button variant="default" size="xs" onClick={() => setClearDraftsOpen(false)}>
+              {t('res_Cancel')}
+            </Button>
+            <Button
+              color="red"
+              size="xs"
+              onClick={() => {
+                setClearDraftsOpen(false);
+                clearSessions();
+              }}
+            >
+              {t('res_Delete')}
+            </Button>
+          </Group>
+        </Modal>
+      </AppShell>
+    </>
   );
 }

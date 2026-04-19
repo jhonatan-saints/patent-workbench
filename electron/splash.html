@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Patent Workbench</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0e0e0e;
+        --accent: #60b5ff;
+        --accent-glow: rgba(96, 181, 255, 0.18);
+        --text: rgba(228, 227, 227, 0.85);
+        --text-dim: rgba(228, 227, 227, 0.45);
+        --cell-dim: rgba(96, 181, 255, 0.14);
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        background: var(--bg);
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+        font-family:
+          'Segoe UI',
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+
+      #root {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        height: 100vh;
+        opacity: 0;
+        animation: fade-in 0.35s ease 0.1s both;
+        position: relative;
+      }
+
+      /* Ambient blob */
+      #blob {
+        position: absolute;
+        top: 40%;
+        left: 45%;
+        width: 320px;
+        height: 280px;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+        filter: blur(80px);
+        opacity: 0.1;
+        animation: blob-drift 14s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      /* Wrapper that holds grid + text side by side */
+      #stage {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        position: relative;
+      }
+
+      /* 3×3 logo grid */
+      #grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        width: 64px;
+        height: 64px;
+        flex-shrink: 0;
+        animation: grid-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+        transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: transform;
+      }
+
+      #grid.shifted {
+        transform: translateX(-48px);
+      }
+
+      .cell {
+        border-radius: 3px;
+        background: var(--accent);
+        opacity: 0.14;
+        transition:
+          opacity 200ms ease-in-out,
+          box-shadow 200ms ease-in-out;
+      }
+
+      .cell.lit {
+        opacity: 0.95;
+        box-shadow:
+          0 0 6px 2px var(--accent),
+          0 0 18px 4px var(--accent-glow);
+      }
+
+      /* Brand text revealed after grid shift */
+      #brand {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        opacity: 0;
+        transform: translateX(16px);
+        transition:
+          opacity 0.5s ease 0.35s,
+          transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.35s;
+        will-change: opacity, transform;
+        margin-left: 16px;
+      }
+
+      #brand.visible {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      #brand .line-patent {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text);
+        line-height: 1;
+      }
+
+      #brand .line-workbench {
+        font-size: 11px;
+        font-weight: 400;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        line-height: 1;
+        opacity: 0;
+        transform: translateY(6px);
+        transition:
+          opacity 0.45s ease 0.55s,
+          transform 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.55s;
+      }
+
+      #brand.visible .line-workbench {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Loading bar */
+      #bar-wrap {
+        position: absolute;
+        bottom: 48px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 140px;
+        height: 1px;
+        background: rgba(96, 181, 255, 0.12);
+        border-radius: 1px;
+        overflow: hidden;
+        opacity: 0;
+        animation: fade-in 0.4s ease 0.5s both;
+      }
+
+      #bar {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 1px;
+        animation: load-bar 1.6s ease-in-out infinite;
+      }
+
+      /* Keyframes */
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes grid-in {
+        from {
+          opacity: 0;
+          transform: scale(0.88);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @keyframes blob-drift {
+        0%,
+        100% {
+          transform: translate(0, 0) scale(1);
+        }
+        33% {
+          transform: translate(40px, -30px) scale(1.08);
+        }
+        66% {
+          transform: translate(-25px, 20px) scale(0.94);
+        }
+      }
+
+      @keyframes load-bar {
+        0% {
+          width: 0%;
+          margin-left: 0%;
+        }
+        50% {
+          width: 60%;
+          margin-left: 20%;
+        }
+        100% {
+          width: 0%;
+          margin-left: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="blob"></div>
+
+      <div id="stage">
+        <div id="grid">
+          <div class="cell" data-i="0"></div>
+          <div class="cell" data-i="1"></div>
+          <div class="cell" data-i="2"></div>
+          <div class="cell" data-i="3"></div>
+          <div class="cell" data-i="4"></div>
+          <div class="cell" data-i="5"></div>
+          <div class="cell" data-i="6"></div>
+          <div class="cell" data-i="7"></div>
+          <div class="cell" data-i="8"></div>
+        </div>
+
+        <div id="brand">
+          <span class="line-patent">Patent</span>
+          <span class="line-workbench">Workbench</span>
+        </div>
+      </div>
+
+      <div id="bar-wrap">
+        <div id="bar"></div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const GLOW_START_MS = 380;
+        const GLOW_DURATION_MS = 2050;
+        const GLOW_INTERVAL_MS = 230;
+        const REVEAL_DELAY_MS = GLOW_START_MS + GLOW_DURATION_MS;
+
+        const cells = Array.from(document.querySelectorAll('.cell'));
+        const grid = document.getElementById('grid');
+        const brand = document.getElementById('brand');
+
+        let lastLit = -1;
+        let clearTimer = null;
+        let glowInterval = null;
+
+        function litCell(idx) {
+          cells.forEach((c) => c.classList.remove('lit'));
+          clearTimeout(clearTimer);
+          cells[idx].classList.add('lit');
+          clearTimer = setTimeout(() => cells[idx].classList.remove('lit'), 180 + Math.random() * 120);
+        }
+
+        function randomExcluding(exclude) {
+          let n;
+          do {
+            n = Math.floor(Math.random() * 9);
+          } while (n === exclude);
+          return n;
+        }
+
+        // Phase 1: glow
+        setTimeout(function () {
+          glowInterval = setInterval(function () {
+            lastLit = randomExcluding(lastLit);
+            litCell(lastLit);
+          }, GLOW_INTERVAL_MS);
+        }, GLOW_START_MS);
+
+        // Phase 2: reveal — grid slides left, brand text fades in
+        setTimeout(function () {
+          clearInterval(glowInterval);
+          clearTimeout(clearTimer);
+          cells.forEach((c) => c.classList.remove('lit'));
+
+          grid.classList.add('shifted');
+          brand.classList.add('visible');
+        }, REVEAL_DELAY_MS);
+      })();
+    </script>
+  </body>
+</html>
