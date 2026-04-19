@@ -39,8 +39,5 @@ module.exports = {
     // Replace with the actual org/repo when publishing releases.
     owner: 'jhonatan-saints',
     repo: 'patent-workbench',
-  },
-
-  // electron-updater feed — reads RELEASES from the GitHub release assets.
-  // Auto-update is initialised in electron/main.js after the app loads.
+  }
 }
