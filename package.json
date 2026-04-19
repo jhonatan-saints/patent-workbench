@@ -1,6 +1,6 @@
 {
   "name": "patent-workbench-monorepo",
-  "version": "1.2.1",
+  "version": "2.0.0",
   "private": true,
   "description": "Monorepo root for Patent Workbench (client + server)",
   "author": "Jhonatan Santos",
@@ -21,7 +21,7 @@
     "server:dev": "npm --workspace server run dev",
     "server:install": "npm --prefix server install",
     "electron": "electron .",
-    "electron:dev": "concurrently -k -n server,client,electron -c cyan,magenta,yellow \"npm run server:dev\" \"cross-env ELECTRON_DEV=true npm run client\" \"electron .\"",
+    "electron:dev": "npm run i18n:generate && concurrently -k -n server,client,electron -c cyan,magenta,yellow \"npm run server:dev\" \"cross-env ELECTRON_DEV=true npm run client\" \"electron .\"",
     "electron:build": "npm run server:build && npm run client:build:electron && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --config electron-builder.config.js --publish=never",
     "electron:pack": "npm run electron:build",
     "generate:favicons": "node scripts/generate-favicons.mjs",
