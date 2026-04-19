@@ -118,18 +118,27 @@ C:\Users\<user>\Patent Workbench\
 
 ```
 Electron main process (main.js)
+  |- Opens BrowserWindow immediately (brand splash — no server needed)
   |- Spawns Express server (app/server/server.js) as a child process
-  |- Waits for server health check on localhost:3001 
-  |- Opens BrowserWindow pointed at localhost:3001/patent-workbench
+  |- Waits for server health check on localhost:3001
+  |- Navigates BrowserWindow to localhost:3001/patent-workbench once ready
   |- System tray icon with "Open" and "Quit" menu
-  |- Splash screen shown during server startup
 ```
+
+**Boot sequence (UX):**
+
+| Step | What the user sees | Trigger |
+| --- | --- | --- |
+| 1 | **Brand splash** — 3×3 grid logo animation (mirrors `OAuthLoginDemo` hero); after animation completes, logo slides to the left and "Patent" fades/types in, then "Workbench" below it | Immediate on `.exe` launch — no server needed |
+| 2 | **AppLoader** — spinning grid glow + progress bar | Replaces brand splash; runs while Electron waits for the Express health check |
+| 3 | **App shell** (`App.tsx`) | Shown once server responds; minimum 3 s artificial delay on AppLoader to avoid a jarring flash on fast machines |
 
 **Key behaviours:**
 
 - Closing the window minimises to system tray (app keeps running)
 - Right-click tray icon → Quit to fully exit
-- Splash screen shown while Express is starting up
+- Brand splash and AppLoader run inside the same `BrowserWindow` — no separate native splash window needed
+- Minimum 3 s on AppLoader even if the server responds faster, for a smoother perceived startup
 - Auto-update via `electron-updater` from GitHub Releases
 - `DATA_DIR` env var passed to Express pointing to `data/` inside the install directory — keeps the database and logs out of `app/`
 
