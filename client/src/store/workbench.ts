@@ -5,6 +5,7 @@ import type {
   WorkflowSession,
   GeneratedOption,
   AppSettings,
+  RegTemplate,
 } from '@/types';
 import {
   generatePatentContent,
@@ -19,10 +20,16 @@ import {
   clearAllSessions,
   getSettings,
   updateSettings as apiUpdateSettings,
+  resetSettings as apiResetSettings,
+  getTemplate,
+  updateTemplate as apiUpdateTemplate,
+  resetTemplate as apiResetTemplate,
+  setApiKey,
 } from '@/api/client';
 import { sanitizeOutput, generateId } from '@/utils/sanitize';
-import { WORKFLOW_MODULES, WORKFLOW_ORDER } from '@/utils/workflowTemplates';
+import { WORKFLOW_MODULES, WORKFLOW_ORDER, reinitFromTemplate } from '@/utils/workflowTemplates';
 import { parseOptions } from '@/utils/optionParser';
+import bundledTemplates from '@/config/reg-templates.json';
 
 const DEFAULT_MODEL = (import.meta.env.VITE_DEFAULT_MODEL as string | undefined) || 'qwen2.5:7b';
 const DEFAULT_LLM_TIMEOUT_MS = Number(import.meta.env.VITE_LLM_TIMEOUT_MS) || 300_000;
@@ -46,19 +53,21 @@ const DEFAULT_SETTINGS: AppSettings = {
 // Module-level abort controller — not in Zustand state to avoid re-renders
 let _abortController: AbortController | null = null;
 
-const INITIAL_STEPS = WORKFLOW_ORDER.map((moduleId) => ({
-  moduleId,
-  label: WORKFLOW_MODULES[moduleId].label,
-  description: WORKFLOW_MODULES[moduleId].description,
-  status: 'pending' as const,
-  options: [],
-  selectedOption: null,
-  promptTokens: 0,
-  completionTokens: 0,
-  inputMode: 'auto' as const,
-  guidedFields: {} as Record<string, string>,
-  manualDraft: '',
-}));
+function getInitialSteps() {
+  return WORKFLOW_ORDER.map((moduleId) => ({
+    moduleId,
+    label: WORKFLOW_MODULES[moduleId].label,
+    description: WORKFLOW_MODULES[moduleId].description,
+    status: 'pending' as const,
+    options: [],
+    selectedOption: null,
+    promptTokens: 0,
+    completionTokens: 0,
+    inputMode: 'auto' as const,
+    guidedFields: {} as Record<string, string>,
+    manualDraft: '',
+  }));
+}
 
 export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   // LLM — selectedModel bootstrapped from VITE_DEFAULT_MODEL until loadSettings() resolves
@@ -70,7 +79,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
 
   // Workflow
   workflowPhase: 'input',
-  steps: INITIAL_STEPS,
+  steps: getInitialSteps(),
   currentStepIndex: -1,
   artifact: null,
   generationStatus: 'idle',
@@ -84,6 +93,9 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
 
   // App settings
   appSettings: DEFAULT_SETTINGS,
+
+  // Workflow template (bundled JSON as initial value; overwritten by loadTemplate on boot)
+  template: bundledTemplates as unknown as RegTemplate,
 
   // Actions
 
@@ -136,7 +148,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       artifact,
       workflowPhase: 'working',
       currentStepIndex: 0,
-      steps: INITIAL_STEPS.map((s, i) => ({
+      steps: getInitialSteps().map((s, i) => ({
         ...s,
         status: i === 0 ? ('input' as const) : ('pending' as const),
         options: [],
@@ -445,7 +457,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     }
     set({
       workflowPhase: 'input',
-      steps: INITIAL_STEPS,
+      steps: getInitialSteps(),
       currentStepIndex: -1,
       artifact: null,
       generationStatus: 'idle',
@@ -589,8 +601,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   loadSettings: async () => {
     const data = await getSettings();
     if (!data) return;
+    setApiKey(data.apiKey);
     set({ appSettings: data });
-    // Sync selectedModel with persisted default if no models have been loaded yet
     set((state) => {
       if (state.availableModels.length === 0) return { selectedModel: data.defaultModel };
       return {};
@@ -602,5 +614,33 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     const next = { ...current, ...patch };
     const confirmed = await apiUpdateSettings(next);
     if (confirmed) set({ appSettings: confirmed });
+  },
+
+  resetSettings: async () => {
+    const confirmed = await apiResetSettings();
+    if (!confirmed) return;
+    setApiKey(confirmed.apiKey);
+    set({ appSettings: confirmed });
+  },
+
+  loadTemplate: async () => {
+    const data = await getTemplate();
+    if (!data) return;
+    reinitFromTemplate(data);
+    set({ template: data });
+  },
+
+  saveTemplate: async (t: RegTemplate) => {
+    const confirmed = await apiUpdateTemplate(t);
+    if (!confirmed) return;
+    reinitFromTemplate(confirmed);
+    set({ template: confirmed });
+  },
+
+  resetTemplate: async () => {
+    const confirmed = await apiResetTemplate();
+    if (!confirmed) return;
+    reinitFromTemplate(confirmed);
+    set({ template: confirmed });
   },
 }));

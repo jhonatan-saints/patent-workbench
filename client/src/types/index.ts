@@ -138,6 +138,47 @@ export interface WorkflowSession {
 
 export type LogLevel = 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
 
+export interface RegTemplateGuidedField {
+  key: string;
+  label: string;
+  labelKey?: string;
+  placeholder?: string;
+  placeholderKey?: string;
+  type: 'text' | 'textarea';
+}
+
+export interface RegTemplateStep {
+  label: string;
+  labelKey?: string;
+  description?: string;
+  descriptionKey?: string;
+  sectionLabelEn?: string;
+  systemContext: string;
+  promptSuffix?: string;
+  guidedFields?: RegTemplateGuidedField[];
+  guidedPromptSuffix?: string;
+}
+
+export interface RegTemplate {
+  meta?: {
+    company?: string;
+    domain?: string;
+    version?: string;
+    description?: string;
+  };
+  rag?: {
+    maxPriorSections: number;
+    maxContextFileChars: number;
+    maxSectionChars: number;
+    maxIdeaChars: number;
+    maxConstraintsChars: number;
+  };
+  workflow: {
+    order: string[];
+  };
+  steps: Record<string, RegTemplateStep>;
+}
+
 export interface AppSettings {
   defaultModel: string;
   llmTimeoutMs: number;
@@ -146,6 +187,7 @@ export interface AppSettings {
   promptMaxLength: number;
   shutdownTimeoutMs: number;
   logLevel: LogLevel;
+  apiKey?: string;
 }
 
 // UI state
@@ -207,4 +249,11 @@ export interface WorkbenchState {
   appSettings: AppSettings;
   loadSettings: () => Promise<void>;
   saveSettings: (patch: Partial<AppSettings>) => Promise<void>;
+
+  // Workflow template
+  template: RegTemplate;
+  loadTemplate: () => Promise<void>;
+  saveTemplate: (t: RegTemplate) => Promise<void>;
+  resetSettings: () => Promise<void>;
+  resetTemplate: () => Promise<void>;
 }

@@ -149,8 +149,15 @@ function ThemeToggle() {
 }
 
 export function App() {
-  const { workflowPhase, initSessions, loadSettings, clearSessions, sessions, persistDraft } =
-    useWorkbenchStore();
+  const {
+    workflowPhase,
+    initSessions,
+    loadSettings,
+    loadTemplate,
+    clearSessions,
+    sessions,
+    persistDraft,
+  } = useWorkbenchStore();
   const [clearDraftsOpen, setClearDraftsOpen] = useState(false);
   const logoutBtnRef = useRef<HTMLButtonElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
@@ -166,7 +173,8 @@ export function App() {
   useEffect(() => {
     void initSessions();
     void loadSettings();
-  }, [initSessions, loadSettings]);
+    void loadTemplate();
+  }, [initSessions, loadSettings, loadTemplate]);
 
   const [navCollapsed, setNavCollapsed] = useState(
     () => localStorage.getItem('nav-collapsed') === 'true'
