@@ -35,8 +35,7 @@ DefaultGroupName={#AppName}
 PrivilegesRequired=lowest
 OutputDir=output
 OutputBaseFilename=PatentWorkbench-setup
-UninstallFilename=PatentWorkbench-uninstall
-SetupIconFile={#SrcDir}\{#AppExeName}
+SetupIconFile=..\build\icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -157,7 +156,7 @@ var
   NodeVersion:    string;
   OllamaPresent:  Boolean;
 
-// ── Utilities ──────────────────────────────────────────────────────────────────
+// Utilities
 
 // Runs a command and captures stdout. Returns exit code.
 function ExecCapture(const Cmd, Params: string; var Output: string): Integer;
@@ -207,7 +206,7 @@ begin
     Result := StrToIntDef(S, -1);
 end;
 
-// ── Node.js detection & install ───────────────────────────────────────────────
+// Node.js detection & install
 
 function DetectNode: Boolean;
 var
@@ -219,7 +218,7 @@ begin
   Result      := (ParseNodeMajor(Output) >= MIN_NODE_MAJOR);
 end;
 
-// ── Ollama detection & install ────────────────────────────────────────────────
+// Ollama detection & install
 
 function DetectOllama: Boolean;
 var
@@ -233,7 +232,7 @@ begin
   Result := (ExitCode = 0);
 end;
 
-// ── Model helpers ─────────────────────────────────────────────────────────────
+// Model helpers
 
 // Runs "ollama list" and populates LocalModels (one model ID per line).
 procedure PopulateLocalModels;
@@ -264,7 +263,7 @@ begin
   Lines.Free;
 end;
 
-// ── Page builders ─────────────────────────────────────────────────────────────
+// Page builders
 
 procedure CreateNodePage;
 begin
@@ -390,7 +389,7 @@ begin
   CboNumOptions.ItemIndex := 2; // default: 3
 end;
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+// Init
 
 procedure InitializeWizard;
 begin
@@ -424,13 +423,13 @@ begin
   CreateConfigPage;
 end;
 
-// ── Page activation (runs checks when the user arrives on each page) ──────────
+// Page activation (runs checks when the user arrives on each page)
 
 procedure CurPageChanged(CurPageID: Integer);
 var
   I: Integer;
 begin
-  // ── Node.js page ──────────────────────────────────────────────────────────
+  // Node.js page
   if CurPageID = PageNode.ID then
   begin
     WizardForm.NextButton.Enabled := False;
@@ -455,7 +454,7 @@ begin
     end;
   end;
 
-  // ── Ollama page ───────────────────────────────────────────────────────────
+  // Ollama page
   if CurPageID = PageOllama.ID then
   begin
     WizardForm.NextButton.Enabled := False;
@@ -481,7 +480,7 @@ begin
     end;
   end;
 
-  // ── Model page ────────────────────────────────────────────────────────────
+  // Model page
   if CurPageID = PageModel.ID then
   begin
     LstModels.Items.Clear;
@@ -504,7 +503,7 @@ begin
   end;
 end;
 
-// ── Validation before leaving each page ──────────────────────────────────────
+// Validation before leaving each page
 
 function NextButtonClick(CurPageID: Integer): Boolean;
 var
@@ -513,7 +512,7 @@ var
 begin
   Result := True;
 
-  // ── Model page — pull model if not already local ──────────────────────────
+  // Model page — pull model if not already local
   if CurPageID = PageModel.ID then
   begin
     SelIdx := LstModels.ItemIndex;
@@ -555,7 +554,7 @@ begin
   end;
 end;
 
-// ── Post-install: write config/settings.json for first-run seeding ───────────
+// Post-install: write config/settings.json for first-run seeding
 
 procedure WriteFirstRunConfig;
 var
