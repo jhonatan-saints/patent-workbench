@@ -33,7 +33,7 @@
     "lint:eslint": "npx eslint --max-warnings=0 --no-error-on-unmatched-pattern .",
     "lint:markdown": "npx markdownlint-cli -i \"**/node_modules/**\" --config .markdownlint.json ./*.md ./**/*.md ./**/**/*.md ./**/**/**/*.md ./**/**/**/**/*.md",
     "lint:style": "npx stylelint **/*.scss **/*.css",
-    "start": "npm run i18n:generate && concurrently \"npm run server:dev\" \"npm run client\"",
+    "start": "npm rebuild && npm run i18n:generate && concurrently -k \"npm run server:dev\" \"wait-on http://127.0.0.1:3001/status -t 60000 && npm run client\"",
     "audit:check": "npm audit --audit-level=moderate"
   },
   "prepare": "git config core.hooksPath .githooks || true",
@@ -55,7 +55,8 @@
     "sharp": "^0.34.5",
     "stylelint": "^17.5.0",
     "stylelint-config-standard-scss": "^17.0.0",
-    "stylelint-scss": "^7.0.0"
+    "stylelint-scss": "^7.0.0",
+    "wait-on": "^9.0.5"
   },
   "dependencies": {
     "electron-updater": "^6.3.0"
