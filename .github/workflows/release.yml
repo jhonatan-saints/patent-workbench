@@ -28,14 +28,6 @@ jobs:
       - name: Install dependencies (root + workspaces)
         run: npm ci
 
-      - name: Install server dependencies
-        run: npm ci
-        working-directory: server
-
-      - name: Install client dependencies
-        run: npm ci
-        working-directory: client
-
       - name: Generate app icon
         run: npm run generate:favicons
 
@@ -48,7 +40,8 @@ jobs:
         run: choco install innosetup --no-progress -y
 
       - name: Compile installer
-        run: iscc installer\patent-workbench.iss
+        shell: cmd
+        run: '"%ProgramFiles(x86)%\Inno Setup 6\iscc.exe" installer\patent-workbench.iss'
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
