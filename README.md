@@ -4,7 +4,7 @@
   <p>Local LLM Assistant for Patent Ideation</p>
 
   ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
-  ![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)
+  ![Node](https://img.shields.io/badge/node-%3E%3D24.14.0-brightgreen)
   ![Status](https://img.shields.io/badge/status-active-success)
 </div>
 
@@ -105,7 +105,7 @@ input → working (steps 1–7) → figures → inventors → preview / export
 - **Context files (RAG)** — attach reference documents (`.txt`, `.md`, `.csv`, `.json`, etc.) at the start; content is injected into prompts up to a 40 000-character budget.
 - **Model selector** — switch between any Ollama-compatible model (Mistral, Llama 3, Phi-3, Gemma 2, etc.).
 - **Model context length** — automatically fetches the `num_ctx` value from the model's Modelfile and shows it in the UI; context file upload is conditionally enabled for models with ≥ 16 384 tokens.
-- **Settings panel** — persistent runtime configuration accessible from the header: default model, options per step (1–5), LLM timeout, max prompt length, Ollama URL, server log level, and shutdown timeout; saved to the server and restored on every app boot.
+- **Settings panel** — tabbed modal accessible from the header: **General** (model, options, timeout, Ollama URL, API Key, log level, shutdown timeout), **Template** (per-step prompt editor — system context, prompt suffix, guided prompt suffix), **RAG** (context limit tunables); all settings persisted to SQLite and restored on every app boot. Changes apply immediately without a page reload.
 - **Token meter** — live prompt + completion token counts per step, totalled across the session.
 - **LLM status indicator** — real-time connectivity check with latency; polls every 30 seconds.
 - **Persistent sessions** — sessions are saved to a local SQLite database and survive page reload and browser restart; browse, restore, or delete from the Drafts sidebar.
@@ -132,7 +132,7 @@ The UI is fully translated into 16 locales:
 > [!IMPORTANT]  
 > The UI language and the **invention content language** are independent settings. Switching the locale translates all labels, buttons, and tooltips but does **not** change the language the REG algorithm prompts in.
 
-The REG system contexts are authored in English and instruct the model to reason as a USPTO patent analyst. They are defined in `client/src/config/reg-templates.json` — the primary customisation entry point. If you want the LLM to generate patent sections in another language, edit `reg-templates.json` without touching application code: append an explicit instruction such as `"Respond entirely in Portuguese."` to each `systemContext` string. See [docs/customising-reg-templates.md](docs/customising-reg-templates.md) for a full authoring guide.
+The REG system contexts are authored in English and instruct the model to reason as a USPTO patent analyst. They can be edited at runtime from the **Settings → Template** tab without touching any file or restarting the app. To customise via file instead, edit `client/src/config/reg-templates.json` (used as the factory default and DB seed). To make the LLM generate in another language, append an explicit instruction such as `"Respond entirely in Portuguese."` to each `systemContext`. See [docs/customising-reg-templates.md](docs/customising-reg-templates.md) for a full authoring guide.
 
 Until the REG prompts are adapted, submitting the invention idea in a non-English language will work, but the generated options are likely to be returned in English regardless of the UI locale.
 
@@ -159,7 +159,7 @@ All prompt assembly — including REG system contexts, RAG context injection, an
 ## Prerequisites
 
 > [!NOTE]  
-> - Node.js 20+
+> - Node.js v24.14.0+
 > - [Ollama](https://ollama.com) installed and running locally.
 > - At least one model pulled, e.g. `ollama pull qwen2.5:7b`
 

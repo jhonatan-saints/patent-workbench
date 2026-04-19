@@ -73,7 +73,8 @@ src/
 | --- | --- |
 | `StatusIndicator` | Header badge — LLM connection status and round-trip latency |
 | `LanguageSwitcher` | Button that allows you to change the app's language |
-| `SettingsMenu` | Header icon button that opens a modal for configuring runtime settings: default model, options per step, LLM timeout, max prompt length, Ollama URL, server log level, and shutdown timeout; persisted via `PUT /settings` |
+| `SettingsMenu` | Header icon button that opens a tabbed modal: **General** (model, options, timeout, Ollama URL, API Key, log level, shutdown timeout — Reset to Defaults + Save), **Template** (per-step accordion editor for system context and prompt suffixes), **RAG** (context limit fields); template changes apply immediately on Save without a page reload |
+| `TemplateEditor` | Presentational component used by SettingsMenu's Template tab — renders a scrollable accordion of workflow steps, each with editable `systemContext`, `promptSuffix`, and (when present) `guidedPromptSuffix` textareas |
 | `ExportPanel` | Export the artifact as `.txt`, `.pdf` (print dialog with embedded figures), or `.docx` (Word with inventors block and embedded figures); also supports `.md` with YAML frontmatter |
 | `AppLoader` | Splash screen shown while the app initialises |
 
@@ -165,9 +166,10 @@ The Zustand store manages the entire application state. It is divided into three
 | `modelContextLength` | `number \| null` | `num_ctx` from model's Modelfile (via `GET /models/:name/context`) |
 | `llmStatus` | `'ok' \| 'unavailable' \| 'checking'` | Connectivity to Ollama |
 | `llmLatency` | `number \| null` | Round-trip latency in ms |
-| `appSettings` | `AppSettings` | Persisted runtime configuration: `defaultModel`, `numOptions`, `llmTimeoutMs`, `promptMaxLength`, `ollamaUrl`, `shutdownTimeoutMs`, `logLevel`; loaded from `GET /settings` on boot, saved via `PUT /settings` |
+| `appSettings` | `AppSettings` | Persisted runtime configuration: `defaultModel`, `numOptions`, `llmTimeoutMs`, `promptMaxLength`, `ollamaUrl`, `shutdownTimeoutMs`, `logLevel`, `apiKey`; loaded from `GET /settings` on boot, saved via `PUT /settings`, reset via `POST /settings/reset` |
+| `template` | `RegTemplate` | Active workflow template (steps, RAG config, workflow order); loaded from `GET /template` on boot; updated in-place via `reinitFromTemplate()` after `saveTemplate()` or `resetTemplate()` |
 
-`checkStatus()` polls `GET /status` and `GET /models` every 30 seconds. When models change, `selectedModel` is updated to the closest match by base name. `loadSettings()` is called once on app mount and populates `appSettings` from the server; `saveSettings(patch)` merges the patch and persists it via `PUT /settings`.
+`checkStatus()` polls `GET /status` and `GET /models` every 30 seconds. When models change, `selectedModel` is updated to the closest match by base name. `loadSettings()` and `loadTemplate()` are called once on app mount; `saveSettings(patch)` merges the patch and persists via `PUT /settings`; `resetSettings()` restores factory defaults via `POST /settings/reset`.
 
 ### Workflow slice
 
@@ -216,9 +218,11 @@ Key actions:
 
 ---
 
-## Template system (`utils/workflowTemplates.ts` + `config/reg-templates.json`)
+## Template system (`utils/workflowTemplates.ts` + API)
 
-`client/src/config/reg-templates.json` is the primary entry point for customising the REG system contexts. It contains one string per IDF step under a `systemContexts` key and can be edited without changing any application code. The default values in `WORKFLOW_MODULES` (defined in `workflowTemplates.ts`) mirror this file and serve as the fallback when no customisation is applied. See [docs/customising-reg-templates.md](../docs/customising-reg-templates.md) for a full authoring guide.
+The workflow template is no longer a static file baked into the build. At boot, `loadTemplate()` fetches it from `GET /template` (stored in SQLite). `reinitFromTemplate(t)` then mutates the module-level exports — `WORKFLOW_MODULES`, `WORKFLOW_ORDER`, `SECTION_LABELS_EN`, and the RAG config — in-place, so all existing component references pick up the new template without any import changes or page reload.
+
+`config/reg-templates.json` is the **bundled fallback** used as the initial value before the API responds and as the seed for the DB on first run. Editing it still works for development, but production changes should be made via the Settings → Template tab in the UI.
 
 `WORKFLOW_MODULES` exports one `WorkflowModule` per IDF section. Each module defines:
 
@@ -288,6 +292,11 @@ All server communication is centralised in `client.ts`. Functions:
 | `clearAllSessions()` | DELETE | `/sessions` |
 | `getSettings()` | GET | `/settings` |
 | `updateSettings(settings)` | PUT | `/settings` |
+| `resetSettings()` | POST | `/settings/reset` |
+| `getTemplate()` | GET | `/template` |
+| `updateTemplate(template)` | PUT | `/template` |
+| `resetTemplate()` | POST | `/template/reset` |
+| `setApiKey(key)` | — | Module-level setter; updates the `x-api-key` header used by all subsequent `apiFetch` calls |
 
 Requests are made relative to `/api` (proxied to `localhost:3001` by Vite during development). `isApiError(result)` is a type guard used across the store and components.
 
