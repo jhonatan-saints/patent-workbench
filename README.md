@@ -3,9 +3,12 @@
   <h1>Patent Workbench</h1>
   <p>Local LLM Assistant for Patent Ideation</p>
 
-  ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
-  ![Node](https://img.shields.io/badge/node-%3E%3D24.14.0-brightgreen)
-  ![Status](https://img.shields.io/badge/status-active-success)
+  ![License](https://img.shields.io/badge/license-Apache%202.0-%230a91ff)
+  ![Node](https://img.shields.io/badge/node-%3E%3D24.14-%2301b701)
+  ![Status](https://img.shields.io/badge/status-active-%2301b701)
+  ![Version](https://img.shields.io/badge/version-v2.0.0-%230a91ff)
+  
+  [![Download Now](https://img.shields.io/badge/-Download%20Now!-%230a91ff)](https://github.com/jhonatan-saints/patent-workbench/releases/latest)
 </div>
 
 ---
@@ -37,7 +40,7 @@ Design, validate and refine invention concepts in a unified workspace built for 
 | [Architecture](#architecture) | System design and structure |
 | [Prerequisites](#prerequisites) | Requirements to run locally |
 | [Ollama setup](#ollama-setup) | Local LLM configuration |
-| [Getting started](#getting-started) | Run the application |
+| [Installation](#installation) | Desktop app installer and dev mode setup |
 | [Available scripts](#available-scripts) | Development utilities |
 | [Contributing](#contributing) | Contribution guidelines |
 | [Licensing](#licensing) | License model |
@@ -102,6 +105,7 @@ input → working (steps 1–7) → figures → inventors → preview / export
 
 ## Key features
 
+- **Electron desktop app** — installable `.exe` wizard for Windows; no terminal, no Node.js knowledge required. Auto-updates via GitHub Releases.
 - **Context files (RAG)** — attach reference documents (`.txt`, `.md`, `.csv`, `.json`, etc.) at the start; content is injected into prompts up to a 40 000-character budget.
 - **Model selector** — switch between any Ollama-compatible model (Mistral, Llama 3, Phi-3, Gemma 2, etc.).
 - **Model context length** — automatically fetches the `num_ctx` value from the model's Modelfile and shows it in the UI; context file upload is conditionally enabled for models with ≥ 16 384 tokens.
@@ -129,7 +133,7 @@ The UI is fully translated into 16 locales:
 
 ### Inputting invention content in a non-English language
 
-> [!IMPORTANT]  
+> [!IMPORTANT]
 > The UI language and the **invention content language** are independent settings. Switching the locale translates all labels, buttons, and tooltips but does **not** change the language the REG algorithm prompts in.
 
 The REG system contexts are authored in English and instruct the model to reason as a USPTO patent analyst. They can be edited at runtime from the **Settings → Template** tab without touching any file or restarting the app. To customise via file instead, edit `client/src/config/reg-templates.json` (used as the factory default and DB seed). To make the LLM generate in another language, append an explicit instruction such as `"Respond entirely in Portuguese."` to each `systemContext`. See [docs/customising-reg-templates.md](docs/customising-reg-templates.md) for a full authoring guide.
@@ -142,26 +146,31 @@ Until the REG prompts are adapted, submitting the invention idea in a non-Englis
 
 ```text
 patent-workbench/
+├── electron/        # Electron main process + preload (desktop app shell)
+├── installer/       # Inno Setup wizard script (Windows installer)
 ├── client/          # React 18 + Vite + Mantine v7 + Tailwind CSS v4 frontend
 ├── server/          # Express + TypeScript API (LLM proxy + validation + SQLite persistence)
 ├── docs/            # Algorithm and architecture documentation
-└── scripts/         # Setup and build utilities
+└── scripts/         # Setup, build, and i18n utilities
 ```
 
 The client talks exclusively to the Express backend via a typed API layer (`client/src/api/client.ts`). The server validates, sanitizes, and forwards requests to Ollama running on `localhost:11434`. **The LLM never receives requests directly from the browser.**
 
-Session data (artifact content, figures, inventor details, diagram board state) is persisted in a SQLite database at `<DATA_DIR>/workbench.db` (default: `./data/workbench.db` relative to the server working directory). Figures are stored in a normalised `figures` table; the rest of the artifact is stored as JSON. The database uses WAL mode for safe concurrent access.
+In the **Electron desktop app**, the main process (`electron/main.js`) spawns the Express server as a child process and loads the React app into a `BrowserWindow`. All three tiers — Electron shell, Express server, and React client — run locally on the user's machine with no external dependencies beyond Ollama.
 
-All prompt assembly — including REG system contexts, RAG context injection, and option-format enforcement — happens in the client before the request is sent to the server. The server is responsible for security, rate limiting, and transport; the client owns the prompt strategy.
+Session data (artifact content, figures, inventor details, diagram board state) is persisted in a SQLite database at `<DATA_DIR>/workbench.db`. Figures are stored in a normalised `figures` table; the rest of the artifact is stored as JSON. The database uses WAL mode for safe concurrent access.
 
 ---
 
 ## Prerequisites
 
-> [!NOTE]  
-> - Node.js v24.14.0+
+> [!NOTE]
 > - [Ollama](https://ollama.com) installed and running locally.
 > - At least one model pulled, e.g. `ollama pull qwen2.5:7b`
+>
+> **Desktop app only:** Node.js v24.14.0+ is bundled inside the Electron app — no manual installation required.
+>
+> **Web / dev mode only:** Node.js v24.14.0+ must be installed on the host machine.
 
 ---
 
@@ -187,19 +196,40 @@ In the **Ollama desktop app settings**, ensure the following are **disabled**:
 | 32 GB | 8 192 – 16 384 | Ideal for most workflows |
 | 64 GB+ | > 16 384 | For very large models or context-heavy reference documents |
 
-> [!TIP] 
+> [!TIP]
 > - Apply via Ollama app settings.
 > - Each full workflow run accumulates ~8 800 tokens of context.
 
 ---
 
-## Getting started
+## Installation
+
+### Option 1 — Desktop app (recommended for end users)
+
+Download `PatentWorkbench-setup.exe` from the [latest GitHub Release](https://github.com/jhonatan-saints/patent-workbench/releases/latest) and run the installer. The wizard will:
+
+1. Check for **Node.js v24** and install it automatically via `winget` if missing.
+2. Check for **Ollama** and install it automatically via `winget` if missing.
+3. Let you **select or download an LLM model** (curated list or from your locally available models).
+4. Configure the **Ollama URL**, **interface language**, and **number of options per step**.
+5. Install Patent Workbench and create Start Menu and Desktop shortcuts.
+
+After installation, launch **Patent Workbench** from the Start Menu or Desktop — no terminal, no configuration files.
+
+> [!NOTE]
+> The app checks for updates automatically on launch and notifies you when a new version is available.
+
+---
+
+### Option 2 — Web / development mode
+
+Run the full stack locally in your browser. Requires Node.js v24.14.0+.
 
 ```bash
 # Install all dependencies (client + server)
 npm run setup
 
-# Start both dev servers concurrently
+# Generate i18n files, then start both dev servers concurrently
 npm run start
 ```
 
@@ -210,8 +240,20 @@ npm run server:dev   # Express on localhost:3001 (watch mode)
 npm run client       # Vite on localhost:3003/patent-workbench
 ```
 
-> [!TIP] 
+> [!TIP]
 > Open `http://localhost:3003/patent-workbench`. The status badge in the header turns green once Ollama is reachable.
+
+---
+
+### Option 3 — Electron dev mode
+
+Run the Electron shell against live Vite and ts-node-dev servers (for development and debugging of the desktop app itself):
+
+```bash
+npm run electron:dev
+```
+
+This starts the Express server, the Vite dev server, and the Electron window concurrently.
 
 ---
 
@@ -219,18 +261,20 @@ npm run client       # Vite on localhost:3003/patent-workbench
 
 | Script | Description |
 | --- | --- |
-| `npm run setup` | Install all dependencies for both workspaces |
-| `npm run start` | Generate i18n files, then run client and server concurrently |
+| `npm run setup` | Install all dependencies for all workspaces |
+| `npm run start` | Generate i18n files, then run client and server concurrently (web mode) |
 | `npm run server:dev` | Server in watch mode on `:3001` |
 | `npm run client` | Vite dev server on `:3003` |
+| `npm run electron:dev` | Generate i18n, then run server + client + Electron concurrently |
+| `npm run electron:build` | Build server + client + Electron and produce `dist-electron/win-unpacked/` |
 | `npm run client:build` | Build client to `client/dist/` |
-| `npm run lint` | ESLint + Markdown + StyleLint |
+| `npm run lint` | ESLint + Markdown + StyleLint (staged files only in pre-commit) |
 | `npm run audit:check` | Run `npm audit` at moderate severity level |
 | `npm run clean` | Remove build artifacts and caches |
-| `npm run generate:favicons` | Regenerate favicon assets from source SVG |
-| `npm run i18n:generate` | Regenerate i18n translation files |
+| `npm run generate:favicons` | Regenerate favicon assets + `build/icon.png` from source SVG |
+| `npm run i18n:generate` | Regenerate i18n translation files from `resource-locale_master.json` |
 
-> [!NOTE] 
+> [!NOTE]
 > - For server-specific configuration (env vars, endpoints, rate limits) see [server/README.md](server/README.md).
 > - For client architecture and component details see [client/README.md](client/README.md).
 > - For algorithm documentation see [docs/reg-rag_algorithm.md](docs/reg-rag_algorithm.md).
