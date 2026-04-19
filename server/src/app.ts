@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import path from 'node:path'
 import express, { Request, Response } from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -235,6 +236,18 @@ app.use('/settings', settingsRouter)
 
 // Workflow template
 app.use('/template', templateRouter)
+
+// Electron: serve the compiled React client and handle SPA deep-links.
+// Activated only when ELECTRON_MODE=true and CLIENT_DIST_DIR is provided by the
+// Electron main process. The React app is served at /patent-workbench (matching
+// Vite's base option) so all API routes at / remain separate and take priority.
+const clientDistDir = process.env.CLIENT_DIST_DIR
+if (process.env.ELECTRON_MODE === 'true' && clientDistDir) {
+  app.use('/patent-workbench', express.static(clientDistDir))
+  app.get(['/patent-workbench', '/patent-workbench/*'], (_req: Request, res: Response) => {
+    res.sendFile(path.join(clientDistDir, 'index.html'))
+  })
+}
 
 // Error handler (must be last middleware)
 app.use(errorHandler)

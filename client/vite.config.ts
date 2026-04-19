@@ -12,8 +12,9 @@ export default defineConfig({
     },
   },
   server: {
+    host: '127.0.0.1',
     port: 3003,
-    open: '/patent-workbench',
+    open: process.env.ELECTRON_DEV !== 'true' && '/patent-workbench',
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
