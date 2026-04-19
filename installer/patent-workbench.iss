@@ -17,7 +17,7 @@
 #define AppVersion   "2.0.0"
 #define AppPublisher "Patent Workbench"
 #define AppURL       "https://github.com/jhonatan-saints/patent-workbench"
-#define AppExeName   "Patent Workbench.exe"
+#define AppExeName   "patent_workbench.exe"
 
 ; Source tree produced by electron-builder (relative to project root)
 #define SrcDir "..\dist-electron\win-unpacked"
@@ -30,9 +30,9 @@ AppPublisher={#AppPublisher}
 AppPublisherURL={#AppURL}
 AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
-DefaultDirName={userdocs}\{#AppName}
+DefaultDirName={sd}\{#AppName}
 DefaultGroupName={#AppName}
-PrivilegesRequired=lowest
+PrivilegesRequired=admin
 OutputDir=output
 OutputBaseFilename=PatentWorkbench-setup
 SetupIconFile=..\build\icon.ico
@@ -275,9 +275,10 @@ begin
 
   LblNodeStatus              := TLabel.Create(PageNode);
   LblNodeStatus.Parent       := PageNode.Surface;
+  LblNodeStatus.AutoSize     := False;
   LblNodeStatus.Left         := 0;
   LblNodeStatus.Top          := 8;
-  LblNodeStatus.Width        := PageNode.SurfaceWidth;
+  LblNodeStatus.Width        := 400;
   LblNodeStatus.Height       := 48;
   LblNodeStatus.WordWrap     := True;
   LblNodeStatus.Caption      := '';
@@ -293,9 +294,10 @@ begin
 
   LblOllamaStatus              := TLabel.Create(PageOllama);
   LblOllamaStatus.Parent       := PageOllama.Surface;
+  LblOllamaStatus.AutoSize     := False;
   LblOllamaStatus.Left         := 0;
   LblOllamaStatus.Top          := 8;
-  LblOllamaStatus.Width        := PageOllama.SurfaceWidth;
+  LblOllamaStatus.Width        := 400;
   LblOllamaStatus.Height       := 48;
   LblOllamaStatus.WordWrap     := True;
   LblOllamaStatus.Caption      := '';
@@ -311,9 +313,10 @@ begin
 
   LblModelHint              := TLabel.Create(PageModel);
   LblModelHint.Parent       := PageModel.Surface;
+  LblModelHint.AutoSize     := False;
   LblModelHint.Left         := 0;
   LblModelHint.Top          := 0;
-  LblModelHint.Width        := PageModel.SurfaceWidth;
+  LblModelHint.Width        := 400;
   LblModelHint.Height       := 20;
   LblModelHint.Caption      := '';
 
@@ -321,7 +324,7 @@ begin
   LstModels.Parent          := PageModel.Surface;
   LstModels.Left            := 0;
   LstModels.Top             := 24;
-  LstModels.Width           := PageModel.SurfaceWidth;
+  LstModels.Width           := WizardForm.InnerNotebook.Width;
   LstModels.Height          := PageModel.SurfaceHeight - 28;
   LstModels.TabStop         := True;
 end;

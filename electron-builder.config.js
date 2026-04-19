@@ -1,5 +1,7 @@
 'use strict'
 
+const { FuseV1Options, FuseVersion } = require('@electron/fuses')
+
 /** @type {import('electron-builder').Configuration} */
 module.exports = {
   appId: 'com.patentworkbench.app',
@@ -17,26 +19,40 @@ module.exports = {
   files: ['electron/**/*'],
 
   extraResources: [
-    { from: 'server/dist', to: 'server', filter: ['**/*'] },
+    { from: 'server/dist/bundle.js', to: 'server/server.js' },
     { from: 'client/dist', to: 'client', filter: ['**/*'] },
-    // node_modules needed by the server at runtime (better-sqlite3, express, …)
-    { from: 'server/node_modules', to: 'server/node_modules', filter: ['**/*'] },
+    { from: 'server/node_modules/better-sqlite3', to: 'server/node_modules/better-sqlite3', filter: ['**/*'] },
+    { from: 'server/node_modules/bindings', to: 'server/node_modules/bindings', filter: ['**/*'] },
+    { from: 'server/node_modules/file-uri-to-path', to: 'server/node_modules/file-uri-to-path', filter: ['**/*'] },
+    { from: 'build/icon.png', to: 'icon.png' },
   ],
 
   win: {
-    // Produce an unpacked directory that Inno Setup will wrap into the wizard
-    // installer. Change to 'nsis' if you want a standalone self-contained setup.
     target: [{ target: 'dir', arch: ['x64'] }],
     icon: 'build/icon.png',
+    executableName: 'patent_workbench',
 
     // Code-signing: set CSC_LINK and CSC_KEY_PASSWORD env vars in CI.
     // When neither is set, skip signing entirely so winCodeSign is not needed.
     sign: process.env.CSC_LINK ? undefined : null,
   },
 
+  afterPack: async (context) => {
+    const { flipFuses } = require('@electron/fuses')
+    const { packager } = context
+    const ext = packager.platform.nodeName === 'win32' ? '.exe' : ''
+    const electronBinary = require('node:path').join(
+      context.appOutDir,
+      `${packager.appInfo.productFilename}${ext}`
+    )
+    await flipFuses(electronBinary, {
+      version: FuseVersion.V1,
+      [FuseV1Options.RunAsNode]: true,
+    })
+  },
+
   publish: {
     provider: 'github',
-    // Replace with the actual org/repo when publishing releases.
     owner: 'jhonatan-saints',
     repo: 'patent-workbench',
   }

@@ -21,7 +21,7 @@ import {
   IconLogout,
   IconTrash,
 } from '@tabler/icons-react';
-import { useRef, useState, useEffect, useCallback, type ReactNode } from 'react';
+import React, { useRef, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useHotkeys } from '@mantine/hooks';
 import { StatusIndicator } from '@/components/StatusIndicator';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -245,6 +245,7 @@ export function App() {
             borderBottom: 'none',
             boxShadow: '0 1px 0 var(--border)',
             zIndex: 200,
+            WebkitAppRegion: 'drag',
           },
           navbar: {
             background: 'var(--surface)',
@@ -285,7 +286,12 @@ export function App() {
             </Group>
 
             {/* Right actions */}
-            <Group gap={8} align="center" wrap="nowrap">
+            <Group
+              gap={8}
+              align="center"
+              wrap="nowrap"
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+            >
               <LanguageSwitcher />
               <ThemeToggle />
               {!DEMO_OAUTH && <SettingsMenu />}
