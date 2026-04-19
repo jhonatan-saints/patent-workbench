@@ -4,7 +4,7 @@ Express + TypeScript backend that validates, sanitizes, and proxies generation r
 
 ## Requirements
 
-- Node.js 20+
+- Node.js v24.14.0+
 - [Ollama](https://ollama.com) running locally (default: `http://localhost:11434`)
 
 ## Recommended models
@@ -119,6 +119,32 @@ curl -X POST http://localhost:3001/generate \
   -H 'Content-Type: application/json' \
   -d '{"prompt": "Write a patent abstract for a self-healing polymer.", "model": "mistral"}'
 ```
+
+---
+
+### `GET /settings`
+
+Returns all persisted runtime settings as a JSON object (`defaultModel`, `llmTimeoutMs`, `numOptions`, `ollamaUrl`, `promptMaxLength`, `shutdownTimeoutMs`, `logLevel`, `apiKey`).
+
+### `PUT /settings`
+
+Validates and persists a full settings object. Applies `logLevel` immediately (no restart needed). `apiKey` is stored in the DB and forwarded by the client as the `x-api-key` header on subsequent requests.
+
+### `POST /settings/reset`
+
+Restores all settings to factory defaults (hardcoded, not env-var-derived). The client's API key is cleared.
+
+### `GET /template`
+
+Returns the current workflow template JSON (steps, RAG config, workflow order) stored in `app_settings.reg_template`.
+
+### `PUT /template`
+
+Validates and persists a workflow template. All `workflow.order` entries must reference existing keys in `steps`. Field limits enforced: `systemContext` ≤ 8 000 chars, `promptSuffix` ≤ 512 chars, `guidedPromptSuffix` ≤ 1 024 chars.
+
+### `POST /template/reset`
+
+Restores the factory template from `server/src/config/defaultTemplate.ts`.
 
 ---
 
@@ -279,12 +305,20 @@ src/
 │   ├── errorHandler.ts     # Last-resort error handler
 │   ├── sanitize.ts         # Prompt trim, truncation, injection detection
 │   └── validate.ts         # Zod body validation factory
+├── config/
+│   └── defaultTemplate.ts  # Factory workflow template (TypeScript constant — source of truth for POST /template/reset)
 ├── routes/
-│   └── sessions.ts         # Sessions CRUD routes + Zod schema + figure XSS validation
+│   ├── sessions.ts         # Sessions CRUD routes + Zod schema + figure XSS validation
+│   ├── settings.ts         # GET/PUT /settings + POST /settings/reset
+│   └── template.ts         # GET/PUT /template + POST /template/reset
 └── services/
-    ├── db.ts               # SQLite client (better-sqlite3); schema + versioned migrations via PRAGMA user_version
+    ├── db.ts               # SQLite client (better-sqlite3); schema v8 + versioned migrations via PRAGMA user_version
     └── llm.service.ts      # Ollama HTTP integration (generate, checkLLM, listModels, getModelContextLength)
 ```
+
+### DB schema (v8)
+
+`app_settings` table columns: `default_model`, `llm_timeout_ms`, `num_options`, `ollama_url`, `prompt_max_length`, `shutdown_timeout_ms`, `log_level`, `reg_template` (JSON blob, v7), `api_key` (v8).
 
 ---
 

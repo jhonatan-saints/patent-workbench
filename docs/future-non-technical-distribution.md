@@ -9,7 +9,7 @@ The goal is to make Patent Workbench installable and runnable by legal professio
 | Phase | Approach | Status |
 | --- | --- | --- |
 | Stop-gap | `setup.ps1` Windows script | Done — ships with v1.x |
-| Target | Electron desktop app + Inno Setup installer | Planned — next major version |
+| Target | Electron desktop app + Inno Setup installer | In progress — prerequisites complete |
 
 ---
 
@@ -31,44 +31,47 @@ The goal is to make Patent Workbench installable and runnable by legal professio
 
 ---
 
-## Phase 2 — Electron desktop app (planned)
+## Phase 2 — Electron desktop app (in progress)
 
 Packages the full stack into a signed `.exe` installer. The user installs it like any commercial software — no terminal, no Node.js, no manual steps.
 
-### 2.1 Prerequisite changes before Electron work begins
+### 2.1 Prerequisite changes — status
 
-Before building the Electron wrapper, the following application changes are required:
+#### 2.1.1 Settings fully configurable from the client - Done
 
-#### 2.1.1 Settings fully configurable from the client
+All runtime configuration is editable from the Settings panel (General tab). No `.env` file is exposed to the user.
 
-All runtime configuration must be editable from the Settings panel in the UI. No `.env` file is exposed to the user.
+| Setting | Status |
+| --- | --- |
+| Default model | Done |
+| Ollama URL | Done |
+| LLM timeout, num options, prompt max length | Done |
+| Log level, shutdown timeout | Done |
+| Theme (dark/light) | Done — localStorage |
+| UI language | Done — localStorage |
+| API key (`x-api-key` header) | Done — PasswordInput in General tab; stored in SQLite `api_key` column (DB v8) |
 
-| Setting | Current state | Target state |
-| --- | --- | --- |
-| Default model | DB + UI | Already done |
-| Ollama URL | DB + UI | Already done |
-| LLM timeout, num options, prompt max length | DB + UI | Already done |
-| Log level, shutdown timeout | DB + UI | Already done |
-| Theme (dark/light) | localStorage | Already done |
-| UI language | localStorage | Already done |
-| API key | Env var only | Add to Settings UI |
+Env vars (`PORT`, `HOST`, `CORS_ORIGIN`, rate limits) are fixed at build time in the Electron context and not exposed to the user.
 
-Env vars (`PORT`, `HOST`, `CORS_ORIGIN`, rate limits, etc.) are fixed at build time in the Electron context and not exposed to the user.
+#### 2.1.2 Workflow template editable from the client - Done (partial)
 
-#### 2.1.2 Workflow template editable from the client
+`reg-templates.json` is no longer baked into the React build at runtime. The template is stored in SQLite (`app_settings.reg_template`, seeded on first run) and served via API. The client loads it at boot and reinitialises all workflow modules in-place without a page reload.
 
-`client/src/config/reg-templates.json` is currently a static file baked into the React build. In the Electron app, users must be able to edit it without recompiling.
+**Done:**
+- `app_settings.reg_template` column (DB migration v7); `api_key` column (DB migration v8)
+- `GET /template`, `PUT /template`, `POST /template/reset` endpoints with Zod validation
+- `POST /settings/reset` endpoint (restores factory defaults)
+- Client loads template from API on boot via `loadTemplate()` in `App.tsx`
+- `reinitFromTemplate()` mutates `WORKFLOW_MODULES` / `WORKFLOW_ORDER` / RAG config in-place — prompt generation picks up the new template on the next `Generate` call without a page reload
+- Settings modal has three tabs:
+  - **General** — all app settings + API Key field + Reset to Defaults
+  - **Template** — per-step accordion editor (system context, prompt suffix, guided prompt suffix); Save disabled until changes are made
+  - **RAG** — context limit fields (maxPriorSections, maxSectionChars, maxIdeaChars, maxConstraintsChars, maxContextFileChars)
+- All labels use i18n resources; 16 new resources added and generated across all locales
 
-**Implementation plan:**
-
-- Add `reg_template` (TEXT, JSON blob) to the `app_settings` table — seeded from the current JSON on first run (schema migration v7)
-- Add `GET /template` and `PUT /template` API endpoints
-- Client loads the template from the API at boot instead of a static import
-- Add a "Template" section to the Settings panel with a **structured per-step editor**:
-  - Editable fields per step: label, system prompt (`systemContext`), prompt suffix, guided fields
-  - RAG parameters section (maxPriorSections, maxContextFileChars, etc.)
-  - Step order drag-and-drop (or up/down arrows)
-  - Reset to default button
+**Still pending:**
+- Step order reordering (drag-and-drop or up/down arrows) — deferred to next iteration
+- Guided fields editor (add/remove/reorder per-step guided form fields) — deferred
 
 ---
 
@@ -116,7 +119,7 @@ C:\Users\<user>\Patent Workbench\
 ```
 Electron main process (main.js)
   |- Spawns Express server (app/server/server.js) as a child process
-  |- Waits for server health check on localhost:3001
+  |- Waits for server health check on localhost:3001 
   |- Opens BrowserWindow pointed at localhost:3001/patent-workbench
   |- System tray icon with "Open" and "Quit" menu
   |- Splash screen shown during server startup
@@ -156,3 +159,5 @@ Electron main process (main.js)
 - macOS `.dmg` — Windows only for the first Electron release
 - Docker Compose — kept available for IT-managed/self-hosted deployments, not for end-users
 - Multi-user / server deployments — out of scope; this is a local single-user app
+- Guided fields editor (add/remove fields per step) — deferred post-Electron
+- Step order drag-and-drop in template editor — deferred post-Electron
