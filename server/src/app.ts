@@ -12,6 +12,7 @@ import { generate, checkLLM, listModels, getModelContextLength } from './service
 import { getAppSettings } from './services/db'
 import sessionsRouter from './routes/sessions'
 import settingsRouter from './routes/settings'
+import templateRouter from './routes/template'
 import logger from './logger'
 import errorHandler from './middleware/errorHandler'
 import { validateBody } from './middleware/validate'
@@ -231,6 +232,9 @@ app.use('/sessions', express.json({ limit: '50mb' }), sessionsRouter)
 
 // Settings
 app.use('/settings', settingsRouter)
+
+// Workflow template
+app.use('/template', templateRouter)
 
 // Error handler (must be last middleware)
 app.use(errorHandler)

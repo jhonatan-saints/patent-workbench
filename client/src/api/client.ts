@@ -7,6 +7,7 @@ import type {
   ModelsResponse,
   WorkflowSession,
   AppSettings,
+  RegTemplate,
 } from '@/types';
 
 interface ModelContextResponse {
@@ -21,8 +22,12 @@ const BASE_URL = VITE_API_BASE ?? '/api';
 
 const DEFAULT_TIMEOUT_MS = Number(import.meta.env.VITE_LLM_TIMEOUT_MS) || 300_000;
 
-// M-4: include API key when the server requires one (set via VITE_API_KEY env var)
-const API_KEY = import.meta.env.VITE_API_KEY as string | undefined;
+// M-4: API key — env var is the build-time default; loadSettings() overrides at runtime.
+let _apiKey: string | undefined = import.meta.env.VITE_API_KEY as string | undefined;
+
+export function setApiKey(key: string | undefined): void {
+  _apiKey = key || undefined;
+}
 
 async function apiFetch<T>(
   path: string,
@@ -47,7 +52,7 @@ async function apiFetch<T>(
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
-        ...(API_KEY ? { 'x-api-key': API_KEY } : {}),
+        ...(_apiKey ? { 'x-api-key': _apiKey } : {}),
         ...options.headers,
       },
     });
@@ -206,6 +211,58 @@ export async function updateSettings(settings: AppSettings): Promise<AppSettings
     const result = await apiFetch<{ success: true; data: AppSettings }>(
       '/settings',
       { method: 'PUT', body: JSON.stringify(settings) },
+      SETTINGS_TIMEOUT_MS
+    );
+    if (isApiError(result)) return null;
+    return result.data;
+  } catch {
+    return null;
+  }
+}
+
+export async function resetSettings(): Promise<AppSettings | null> {
+  try {
+    const result = await apiFetch<{ success: true; data: AppSettings }>(
+      '/settings/reset',
+      { method: 'POST' },
+      SETTINGS_TIMEOUT_MS
+    );
+    if (isApiError(result)) return null;
+    return result.data;
+  } catch {
+    return null;
+  }
+}
+
+export async function getTemplate(): Promise<RegTemplate | null> {
+  try {
+    const result = await apiFetch<{ success: true; data: RegTemplate }>('/template', {}, SETTINGS_TIMEOUT_MS);
+    if (isApiError(result)) return null;
+    return result.data;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateTemplate(template: RegTemplate): Promise<RegTemplate | null> {
+  try {
+    const result = await apiFetch<{ success: true; data: RegTemplate }>(
+      '/template',
+      { method: 'PUT', body: JSON.stringify(template) },
+      SETTINGS_TIMEOUT_MS
+    );
+    if (isApiError(result)) return null;
+    return result.data;
+  } catch {
+    return null;
+  }
+}
+
+export async function resetTemplate(): Promise<RegTemplate | null> {
+  try {
+    const result = await apiFetch<{ success: true; data: RegTemplate }>(
+      '/template/reset',
+      { method: 'POST' },
       SETTINGS_TIMEOUT_MS
     );
     if (isApiError(result)) return null;

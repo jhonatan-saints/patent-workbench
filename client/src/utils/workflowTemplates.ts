@@ -1,5 +1,5 @@
-import type { PatentArtifact } from '@/types';
-import templates from '@/config/reg-templates.json';
+import type { PatentArtifact, RegTemplate } from '@/types';
+import bundledTemplates from '@/config/reg-templates.json';
 
 export interface GuidedField {
   key: string;
@@ -23,7 +23,10 @@ export interface WorkflowModule {
   ) => string;
 }
 
-const RAG = templates.rag;
+// Mutable module-level state — updated by reinitFromTemplate() after the
+// live template is loaded from the API. Components hold references to these
+// objects, so in-place mutation propagates without requiring component changes.
+let RAG = bundledTemplates.rag;
 
 // Internal helpers
 
@@ -61,12 +64,24 @@ function applyPlaceholders(
   return result;
 }
 
-// RAG context builder
+// Mutable internal maps — updated in-place by reinitFromTemplate().
+// Components hold references to these objects so mutations are visible
+// without requiring any import changes in consumers.
+const bundledSteps = bundledTemplates.steps as RegTemplate['steps'];
 
-// EN labels used when injecting prior sections into the prompt context.
-const SECTION_LABELS_EN: Record<string, string> = Object.fromEntries(
-  Object.entries(templates.steps).map(([id, step]) => [id, step.sectionLabelEn]),
+let SECTION_LABELS_EN: Record<string, string> = Object.fromEntries(
+  Object.entries(bundledSteps).map(([id, step]) => [id, step.sectionLabelEn ?? id]),
 );
+
+const MODULE_RESOURCE_KEYS: Record<string, string> = Object.fromEntries(
+  Object.entries(bundledSteps).map(([id, step]) => [id, step.labelKey ?? step.label]),
+);
+
+const MODULE_DESCRIPTION_RESOURCE_KEYS: Record<string, string> = Object.fromEntries(
+  Object.entries(bundledSteps).map(([id, step]) => [id, step.descriptionKey ?? step.description ?? id]),
+);
+
+// RAG context builder
 
 export function buildArtifactContext(artifact: PatentArtifact, upToModule?: string): string {
   const stopIdx = upToModule ? WORKFLOW_ORDER.indexOf(upToModule) : WORKFLOW_ORDER.length;
@@ -108,17 +123,38 @@ export function buildArtifactContext(artifact: PatentArtifact, upToModule?: stri
 
 // Derived exports (consumed by store + components)
 
-// Ordered list of step IDs — driven by workflow.order in reg-templates.json.
-export const WORKFLOW_ORDER: string[] = templates.workflow.order;
+// Mutable arrays/objects — mutated in-place by reinitFromTemplate() so that
+// all existing consumer references pick up the live template without changes.
+export const WORKFLOW_ORDER: string[] = [...bundledTemplates.workflow.order];
 
-// Internal maps — consumed only by resolveLabel / resolveDescription below.
-const MODULE_RESOURCE_KEYS: Record<string, string> = Object.fromEntries(
-  Object.entries(templates.steps).map(([id, step]) => [id, step.labelKey ?? step.label]),
+export const WORKFLOW_MODULES: Record<string, WorkflowModule> = buildModulesFromSteps(
+  bundledTemplates.steps as RegTemplate['steps'],
 );
 
-const MODULE_DESCRIPTION_RESOURCE_KEYS: Record<string, string> = Object.fromEntries(
-  Object.entries(templates.steps).map(([id, step]) => [id, step.descriptionKey ?? step.description]),
-);
+function buildModulesFromSteps(
+  steps: RegTemplate['steps'],
+): Record<string, WorkflowModule> {
+  return Object.fromEntries(
+    Object.entries(steps).map(([id, step]) => [
+      id,
+      {
+        label: step.label,
+        description: step.description ?? '',
+        systemContext: (numOptions: number) =>
+          applyPlaceholders(step.systemContext, numOptions) + buildOptionsFormat(numOptions),
+        buildPrompt: (artifact: PatentArtifact, numOptions: number) =>
+          `${buildArtifactContext(artifact, id)}\n\n${applyPlaceholders(step.promptSuffix ?? '', numOptions)}`,
+        guidedFields: (step.guidedFields ?? []) as GuidedField[],
+        buildGuidedPrompt: (
+          artifact: PatentArtifact,
+          fields: Record<string, string>,
+          numOptions: number,
+        ) =>
+          `${buildArtifactContext(artifact, id)}\n\n${applyPlaceholders(step.guidedPromptSuffix ?? '', numOptions, fields)}`,
+      } satisfies WorkflowModule,
+    ]),
+  );
+}
 
 /**
  * Resolves the display label for a step.
@@ -138,33 +174,32 @@ export function resolveDescription(moduleId: string, t: (key: string) => string)
   return key.startsWith('res_') ? t(key) : key;
 }
 
-// Workflow modules (derived from JSON)
+/**
+ * Reinitialises all module-level exports from a live template fetched from
+ * the API. Mutates in-place so that existing consumer references remain valid.
+ * Called by the store after loadTemplate() resolves.
+ */
+export function reinitFromTemplate(t: RegTemplate): void {
+  if (t.rag) RAG = t.rag;
 
-export const WORKFLOW_MODULES: Record<string, WorkflowModule> = Object.fromEntries(
-  Object.entries(templates.steps).map(([id, step]) => [
-    id,
-    {
-      label: step.label,
-      description: step.description,
+  WORKFLOW_ORDER.splice(0, Infinity, ...t.workflow.order);
 
-      // System prompt: JSON provides role + requirements; engine appends the
-      // dynamic "OPTION 1 / OPTION 2 / ..." format block.
-      systemContext: (numOptions: number) =>
-        applyPlaceholders(step.systemContext, numOptions) + buildOptionsFormat(numOptions),
+  SECTION_LABELS_EN = Object.fromEntries(
+    Object.entries(t.steps).map(([id, step]) => [id, step.sectionLabelEn ?? id]),
+  );
 
-      // Auto mode: RAG context prefix + prompt suffix from JSON.
-      buildPrompt: (artifact: PatentArtifact, numOptions: number) =>
-        `${buildArtifactContext(artifact, id)}\n\n${applyPlaceholders(step.promptSuffix, numOptions)}`,
+  const newKeys = Object.fromEntries(
+    Object.entries(t.steps).map(([id, step]) => [id, step.labelKey ?? step.label]),
+  );
+  const newDescKeys = Object.fromEntries(
+    Object.entries(t.steps).map(([id, step]) => [id, step.descriptionKey ?? step.description ?? id]),
+  );
+  Object.keys(MODULE_RESOURCE_KEYS).forEach((k) => delete MODULE_RESOURCE_KEYS[k]);
+  Object.assign(MODULE_RESOURCE_KEYS, newKeys);
+  Object.keys(MODULE_DESCRIPTION_RESOURCE_KEYS).forEach((k) => delete MODULE_DESCRIPTION_RESOURCE_KEYS[k]);
+  Object.assign(MODULE_DESCRIPTION_RESOURCE_KEYS, newDescKeys);
 
-      guidedFields: (step.guidedFields ?? []) as GuidedField[],
-
-      // Guided mode: RAG context prefix + guided prompt suffix from JSON.
-      buildGuidedPrompt: (
-        artifact: PatentArtifact,
-        fields: Record<string, string>,
-        numOptions: number,
-      ) =>
-        `${buildArtifactContext(artifact, id)}\n\n${applyPlaceholders(step.guidedPromptSuffix, numOptions, fields)}`,
-    } satisfies WorkflowModule,
-  ]),
-);
+  const newModules = buildModulesFromSteps(t.steps);
+  Object.keys(WORKFLOW_MODULES).forEach((k) => delete WORKFLOW_MODULES[k]);
+  Object.assign(WORKFLOW_MODULES, newModules);
+}
