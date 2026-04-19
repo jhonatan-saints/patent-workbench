@@ -2,6 +2,13 @@
 
 Express + TypeScript backend that validates, sanitizes, and proxies generation requests to a local Ollama instance. The server is the sole gateway between the React client and the LLM — the browser never communicates with Ollama directly.
 
+## Usage modes
+
+| Mode | How the server starts | Config |
+| --- | --- | --- |
+| **Desktop app (Electron)** | Spawned automatically as a child process by `electron/main.js` on app launch | Port, host, CORS origin, and data directory are injected as environment variables by the main process — no `.env` file needed |
+| **Web / dev mode** | Started manually with `npm run server:dev` (or `npm run start` from the repo root) | Copy `.env.example` to `.env` and adjust as needed |
+
 ## Requirements
 
 - Node.js v24.14.0+

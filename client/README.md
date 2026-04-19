@@ -76,7 +76,9 @@ src/
 | `SettingsMenu` | Header icon button that opens a tabbed modal: **General** (model, options, timeout, Ollama URL, API Key, log level, shutdown timeout — Reset to Defaults + Save), **Template** (per-step accordion editor for system context and prompt suffixes), **RAG** (context limit fields); template changes apply immediately on Save without a page reload |
 | `TemplateEditor` | Presentational component used by SettingsMenu's Template tab — renders a scrollable accordion of workflow steps, each with editable `systemContext`, `promptSuffix`, and (when present) `guidedPromptSuffix` textareas |
 | `ExportPanel` | Export the artifact as `.txt`, `.pdf` (print dialog with embedded figures), or `.docx` (Word with inventors block and embedded figures); also supports `.md` with YAML frontmatter |
-| `AppLoader` | Splash screen shown while the app initialises |
+| `AppLoader` | Splash screen shown while the app initialises (web mode) |
+| `BrandSplash` | **Electron-only** animated brand intro — 3×3 grid builds cell by cell, spins 90°, then "Patent / Workbench" fades in with a tagline; overlays the app shell so the UI is ready when the splash exits (no flicker) |
+| `WindowControls` | **Electron-only** title-bar buttons (minimise, maximise/restore, close) rendered in the app header; close shows a confirmation modal when unsaved (non-persisted) drafts exist |
 
 ---
 
@@ -302,7 +304,17 @@ Requests are made relative to `/api` (proxied to `localhost:3001` by Vite during
 
 ---
 
-## Dev
+## Electron mode
+
+When the app is running inside the Electron shell, `window.electronAPI.isElectron === true`. This flag enables:
+
+- `BrandSplash` on first paint instead of `AppLoader`
+- `WindowControls` in the header (minimise / maximise / close)
+- The close button guard — only prompts if `sessions.some(s => !s.persisted)`
+
+The `IS_ELECTRON` constant in `App.tsx` gates all Electron-only rendering. In web mode the value is `false` and none of the Electron components are mounted.
+
+## Dev (web mode)
 
 ```bash
 npm install
@@ -316,5 +328,6 @@ The model is selected directly in the UI from the list of models available in th
 ## Build
 
 ```bash
-npm run build   # Output to dist/ (base path: /patent-workbench)
+npm run build               # Web — output to dist/ (base path: /patent-workbench)
+npm run electron:build      # Desktop — output to dist-electron/win-unpacked/ (run from repo root)
 ```
