@@ -12,6 +12,7 @@ jobs:
   release:
     name: Build & publish installer
     runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - name: Checkout
@@ -30,6 +31,9 @@ jobs:
 
       - name: Generate app icon
         run: npm run generate:favicons
+
+      - name: Generate icon.ico for installer
+        run: magick build/icon.png -define icon:auto-resize=256,128,64,48,32,16 build/icon.ico
 
       - name: Build Electron app (server + client + electron-builder)
         run: npm run electron:build
