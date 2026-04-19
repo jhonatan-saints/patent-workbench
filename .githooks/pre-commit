@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-# Pre-commit hook: run repository linters and (optionally) builds
 echo "Running pre-commit checks: lint..."
 
 # Block commits on protected branches
@@ -11,18 +10,37 @@ if [ "$branch" = "develop" ]; then
   exit 1
 fi
 
-# Only lint if there are staged changes
-if git diff --cached --quiet; then
+# Collect staged files (added, copied, modified, renamed — excluding deleted)
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+
+if [ -z "$staged" ]; then
   echo "No staged changes; skipping lint"
-else
-  # Prefer npm run lint at root
-  if command -v npm > /dev/null 2>&1; then
-    npm run lint
-  else
-    echo "npm not found; skipping lint"
-  fi
+  echo "Pre-commit checks passed"
+  exit 0
 fi
 
-echo "Pre-commit checks passed"
+# Filter by extension
+js_ts=$(echo "$staged" | grep -E '\.(js|ts|tsx|cjs|mjs)$' || true)
+md=$(echo "$staged" | grep -E '\.md$' || true)
+styles=$(echo "$staged" | grep -E '\.(scss|css)$' || true)
 
+if [ -n "$js_ts" ]; then
+  echo "ESLint..."
+  echo "$js_ts" | xargs npx eslint --max-warnings=0 --no-error-on-unmatched-pattern
+fi
+
+if [ -n "$md" ]; then
+  echo "Markdownlint..."
+  echo "$md" | xargs npx markdownlint-cli --config .markdownlint.json
+fi
+
+if [ -n "$styles" ]; then
+  echo "Stylelint..."
+  echo "$styles" | xargs npx stylelint
+fi
+
+echo "Prettier..."
+echo "$staged" | xargs npx prettier --check --ignore-unknown
+
+echo "Pre-commit checks passed"
 exit 0

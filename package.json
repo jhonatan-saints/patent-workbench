@@ -3,6 +3,8 @@
   "version": "1.2.1",
   "private": true,
   "description": "Monorepo root for Patent Workbench (client + server)",
+  "author": "Jhonatan Santos",
+  "main": "electron/main.js",
   "workspaces": [
     "client",
     "server"
@@ -12,10 +14,16 @@
     "clean": "bash ./scripts/clean.sh",
     "client": "npm --workspace client run dev",
     "client:build": "npm --workspace client run build",
+    "client:build:electron": "cross-env VITE_API_BASE=http://127.0.0.1:3001 npm --workspace client run build",
     "client:install": "npm --prefix client install",
     "server": "npm --workspace server run start",
+    "server:build": "npm --workspace server run build",
     "server:dev": "npm --workspace server run dev",
     "server:install": "npm --prefix server install",
+    "electron": "electron .",
+    "electron:dev": "concurrently -k -n server,client,electron -c cyan,magenta,yellow \"npm run server:dev\" \"cross-env ELECTRON_DEV=true npm run client\" \"electron .\"",
+    "electron:build": "npm run server:build && npm run client:build:electron && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --config electron-builder.config.js --publish=never",
+    "electron:pack": "npm run electron:build",
     "generate:favicons": "node scripts/generate-favicons.mjs",
     "i18n:generate": "node -e \"require('./scripts/i18n/translateHook.cjs').generateLanguage()\"",
     "setup": "npm install",
@@ -36,6 +44,9 @@
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "concurrently": "^9.0.0",
+    "cross-env": "^7.0.3",
+    "electron": "^36.0.0",
+    "electron-builder": "^25.0.0",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.9",
     "prettier-plugin-sh": "^0.18.0",
@@ -43,5 +54,8 @@
     "stylelint": "^17.5.0",
     "stylelint-config-standard-scss": "^17.0.0",
     "stylelint-scss": "^7.0.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.0"
   }
 }
