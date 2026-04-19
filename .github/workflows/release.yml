@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   release:
@@ -46,6 +48,11 @@ jobs:
       - name: Compile installer
         shell: cmd
         run: '"%ProgramFiles(x86)%\Inno Setup 6\iscc.exe" installer\patent-workbench.iss'
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: installer/output/PatentWorkbench-setup.exe
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
