@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import {
   ActionIcon,
   Tooltip,
@@ -8,7 +8,6 @@ import {
   Select,
   NumberInput,
   TextInput,
-  PasswordInput,
   Group,
   Button,
   Text,
@@ -17,11 +16,11 @@ import {
   useComputedColorScheme,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAdjustmentsCog, IconTrash } from '@tabler/icons-react';
+import { IconAdjustmentsCog, IconFileTextFilled } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n';
 import { TemplateEditor } from '@/components/TemplateEditor';
-import { listBackups, restoreBackup, deleteBackup, type BackupEntry } from '@/api/client';
+import { exportBackup, importBackup } from '@/api/client';
 import type { AppSettings, LogLevel, RegTemplate } from '@/types';
 
 const LOG_LEVEL_OPTIONS: { value: LogLevel; label: string }[] = [
@@ -36,120 +35,134 @@ const LOG_LEVEL_OPTIONS: { value: LogLevel; label: string }[] = [
 const FIELD = { label: { fontFamily: 'monospace', fontSize: 11 } } as const;
 const TAB_STYLES = { tab: { fontFamily: 'monospace', fontSize: 11 } } as const;
 
-const MODAL_STYLES = {
+const MODAL_BASE = {
   content: { background: 'var(--surface-raised)', border: '1px solid var(--border)' },
   header: {
     background: 'var(--surface-raised)',
     borderBottom: '1px solid var(--border)',
     paddingBottom: 8,
   },
+  close: {
+    color: 'var(--text-muted)',
+    '&:hover': { color: 'var(--text-fg)', background: 'var(--surface-hover)' },
+  },
+} as const;
+
+const MODAL_STYLES = {
+  ...MODAL_BASE,
+  body: {
+    paddingTop: 12,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    height: 'min(620px, calc(100vh - 160px))',
+    overflow: 'hidden',
+  },
+} as const;
+
+const CONFIRM_MODAL_STYLES = {
+  ...MODAL_BASE,
   body: { paddingTop: 12 },
 } as const;
 
-function formatDate(ms: number) {
-  return new Date(ms).toLocaleString();
+interface BackupTabProps {
+  readonly selectedFile: File | null;
+  readonly importing: boolean;
+  readonly onFileSelect: (file: File | null) => void;
+  readonly status: { ok: boolean; msg: string } | null;
 }
 
-function formatSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
-}
-
-function BackupTab() {
-  const { initSessions, loadSettings, loadTemplate } = useWorkbenchStore();
+function BackupTab({ selectedFile, importing, onFileSelect, status }: BackupTabProps) {
   const { t } = useI18n();
-  const [backups, setBackups] = useState<BackupEntry[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [restoringId, setRestoringId] = useState<string | null>(null);
-  const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    listBackups().then((list) => {
-      setBackups(list);
-      setLoaded(true);
-    });
-  }, []);
-
-  const restore = async (filename: string) => {
-    setRestoringId(filename);
-    setStatus(null);
-    const result = await restoreBackup(filename);
-    setRestoringId(null);
-    if (result.success) {
-      await Promise.all([initSessions(), loadSettings(), loadTemplate()]);
-      setStatus({ ok: true, msg: t('res_BackupRestored') });
-    } else {
-      setStatus({ ok: false, msg: result.error ?? t('res_BackupRestoreError') });
-    }
+  const handleExport = async () => {
+    setExporting(true);
+    await exportBackup();
+    setExporting(false);
   };
 
-  const remove = async (filename: string) => {
-    const ok = await deleteBackup(filename);
-    if (ok) setBackups((prev) => prev.filter((b) => b.filename !== filename));
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) onFileSelect(file);
+    e.target.value = '';
   };
 
-  if (!loaded) {
-    return (
-      <Text size="xs" ff="monospace" c="var(--text-muted)">
-        Loading...
-      </Text>
-    );
-  }
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) onFileSelect(file);
+  };
 
   return (
-    <Stack gap="sm">
+    <Stack gap="xl">
       {status && (
         <Text size="xs" ff="monospace" c={status.ok ? 'teal' : 'red'}>
           {status.msg}
         </Text>
       )}
-      {backups.length === 0 ? (
-        <Text size="xs" ff="monospace" c="var(--text-muted)">
-          {t('res_BackupNoBackups')}
-        </Text>
-      ) : (
-        <Stack gap="xs">
-          {backups.map((b) => (
-            <Group
-              key={b.filename}
-              justify="space-between"
-              align="center"
-              className="border border-stroke rounded px-3 py-2"
-            >
-              <Box>
-                <Text size="xs" ff="monospace">
-                  {formatDate(b.mtimeMs)}
+
+      <Box>
+        <SectionLabel>{t('res_BackupRestore')}</SectionLabel>
+        <Box
+          mt="xs"
+          className="border border-stroke rounded px-4 text-center"
+          style={{
+            cursor: importing ? 'default' : 'pointer',
+            opacity: importing ? 0.5 : 1,
+            minHeight: 120,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
+          onClick={() => !importing && fileInputRef.current?.click()}
+        >
+          <Group gap={6} align="center" wrap="nowrap">
+            {selectedFile ? (
+              <>
+                <IconFileTextFilled
+                  size={24}
+                  style={{ color: 'var(--text-muted)', flexShrink: 0 }}
+                />
+                <Text size="sm" ff="monospace">
+                  {selectedFile.name}
                 </Text>
-                <Text size="xs" ff="monospace" c="var(--text-muted)">
-                  {formatSize(b.size)}
-                </Text>
-              </Box>
-              <Group gap={4} wrap="nowrap">
-                <Button
-                  size="xs"
-                  ff="monospace"
-                  variant="subtle"
-                  loading={restoringId === b.filename}
-                  disabled={restoringId !== null && restoringId !== b.filename}
-                  onClick={() => void restore(b.filename)}
-                >
-                  {restoringId === b.filename ? t('res_BackupRestoring') : t('res_BackupRestore')}
-                </Button>
-                <ActionIcon
-                  size="sm"
-                  variant="subtle"
-                  disabled={restoringId !== null}
-                  onClick={() => void remove(b.filename)}
-                  aria-label="Delete backup"
-                >
-                  <IconTrash size={13} />
-                </ActionIcon>
-              </Group>
-            </Group>
-          ))}
-        </Stack>
-      )}
+              </>
+            ) : (
+              <Text size="sm" ff="monospace" c="var(--text-muted)">
+                {t('res_BackupDropHint')}
+              </Text>
+            )}
+          </Group>
+          <input
+            aria-label={t('res_BackupRestore')}
+            ref={fileInputRef}
+            type="file"
+            accept=".db"
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+          />
+        </Box>
+      </Box>
+
+      <Box className="border-t border-stroke pt-4">
+        <Group justify="space-between" align="center">
+          <Text size="xs" ff="monospace" c="var(--text-muted)">
+            {t('res_BackupExportHint')}
+          </Text>
+          <Button
+            size="xs"
+            ff="monospace"
+            loading={exporting}
+            onClick={() => void handleExport()}
+            className="bg-accent text-bg"
+          >
+            {t('res_BackupDownload')}
+          </Button>
+        </Group>
+      </Box>
     </Stack>
   );
 }
@@ -180,6 +193,9 @@ export function SettingsMenu() {
     template,
     saveTemplate,
     resetTemplate,
+    initSessions,
+    loadSettings,
+    loadTemplate,
   } = useWorkbenchStore();
 
   const { t } = useI18n();
@@ -187,19 +203,94 @@ export function SettingsMenu() {
   const [templateDraft, setTemplateDraft] = useState<RegTemplate>(() => structuredClone(template));
   const [saving, setSaving] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
+  const [backupFile, setBackupFile] = useState<File | null>(null);
+  const [backupImporting, setBackupImporting] = useState(false);
+  const [backupStatus, setBackupStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   useEffect(() => {
     if (opened) {
       setForm({ ...appSettings });
       setTemplateDraft(structuredClone(template));
       setActiveTab('general');
+      setBackupFile(null);
+      setBackupStatus(null);
     }
   }, [opened, appSettings, template]);
+
+  const handleBackupApply = async () => {
+    if (!backupFile) return;
+    setBackupImporting(true);
+    setBackupStatus(null);
+    const result = await importBackup(backupFile);
+    setBackupImporting(false);
+    if (result.success) {
+      setBackupFile(null);
+      await Promise.all([initSessions(), loadSettings(), loadTemplate()]);
+      setBackupStatus({ ok: true, msg: t('res_BackupRestored') });
+    } else {
+      setBackupStatus({ ok: false, msg: result.error ?? t('res_BackupRestoreError') });
+    }
+  };
 
   const isTemplateDirty = useMemo(
     () => JSON.stringify(templateDraft) !== JSON.stringify(template),
     [templateDraft, template]
   );
+
+  const isGeneralDirty = useMemo(
+    () => JSON.stringify(form) !== JSON.stringify(appSettings),
+    [form, appSettings]
+  );
+
+  const isCurrentTabDirty = useMemo(() => {
+    if (activeTab === 'general') return isGeneralDirty;
+    if (activeTab === 'template' || activeTab === 'rag') return isTemplateDirty;
+    if (activeTab === 'backup') return backupFile !== null;
+    return false;
+  }, [activeTab, isGeneralDirty, isTemplateDirty, backupFile]);
+
+  const guardedTabChange = (tab: string | null) => {
+    if (!tab || tab === activeTab) return;
+    if (isCurrentTabDirty) {
+      setPendingAction(tab);
+      setDiscardOpen(true);
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
+  const guardedClose = () => {
+    if (isCurrentTabDirty) {
+      setPendingAction('__close__');
+      setDiscardOpen(true);
+    } else {
+      close();
+    }
+  };
+
+  const handleConfirmDiscard = () => {
+    setDiscardOpen(false);
+    if (activeTab === 'general') setForm({ ...appSettings });
+    if (activeTab === 'template' || activeTab === 'rag')
+      setTemplateDraft(structuredClone(template));
+    if (activeTab === 'backup') {
+      setBackupFile(null);
+      setBackupStatus(null);
+    }
+    if (pendingAction === '__close__') {
+      close();
+    } else if (pendingAction) {
+      setActiveTab(pendingAction);
+    }
+    setPendingAction(null);
+  };
+
+  const handleCancelDiscard = () => {
+    setDiscardOpen(false);
+    setPendingAction(null);
+  };
 
   const patch = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -246,6 +337,84 @@ export function SettingsMenu() {
   const isTemplateTab = activeTab === 'template' || activeTab === 'rag';
   const isBackupTab = activeTab === 'backup';
 
+  const renderFooter = () => {
+    if (isBackupTab) {
+      return (
+        <>
+          <Button
+            variant="subtle"
+            size="xs"
+            ff="monospace"
+            disabled={!backupFile || backupImporting}
+            onClick={() => {
+              setBackupFile(null);
+              setBackupStatus(null);
+            }}
+          >
+            {t('res_Cancel')}
+          </Button>
+          <Button
+            size="xs"
+            ff="monospace"
+            loading={backupImporting}
+            disabled={!backupFile}
+            onClick={() => void handleBackupApply()}
+            className="bg-accent text-bg"
+          >
+            {t('res_Save')}
+          </Button>
+        </>
+      );
+    }
+    if (isTemplateTab) {
+      return (
+        <>
+          <Button
+            variant="subtle"
+            size="xs"
+            ff="monospace"
+            loading={templateSaving}
+            onClick={() => void handleResetTemplate()}
+          >
+            {t('res_ResetToDefaults')}
+          </Button>
+          <Button
+            size="xs"
+            ff="monospace"
+            loading={templateSaving}
+            disabled={!isTemplateDirty}
+            onClick={() => void handleSaveTemplate()}
+            className="bg-accent text-bg"
+          >
+            {t('res_Save')}
+          </Button>
+        </>
+      );
+    }
+    return (
+      <>
+        <Button
+          variant="subtle"
+          size="xs"
+          ff="monospace"
+          loading={saving}
+          onClick={() => void handleResetSettings()}
+        >
+          {t('res_ResetToDefaults')}
+        </Button>
+        <Button
+          size="xs"
+          loading={saving}
+          onClick={() => void handleSave()}
+          ff="monospace"
+          className="bg-accent text-bg"
+        >
+          {t('res_Save')}
+        </Button>
+      </>
+    );
+  };
+
   return (
     <>
       <Tooltip label={t('res_Settings')} position="bottom">
@@ -261,8 +430,45 @@ export function SettingsMenu() {
       </Tooltip>
 
       <Modal
+        opened={discardOpen}
+        onClose={handleCancelDiscard}
+        title={
+          <Text
+            ff="monospace"
+            fw={700}
+            tt="uppercase"
+            size="xs"
+            className="text-accent tracking-widest"
+          >
+            {t('res_SettingsDiscardTitle')}
+          </Text>
+        }
+        centered
+        size="sm"
+        zIndex={400}
+        styles={CONFIRM_MODAL_STYLES}
+      >
+        <Text className="py-5" size="sm" mb="lg" ff="monospace">
+          {t('res_SettingsDiscardMessage')}
+        </Text>
+        <Group justify="flex-end" gap="xs">
+          <Button variant="subtle" size="xs" ff="monospace" onClick={handleCancelDiscard}>
+            {t('res_Cancel')}
+          </Button>
+          <Button
+            size="xs"
+            ff="monospace"
+            onClick={handleConfirmDiscard}
+            className="bg-accent text-bg"
+          >
+            {t('res_Discard')}
+          </Button>
+        </Group>
+      </Modal>
+
+      <Modal
         opened={opened}
-        onClose={close}
+        onClose={guardedClose}
         title={
           <Text
             ff="monospace"
@@ -277,8 +483,16 @@ export function SettingsMenu() {
         size="lg"
         styles={MODAL_STYLES}
       >
-        <Stack gap="sm">
-          <Tabs value={activeTab} onChange={setActiveTab} styles={TAB_STYLES}>
+        <Stack gap={0} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <Tabs
+            value={activeTab}
+            onChange={guardedTabChange}
+            styles={{
+              ...TAB_STYLES,
+              root: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' },
+              panel: { flex: 1, minHeight: 0, overflowY: 'auto' },
+            }}
+          >
             <Tabs.List mb="sm">
               <Tabs.Tab value="general">{t('res_SettingsTabGeneral')}</Tabs.Tab>
               <Tabs.Tab value="template">{t('res_SettingsTabTemplate')}</Tabs.Tab>
@@ -286,8 +500,8 @@ export function SettingsMenu() {
               <Tabs.Tab value="backup">{t('res_SettingsTabBackup')}</Tabs.Tab>
             </Tabs.List>
 
-            <Tabs.Panel value="general">
-              <Stack gap="sm">
+            <Tabs.Panel value="general" pb="md">
+              <Stack gap="xl">
                 <Box>
                   <SectionLabel>{t('res_SettingsSectionLLM')}</SectionLabel>
                   <SimpleGrid cols={2} spacing="xs" mt="xs">
@@ -331,22 +545,14 @@ export function SettingsMenu() {
 
                 <Box>
                   <SectionLabel>{t('res_SettingsSectionConnection')}</SectionLabel>
-                  <Stack gap="xs" mt="xs">
+                  <Box mt="xs">
                     <TextInput
                       label={t('res_SettingsOllamaUrl')}
                       value={form.ollamaUrl}
                       onChange={(e) => patch('ollamaUrl', e.target.value)}
                       styles={FIELD}
                     />
-                    <PasswordInput
-                      label={t('res_SettingsApiKey')}
-                      description={t('res_SettingsApiKeyDescription')}
-                      value={form.apiKey ?? ''}
-                      onChange={(e) => patch('apiKey', e.target.value || undefined)}
-                      maxLength={256}
-                      styles={FIELD}
-                    />
-                  </Stack>
+                  </Box>
                 </Box>
 
                 <Box>
@@ -374,12 +580,12 @@ export function SettingsMenu() {
               </Stack>
             </Tabs.Panel>
 
-            <Tabs.Panel value="template">
+            <Tabs.Panel value="template" pb="md">
               <TemplateEditor steps={templateDraft.steps} patchStep={patchStep} />
             </Tabs.Panel>
 
             {templateDraft.rag && (
-              <Tabs.Panel value="rag">
+              <Tabs.Panel value="rag" pb="md">
                 <Box mt="xs">
                   <SimpleGrid cols={2} spacing="xs">
                     <NumberInput
@@ -434,62 +640,28 @@ export function SettingsMenu() {
                 </Box>
               </Tabs.Panel>
             )}
-            <Tabs.Panel value="backup">
-              <BackupTab />
+            <Tabs.Panel value="backup" pb="md">
+              <BackupTab
+                selectedFile={backupFile}
+                importing={backupImporting}
+                status={backupStatus}
+                onFileSelect={(f) => {
+                  setBackupFile(f);
+                  setBackupStatus(null);
+                }}
+              />
             </Tabs.Panel>
           </Tabs>
 
-          {/* Footer — varies by active tab */}
-          {!isBackupTab && (
-            <Group justify="flex-end" gap="xs" pt={4}>
-              {isTemplateTab ? (
-                <>
-                  <Button
-                    variant="subtle"
-                    size="xs"
-                    color="red"
-                    ff="monospace"
-                    loading={templateSaving}
-                    onClick={() => void handleResetTemplate()}
-                  >
-                    {t('res_ResetToDefaults')}
-                  </Button>
-                  <Button
-                    size="xs"
-                    ff="monospace"
-                    loading={templateSaving}
-                    disabled={!isTemplateDirty}
-                    onClick={() => void handleSaveTemplate()}
-                    className="bg-accent text-bg"
-                  >
-                    {t('res_Save')}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="subtle"
-                    size="xs"
-                    color="red"
-                    ff="monospace"
-                    loading={saving}
-                    onClick={() => void handleResetSettings()}
-                  >
-                    {t('res_ResetToDefaults')}
-                  </Button>
-                  <Button
-                    size="xs"
-                    loading={saving}
-                    onClick={() => void handleSave()}
-                    ff="monospace"
-                    className="bg-accent text-bg"
-                  >
-                    {t('res_Save')}
-                  </Button>
-                </>
-              )}
-            </Group>
-          )}
+          {/* Footer — fixed at bottom, content varies by active tab */}
+          <Group
+            justify="flex-end"
+            gap="xs"
+            pt="sm"
+            style={{ borderTop: '1px solid var(--border)', flexShrink: 0 }}
+          >
+            {renderFooter()}
+          </Group>
         </Stack>
       </Modal>
     </>

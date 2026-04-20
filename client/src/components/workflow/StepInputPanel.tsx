@@ -188,6 +188,7 @@ export function StepInputPanel({ moduleId }: Props) {
   }, [llmOffline, mode, currentStepIndex, setStepInputState]);
   const guidedFields: Record<string, string> = step?.guidedFields ?? {};
   const manualText: string = step?.manualDraft ?? '';
+  const hasAnyGuidedInput = Object.values(guidedFields).some((v) => v.trim().length > 0);
 
   const setMode = (m: InputMode) => setStepInputState(currentStepIndex, { inputMode: m });
   const setField = (key: string, value: string) =>
@@ -467,8 +468,9 @@ export function StepInputPanel({ moduleId }: Props) {
             <Button
               leftSection={<IconForms size={14} />}
               onClick={handleGenerate}
+              disabled={!hasAnyGuidedInput}
               size="sm"
-              style={btnPrimary(true)}
+              style={btnPrimary(hasAnyGuidedInput)}
             >
               <span className="uppercase">{t('res_Generate')}</span>
             </Button>
