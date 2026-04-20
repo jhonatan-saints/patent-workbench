@@ -73,7 +73,7 @@ src/
 | --- | --- |
 | `StatusIndicator` | Header badge — LLM connection status and round-trip latency |
 | `LanguageSwitcher` | Button that allows you to change the app's language |
-| `SettingsMenu` | Header icon button that opens a tabbed modal: **General** (model, options, timeout, Ollama URL, API Key, log level, shutdown timeout — Reset to Defaults + Save), **Template** (per-step accordion editor for system context and prompt suffixes), **RAG** (context limit fields); template changes apply immediately on Save without a page reload |
+| `SettingsMenu` | Header icon button that opens a tabbed modal: **General** (model, options, timeout, Ollama URL, log level, shutdown timeout — Reset to Defaults + Save), **Template** (per-step accordion editor for system context and prompt suffixes), **RAG** (context limit fields), **Backup** (drop or select a `.db` file to restore all drafts and settings; Download button exports the current database); switching tabs or closing with unsaved changes shows a discard-confirmation dialog |
 | `TemplateEditor` | Presentational component used by SettingsMenu's Template tab — renders a scrollable accordion of workflow steps, each with editable `systemContext`, `promptSuffix`, and (when present) `guidedPromptSuffix` textareas |
 | `ExportPanel` | Export the artifact as `.txt`, `.pdf` (print dialog with embedded figures), or `.docx` (Word with inventors block and embedded figures); also supports `.md` with YAML frontmatter |
 | `AppLoader` | Splash screen shown while the app initialises (web mode) |
@@ -116,7 +116,7 @@ The user can navigate to any previously completed step via `StepProgress` and re
 | Mode | Behaviour |
 | --- | --- |
 | **Auto** | Prompt assembled from the REG system context + RAG artifact context; no user input required |
-| **Guided** | User fills structured form fields (defined per module in `workflowTemplates.ts`); fields are interpolated into the prompt before the LLM call |
+| **Guided** | User fills structured form fields (defined per module in `workflowTemplates.ts`); fields are interpolated into the prompt before the LLM call; the Generate button is disabled until at least one field contains text |
 | **Manual** | User writes the section content directly; `submitManualContent()` is called, no LLM request is made |
 
 ### Phase 3 — figures
@@ -168,7 +168,7 @@ The Zustand store manages the entire application state. It is divided into three
 | `modelContextLength` | `number \| null` | `num_ctx` from model's Modelfile (via `GET /models/:name/context`) |
 | `llmStatus` | `'ok' \| 'unavailable' \| 'checking'` | Connectivity to Ollama |
 | `llmLatency` | `number \| null` | Round-trip latency in ms |
-| `appSettings` | `AppSettings` | Persisted runtime configuration: `defaultModel`, `numOptions`, `llmTimeoutMs`, `promptMaxLength`, `ollamaUrl`, `shutdownTimeoutMs`, `logLevel`, `apiKey`; loaded from `GET /settings` on boot, saved via `PUT /settings`, reset via `POST /settings/reset` |
+| `appSettings` | `AppSettings` | Persisted runtime configuration: `defaultModel`, `numOptions`, `llmTimeoutMs`, `promptMaxLength`, `ollamaUrl`, `shutdownTimeoutMs`, `logLevel`; loaded from `GET /settings` on boot, saved via `PUT /settings`, reset via `POST /settings/reset` |
 | `template` | `RegTemplate` | Active workflow template (steps, RAG config, workflow order); loaded from `GET /template` on boot; updated in-place via `reinitFromTemplate()` after `saveTemplate()` or `resetTemplate()` |
 
 `checkStatus()` polls `GET /status` and `GET /models` every 30 seconds. When models change, `selectedModel` is updated to the closest match by base name. `loadSettings()` and `loadTemplate()` are called once on app mount; `saveSettings(patch)` merges the patch and persists via `PUT /settings`; `resetSettings()` restores factory defaults via `POST /settings/reset`.
@@ -298,6 +298,8 @@ All server communication is centralised in `client.ts`. Functions:
 | `getTemplate()` | GET | `/template` |
 | `updateTemplate(template)` | PUT | `/template` |
 | `resetTemplate()` | POST | `/template/reset` |
+| `exportBackup()` | GET | `/backups/export` — triggers a `.db` file download of the current database |
+| `importBackup(file)` | POST | `/backups/import` — uploads a `.db` file as `application/octet-stream`; reloads sessions, settings, and template on success |
 | `setApiKey(key)` | — | Module-level setter; updates the `x-api-key` header used by all subsequent `apiFetch` calls |
 
 Requests are made relative to `/api` (proxied to `localhost:3001` by Vite during development). `isApiError(result)` is a type guard used across the store and components.
