@@ -273,9 +273,8 @@ end;
 
 procedure SetProgress(Bar: TNewProgressBar; LblPct: TLabel; Pct: Integer);
 begin
-  Bar.Position     := Pct;
-  LblPct.Caption   := IntToStr(Pct) + '%';
-  Application.ProcessMessages;
+  Bar.Position   := Pct;
+  LblPct.Caption := IntToStr(Pct) + '%';
 end;
 
 // Page builders
@@ -540,20 +539,16 @@ begin
   if CurPageID = PageOllama.ID then
   begin
     WizardForm.NextButton.Enabled := False;
-    SetProgress(BarOllama, LblOllamaPct, 10);
     LblOllamaStatus.Caption := '';
     OllamaPresent := DetectOllama;
     if OllamaPresent then
     begin
-      SetProgress(BarOllama, LblOllamaPct, 100);
       LblOllamaStatus.Caption := CustomMessage('OllamaFound');
       WizardForm.NextButton.Enabled := True;
     end
     else
     begin
-      SetProgress(BarOllama, LblOllamaPct, 30);
       LblOllamaStatus.Caption := CustomMessage('OllamaMissing') + #13#10 + CustomMessage('OllamaInstalling');
-      SetProgress(BarOllama, LblOllamaPct, 50);
       if WingetInstall(OLLAMA_WINGET_ID) then
       begin
         OllamaPresent := True;
@@ -572,11 +567,8 @@ begin
   // Model page
   if CurPageID = PageModel.ID then
   begin
-    SetProgress(BarModel, LblModelPct, 0);
     LstModels.Items.Clear;
-    SetProgress(BarModel, LblModelPct, 20);
     PopulateLocalModels;
-    SetProgress(BarModel, LblModelPct, 50);
 
     if LocalModels.Count > 0 then
     begin
