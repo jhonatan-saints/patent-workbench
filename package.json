@@ -22,7 +22,7 @@
     "server:install": "npm --prefix server install",
     "electron": "electron .",
     "electron:dev": "npm rebuild --workspace=server && npm run i18n:generate && concurrently -k -n server,client,electron -c cyan,magenta,yellow \"npm run server:dev\" \"cross-env ELECTRON_DEV=true npm run client\" \"electron .\"",
-    "electron:build": "npm run server:build && npm run client:build:electron && node scripts/prepare-native-deps.mjs && electron-rebuild -m server --force && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --config electron-builder.config.js --publish=never",
+    "electron:build": "npm run server:build && npm run i18n:generate && npm run client:build:electron && node scripts/prepare-native-deps.mjs && electron-rebuild -m server --force && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --config electron-builder.config.js --publish=never",
     "electron:pack": "npm run electron:build",
     "installer:build": "npm run generate:favicons && npm run electron:build && \"%ProgramFiles(x86)%\\Inno Setup 6\\ISCC.exe\" installer\\patent-workbench.iss",
     "generate:favicons": "node scripts/generate-favicons.mjs",
