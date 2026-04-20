@@ -95,7 +95,7 @@ input → working (steps 1–7) → figures → inventors → preview / export
 | Mode | Behaviour |
 | --- | --- |
 | **Auto** | Prompt is assembled automatically from the base idea, prior sections, and context files |
-| **Guided** | User fills structured form fields; fields are interpolated into the template before sending to the LLM |
+| **Guided** | User fills structured form fields; fields are interpolated into the template before sending to the LLM; Generate is disabled until at least one field has content |
 | **Manual** | User writes the section content directly; no LLM call is made |
 
 > [!NOTE]
@@ -109,7 +109,7 @@ input → working (steps 1–7) → figures → inventors → preview / export
 - **Context files (RAG)** — attach reference documents (`.txt`, `.md`, `.csv`, `.json`, etc.) at the start; content is injected into prompts up to a 40 000-character budget.
 - **Model selector** — switch between any Ollama-compatible model (Mistral, Llama 3, Phi-3, Gemma 2, etc.).
 - **Model context length** — automatically fetches the `num_ctx` value from the model's Modelfile and shows it in the UI; context file upload is conditionally enabled for models with ≥ 16 384 tokens.
-- **Settings panel** — tabbed modal accessible from the header: **General** (model, options, timeout, Ollama URL, API Key, log level, shutdown timeout), **Template** (per-step prompt editor — system context, prompt suffix, guided prompt suffix), **RAG** (context limit tunables); all settings persisted to SQLite and restored on every app boot. Changes apply immediately without a page reload.
+- **Settings panel** — tabbed modal accessible from the header: **General** (model, options, timeout, Ollama URL, log level, shutdown timeout), **Template** (per-step prompt editor — system context, prompt suffix, guided prompt suffix), **RAG** (context limit tunables), **Backup** (export the full database as a `.db` file or restore from one); all settings persisted to SQLite and restored on every app boot. Changes apply immediately without a page reload.
 - **Token meter** — live prompt + completion token counts per step, totalled across the session.
 - **LLM status indicator** — real-time connectivity check with latency; polls every 30 seconds.
 - **Persistent sessions** — sessions are saved to a local SQLite database and survive page reload and browser restart; browse, restore, or delete from the Drafts sidebar.
@@ -204,7 +204,7 @@ In the **Ollama desktop app settings**, ensure the following are **disabled**:
 
 ## Installation
 
-### Option 1 — Desktop app (recommended for end users)
+### Option 1 — Desktop app installer (recommended for end users)
 
 Download `PatentWorkbench-setup.exe` from the [latest GitHub Release](https://github.com/jhonatan-saints/patent-workbench/releases/latest) and run the installer. The wizard will:
 
@@ -214,7 +214,7 @@ Download `PatentWorkbench-setup.exe` from the [latest GitHub Release](https://gi
 4. Configure the **Ollama URL**, **interface language**, and **number of options per step**.
 5. Install Patent Workbench and create Start Menu and Desktop shortcuts.
 
-After installation, launch **Patent Workbench** from the Start Menu or Desktop — no terminal, no configuration files.
+After installation, launch **Patent Workbench** from the Start Menu or Desktop — no terminal, no configuration files required.
 
 > [!NOTE]
 > The app checks for updates automatically on launch and notifies you when a new version is available.
@@ -223,7 +223,7 @@ After installation, launch **Patent Workbench** from the Start Menu or Desktop �
 
 ### Option 2 — Web / development mode
 
-Run the full stack locally in your browser. Requires Node.js v24.14.0+.
+Run the full stack in your browser. Requires Node.js v24.14.0+.
 
 ```bash
 # Install all dependencies (client + server)
@@ -245,15 +245,15 @@ npm run client       # Vite on localhost:3003/patent-workbench
 
 ---
 
-### Option 3 — Electron dev mode
+### Option 3 — Electron desktop app (dev mode)
 
-Run the Electron shell against live Vite and ts-node-dev servers (for development and debugging of the desktop app itself):
+Runs the Electron shell against live Vite and ts-node-dev servers. Use this when developing or debugging the desktop app itself. Requires Node.js v24.14.0+.
 
 ```bash
 npm run electron:dev
 ```
 
-This starts the Express server, the Vite dev server, and the Electron window concurrently.
+This starts the Express server, the Vite dev server, and the Electron window concurrently. Hot-reload is active for both client and server.
 
 ---
 

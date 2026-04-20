@@ -214,4 +214,29 @@ export function restoreFromBackup(filename: string): void {
   applyPragmas(_db)
 }
 
+export function getDbPath(): string {
+  return DB_PATH
+}
+
+export function checkpointDb(): void {
+  _db.pragma('wal_checkpoint(FULL)')
+}
+
+export function restoreFromBuffer(buf: Buffer): void {
+  const SQLITE_MAGIC = 'SQLite format 3'
+  if (buf.length < 16 || buf.subarray(0, 15).toString('ascii') !== SQLITE_MAGIC) {
+    throw new Error('Not a valid SQLite database file')
+  }
+  const tmpPath = `${DB_PATH}.import.tmp`
+  fs.writeFileSync(tmpPath, buf)
+  _db.close()
+  for (const ext of ['-wal', '-shm']) {
+    try { fs.unlinkSync(DB_PATH + ext) } catch { /* already absent */ }
+  }
+  fs.copyFileSync(tmpPath, DB_PATH)
+  try { fs.unlinkSync(tmpPath) } catch { /* ignore */ }
+  _db = new Database(DB_PATH)
+  applyPragmas(_db)
+}
+
 export default db

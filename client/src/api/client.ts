@@ -259,65 +259,40 @@ export async function updateTemplate(template: RegTemplate): Promise<RegTemplate
 }
 
 // Backups API
-const BACKUP_TIMEOUT_MS = 60_000
-
-export interface BackupEntry {
-  filename: string
-  size: number
-  mtimeMs: number
-}
-
-export async function listBackups(): Promise<BackupEntry[]> {
+export async function exportBackup(): Promise<void> {
   try {
-    const result = await apiFetch<{ success: true; data: { backups: BackupEntry[] } }>(
-      '/backups',
-      {},
-      BACKUP_TIMEOUT_MS
-    )
-    if (isApiError(result)) return []
-    return result.data.backups
+    const res = await fetch(`${BASE_URL}/backups/export`, {
+      headers: { ...(_apiKey ? { 'x-api-key': _apiKey } : {}) },
+    })
+    if (!res.ok) return
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    const stamp = new Date().toISOString().slice(0, 10)
+    a.href = url
+    a.download = `workbench-backup-${stamp}.db`
+    a.click()
+    URL.revokeObjectURL(url)
   } catch {
-    return []
+    // best-effort
   }
 }
 
-export async function createBackup(): Promise<string | null> {
+export async function importBackup(file: File): Promise<{ success: boolean; error?: string }> {
   try {
-    const result = await apiFetch<{ success: true; data: { filename: string } }>(
-      '/backups',
-      { method: 'POST' },
-      BACKUP_TIMEOUT_MS
-    )
-    if (isApiError(result)) return null
-    return result.data.filename
-  } catch {
-    return null
-  }
-}
-
-export async function restoreBackup(filename: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const result = await apiFetch<{ success: boolean; error?: string }>(
-      `/backups/${encodeURIComponent(filename)}/restore`,
-      { method: 'POST' },
-      BACKUP_TIMEOUT_MS
-    )
-    return result as { success: boolean; error?: string }
+    const buf = await file.arrayBuffer()
+    const res = await fetch(`${BASE_URL}/backups/import`, {
+      method: 'POST',
+      body: buf,
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        ...(_apiKey ? { 'x-api-key': _apiKey } : {}),
+      },
+      signal: AbortSignal.timeout(60_000),
+    })
+    return await res.json() as { success: boolean; error?: string }
   } catch {
     return { success: false, error: 'Request failed' }
-  }
-}
-
-export async function deleteBackup(filename: string): Promise<boolean> {
-  try {
-    const result = await apiFetch<{ success: boolean }>(
-      `/backups/${encodeURIComponent(filename)}`,
-      { method: 'DELETE' },
-      BACKUP_TIMEOUT_MS
-    )
-    return !isApiError(result)
-  } catch {
-    return false
   }
 }
 

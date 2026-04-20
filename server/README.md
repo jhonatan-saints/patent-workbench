@@ -131,7 +131,7 @@ curl -X POST http://localhost:3001/generate \
 
 ### `GET /settings`
 
-Returns all persisted runtime settings as a JSON object (`defaultModel`, `llmTimeoutMs`, `numOptions`, `ollamaUrl`, `promptMaxLength`, `shutdownTimeoutMs`, `logLevel`, `apiKey`).
+Returns all persisted runtime settings as a JSON object (`defaultModel`, `llmTimeoutMs`, `numOptions`, `ollamaUrl`, `promptMaxLength`, `shutdownTimeoutMs`, `logLevel`, `apiKey`). The `apiKey` field is managed server-side via the `API_KEY` env var and is not exposed in the client settings UI.
 
 ### `PUT /settings`
 
@@ -152,6 +152,22 @@ Validates and persists a workflow template. All `workflow.order` entries must re
 ### `POST /template/reset`
 
 Restores the factory template from `server/src/config/defaultTemplate.ts`.
+
+---
+
+### Backup endpoints
+
+#### `GET /backups/export`
+
+Checkpoints the WAL file (`PRAGMA wal_checkpoint(FULL)`) then serves the raw SQLite database as a binary attachment (`workbench-backup-<date>.db`). Use this to download a portable snapshot of all drafts, settings, and the workflow template.
+
+#### `POST /backups/import`
+
+Accepts an `application/octet-stream` body (max `100mb`). Validates the SQLite magic bytes (`SQLite format 3`), writes the payload to a temporary file, closes the current DB connection, replaces the database file, and reopens it. The client reloads sessions, settings, and template after a successful import.
+
+| Status | Cause |
+| --- | --- |
+| `400` | Body is missing, too short, or fails the SQLite magic-byte check |
 
 ---
 
@@ -317,7 +333,8 @@ src/
 ├── routes/
 │   ├── sessions.ts         # Sessions CRUD routes + Zod schema + figure XSS validation
 │   ├── settings.ts         # GET/PUT /settings + POST /settings/reset
-│   └── template.ts         # GET/PUT /template + POST /template/reset
+│   ├── template.ts         # GET/PUT /template + POST /template/reset
+│   └── backups.ts          # GET /backups/export (WAL checkpoint + file download) + POST /backups/import (SQLite replace)
 └── services/
     ├── db.ts               # SQLite client (better-sqlite3); schema v8 + versioned migrations via PRAGMA user_version
     └── llm.service.ts      # Ollama HTTP integration (generate, checkLLM, listModels, getModelContextLength)

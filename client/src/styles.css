@@ -490,4 +490,11 @@ body {
   background-color: var(--accent);
 }
 
+/* Disabled state for accent-filled buttons */
+.bg-accent[data-disabled],
+.bg-accent:disabled {
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
+}
+
 /* stylelint-enable selector-class-pattern */
