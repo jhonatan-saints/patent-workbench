@@ -2,7 +2,7 @@
   "meta": {
     "company": "Default",
     "domain": "patent",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "description": "Full workflow configuration for the Patent Workbench. Edit this file to customise steps, labels, prompts, and RAG parameters without changing any source code. Duplicate the file to support multiple domains."
   },
 
