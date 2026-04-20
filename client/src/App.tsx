@@ -172,9 +172,13 @@ export function App() {
   const isInventors = workflowPhase === 'inventors';
   const isPreview = workflowPhase === 'preview';
 
-  const [phase, setPhase] = useState<AppPhase>(
-    IS_ELECTRON ? 'splash' : DEMO_OAUTH ? 'login' : 'loading'
-  );
+  function getInitialPhase(): AppPhase {
+    if (IS_ELECTRON) return 'splash';
+    if (DEMO_OAUTH) return 'login';
+    return 'loading';
+  }
+
+  const [phase, setPhase] = useState<AppPhase>(getInitialPhase);
 
   useEffect(() => {
     void initSessions();

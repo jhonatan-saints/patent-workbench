@@ -24,6 +24,7 @@ export function BrandSplash({ onDone }: BrandSplashProps) {
   const [activeCell, setActiveCell] = useState(-1);
   const [phase, setPhase] = useState<Phase>('build');
   const onDoneRef = useRef(onDone);
+  const lastGlowRef = useRef(-1);
   const { t } = useI18n();
 
   onDoneRef.current = onDone;
@@ -60,6 +61,31 @@ export function BrandSplash({ onDone }: BrandSplashProps) {
       timers.forEach(clearTimeout);
     };
   }, []);
+
+  // Ambient glow cycle — starts after spin settles, mirrors OAuthLoginDemo
+  useEffect(() => {
+    if (phase !== 'reveal') return;
+    let cancelled = false;
+    const tick = () => {
+      setTimeout(
+        () => {
+          if (cancelled) return;
+          let next: number;
+          do {
+            next = Math.floor(Math.random() * 9);
+          } while (next === lastGlowRef.current);
+          lastGlowRef.current = next;
+          setActiveCell(next);
+          tick();
+        },
+        1100 + Math.random() * 900
+      );
+    };
+    tick();
+    return () => {
+      cancelled = true;
+    };
+  }, [phase]);
 
   const spinning = phase === 'spin';
   const revealing = phase === 'reveal' || phase === 'out';
