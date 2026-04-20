@@ -258,6 +258,69 @@ export async function updateTemplate(template: RegTemplate): Promise<RegTemplate
   }
 }
 
+// Backups API
+const BACKUP_TIMEOUT_MS = 60_000
+
+export interface BackupEntry {
+  filename: string
+  size: number
+  mtimeMs: number
+}
+
+export async function listBackups(): Promise<BackupEntry[]> {
+  try {
+    const result = await apiFetch<{ success: true; data: { backups: BackupEntry[] } }>(
+      '/backups',
+      {},
+      BACKUP_TIMEOUT_MS
+    )
+    if (isApiError(result)) return []
+    return result.data.backups
+  } catch {
+    return []
+  }
+}
+
+export async function createBackup(): Promise<string | null> {
+  try {
+    const result = await apiFetch<{ success: true; data: { filename: string } }>(
+      '/backups',
+      { method: 'POST' },
+      BACKUP_TIMEOUT_MS
+    )
+    if (isApiError(result)) return null
+    return result.data.filename
+  } catch {
+    return null
+  }
+}
+
+export async function restoreBackup(filename: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const result = await apiFetch<{ success: boolean; error?: string }>(
+      `/backups/${encodeURIComponent(filename)}/restore`,
+      { method: 'POST' },
+      BACKUP_TIMEOUT_MS
+    )
+    return result as { success: boolean; error?: string }
+  } catch {
+    return { success: false, error: 'Request failed' }
+  }
+}
+
+export async function deleteBackup(filename: string): Promise<boolean> {
+  try {
+    const result = await apiFetch<{ success: boolean }>(
+      `/backups/${encodeURIComponent(filename)}`,
+      { method: 'DELETE' },
+      BACKUP_TIMEOUT_MS
+    )
+    return !isApiError(result)
+  } catch {
+    return false
+  }
+}
+
 export async function resetTemplate(): Promise<RegTemplate | null> {
   try {
     const result = await apiFetch<{ success: true; data: RegTemplate }>(

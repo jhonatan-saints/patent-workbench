@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActionIcon, Modal, Text, Group, Button, Tooltip } from '@mantine/core';
 import { IconMinus, IconSquare, IconCopy, IconX } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
@@ -33,7 +33,7 @@ export function WindowControls() {
 
   return (
     <>
-      <Group gap={2} wrap="nowrap">
+      <Group gap={2} wrap="nowrap" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         <Tooltip label={t('res_WindowMinimize')} position="bottom">
           <ActionIcon
             variant="subtle"
@@ -73,7 +73,7 @@ export function WindowControls() {
             onClick={handleClose}
             className="text-fg-muted hover:text-accent"
           >
-            <IconX size={14} />
+            <IconX size={16} />
           </ActionIcon>
         </Tooltip>
       </Group>

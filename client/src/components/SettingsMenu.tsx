@@ -17,10 +17,11 @@ import {
   useComputedColorScheme,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { IconAdjustmentsCog } from '@tabler/icons-react';
+import { IconAdjustmentsCog, IconTrash } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n';
 import { TemplateEditor } from '@/components/TemplateEditor';
+import { listBackups, restoreBackup, deleteBackup, type BackupEntry } from '@/api/client';
 import type { AppSettings, LogLevel, RegTemplate } from '@/types';
 
 const LOG_LEVEL_OPTIONS: { value: LogLevel; label: string }[] = [
@@ -44,6 +45,114 @@ const MODAL_STYLES = {
   },
   body: { paddingTop: 12 },
 } as const;
+
+function formatDate(ms: number) {
+  return new Date(ms).toLocaleString();
+}
+
+function formatSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function BackupTab() {
+  const { initSessions, loadSettings, loadTemplate } = useWorkbenchStore();
+  const { t } = useI18n();
+  const [backups, setBackups] = useState<BackupEntry[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  useEffect(() => {
+    listBackups().then((list) => {
+      setBackups(list);
+      setLoaded(true);
+    });
+  }, []);
+
+  const restore = async (filename: string) => {
+    setRestoringId(filename);
+    setStatus(null);
+    const result = await restoreBackup(filename);
+    setRestoringId(null);
+    if (result.success) {
+      await Promise.all([initSessions(), loadSettings(), loadTemplate()]);
+      setStatus({ ok: true, msg: t('res_BackupRestored') });
+    } else {
+      setStatus({ ok: false, msg: result.error ?? t('res_BackupRestoreError') });
+    }
+  };
+
+  const remove = async (filename: string) => {
+    const ok = await deleteBackup(filename);
+    if (ok) setBackups((prev) => prev.filter((b) => b.filename !== filename));
+  };
+
+  if (!loaded) {
+    return (
+      <Text size="xs" ff="monospace" c="var(--text-muted)">
+        Loading...
+      </Text>
+    );
+  }
+
+  return (
+    <Stack gap="sm">
+      {status && (
+        <Text size="xs" ff="monospace" c={status.ok ? 'teal' : 'red'}>
+          {status.msg}
+        </Text>
+      )}
+      {backups.length === 0 ? (
+        <Text size="xs" ff="monospace" c="var(--text-muted)">
+          {t('res_BackupNoBackups')}
+        </Text>
+      ) : (
+        <Stack gap="xs">
+          {backups.map((b) => (
+            <Group
+              key={b.filename}
+              justify="space-between"
+              align="center"
+              className="border border-stroke rounded px-3 py-2"
+            >
+              <Box>
+                <Text size="xs" ff="monospace">
+                  {formatDate(b.mtimeMs)}
+                </Text>
+                <Text size="xs" ff="monospace" c="var(--text-muted)">
+                  {formatSize(b.size)}
+                </Text>
+              </Box>
+              <Group gap={4} wrap="nowrap">
+                <Button
+                  size="xs"
+                  ff="monospace"
+                  variant="subtle"
+                  loading={restoringId === b.filename}
+                  disabled={restoringId !== null && restoringId !== b.filename}
+                  onClick={() => void restore(b.filename)}
+                >
+                  {restoringId === b.filename ? t('res_BackupRestoring') : t('res_BackupRestore')}
+                </Button>
+                <ActionIcon
+                  size="sm"
+                  variant="subtle"
+                  disabled={restoringId !== null}
+                  onClick={() => void remove(b.filename)}
+                  aria-label="Delete backup"
+                >
+                  <IconTrash size={13} />
+                </ActionIcon>
+              </Group>
+            </Group>
+          ))}
+        </Stack>
+      )}
+    </Stack>
+  );
+}
 
 function SectionLabel({ children }: { readonly children: string }) {
   return (
@@ -135,6 +244,7 @@ export function SettingsMenu() {
   else modelOptions = [];
 
   const isTemplateTab = activeTab === 'template' || activeTab === 'rag';
+  const isBackupTab = activeTab === 'backup';
 
   return (
     <>
@@ -173,6 +283,7 @@ export function SettingsMenu() {
               <Tabs.Tab value="general">{t('res_SettingsTabGeneral')}</Tabs.Tab>
               <Tabs.Tab value="template">{t('res_SettingsTabTemplate')}</Tabs.Tab>
               {templateDraft.rag && <Tabs.Tab value="rag">{t('res_TemplateRagLimits')}</Tabs.Tab>}
+              <Tabs.Tab value="backup">{t('res_SettingsTabBackup')}</Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="general">
@@ -323,57 +434,62 @@ export function SettingsMenu() {
                 </Box>
               </Tabs.Panel>
             )}
+            <Tabs.Panel value="backup">
+              <BackupTab />
+            </Tabs.Panel>
           </Tabs>
 
           {/* Footer — varies by active tab */}
-          <Group justify="flex-end" gap="xs" pt={4}>
-            {isTemplateTab ? (
-              <>
-                <Button
-                  variant="subtle"
-                  size="xs"
-                  color="red"
-                  ff="monospace"
-                  loading={templateSaving}
-                  onClick={() => void handleResetTemplate()}
-                >
-                  {t('res_ResetToDefaults')}
-                </Button>
-                <Button
-                  size="xs"
-                  ff="monospace"
-                  loading={templateSaving}
-                  disabled={!isTemplateDirty}
-                  onClick={() => void handleSaveTemplate()}
-                  className="bg-accent text-bg"
-                >
-                  {t('res_Save')}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="subtle"
-                  size="xs"
-                  color="red"
-                  ff="monospace"
-                  loading={saving}
-                  onClick={() => void handleResetSettings()}
-                >
-                  {t('res_ResetToDefaults')}
-                </Button>
-                <Button
-                  size="xs"
-                  loading={saving}
-                  onClick={() => void handleSave()}
-                  ff="monospace"
-                  className="bg-accent text-bg"
-                >
-                  {t('res_Save')}
-                </Button>
-              </>
-            )}
-          </Group>
+          {!isBackupTab && (
+            <Group justify="flex-end" gap="xs" pt={4}>
+              {isTemplateTab ? (
+                <>
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    color="red"
+                    ff="monospace"
+                    loading={templateSaving}
+                    onClick={() => void handleResetTemplate()}
+                  >
+                    {t('res_ResetToDefaults')}
+                  </Button>
+                  <Button
+                    size="xs"
+                    ff="monospace"
+                    loading={templateSaving}
+                    disabled={!isTemplateDirty}
+                    onClick={() => void handleSaveTemplate()}
+                    className="bg-accent text-bg"
+                  >
+                    {t('res_Save')}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    color="red"
+                    ff="monospace"
+                    loading={saving}
+                    onClick={() => void handleResetSettings()}
+                  >
+                    {t('res_ResetToDefaults')}
+                  </Button>
+                  <Button
+                    size="xs"
+                    loading={saving}
+                    onClick={() => void handleSave()}
+                    ff="monospace"
+                    className="bg-accent text-bg"
+                  >
+                    {t('res_Save')}
+                  </Button>
+                </>
+              )}
+            </Group>
+          )}
         </Stack>
       </Modal>
     </>

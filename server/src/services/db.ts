@@ -4,6 +4,8 @@ import fs from 'node:fs'
 import defaultTemplate from '../config/defaultTemplate'
 
 const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), 'data')
+const BACKUPS_DIR = path.join(path.dirname(DATA_DIR), 'backups')
+const MAX_BACKUPS = 5
 fs.mkdirSync(DATA_DIR, { recursive: true })
 
 // Restrict data directory and DB file to owner-only on Unix/macOS.
@@ -13,16 +15,29 @@ if (process.platform !== 'win32') {
 }
 
 const DB_PATH = path.join(DATA_DIR, 'workbench.db')
-const db = new Database(DB_PATH)
+let _db = new Database(DB_PATH)
 
 if (process.platform !== 'win32') {
   fs.chmodSync(DB_PATH, 0o600) // rw
 }
 
-db.pragma('journal_mode = WAL')
-db.pragma('synchronous = NORMAL')
-db.pragma('wal_autocheckpoint = 1000') // checkpoint every ~4 MB;
-db.pragma('foreign_keys = ON')
+function applyPragmas(instance: Database.Database) {
+  instance.pragma('journal_mode = WAL')
+  instance.pragma('synchronous = NORMAL')
+  instance.pragma('wal_autocheckpoint = 1000')
+  instance.pragma('foreign_keys = ON')
+}
+
+applyPragmas(_db)
+
+// Proxy so all callers always hit the live connection even after a hot restore
+const dbHandler: ProxyHandler<Database.Database> = {
+  get(_, prop: string | symbol) {
+    const val = (_db as unknown as Record<string | symbol, unknown>)[prop]
+    return typeof val === 'function' ? (val as (...a: unknown[]) => unknown).bind(_db) : val
+  },
+}
+const db = new Proxy(_db, dbHandler)
 
 const SCHEMA_VERSION = 8
 
@@ -130,6 +145,73 @@ export function getRegTemplate(): unknown {
 
 export function setRegTemplate(template: unknown): void {
   db.prepare('UPDATE app_settings SET reg_template = ? WHERE id = 1').run(JSON.stringify(template))
+}
+
+export interface BackupEntry {
+  filename: string
+  size: number
+  mtimeMs: number
+}
+
+export function listBackups(): BackupEntry[] {
+  if (!fs.existsSync(BACKUPS_DIR)) return []
+  return fs
+    .readdirSync(BACKUPS_DIR)
+    .filter((f) => f.startsWith('workbench-') && f.endsWith('.db'))
+    .sort((a, b) => b.localeCompare(a))
+    .map((filename) => {
+      const stats = fs.statSync(path.join(BACKUPS_DIR, filename))
+      return { filename, size: stats.size, mtimeMs: stats.mtimeMs }
+    })
+}
+
+export function createBackup(): string {
+  fs.mkdirSync(BACKUPS_DIR, { recursive: true })
+  _db.pragma('wal_checkpoint(FULL)')
+  const stamp = new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-').slice(0, 19)
+  const destBase = path.join(BACKUPS_DIR, `workbench-${stamp}.db`)
+  fs.copyFileSync(DB_PATH, destBase)
+  for (const ext of ['-wal', '-shm']) {
+    const wal = `${DB_PATH}${ext}`
+    if (fs.existsSync(wal)) fs.copyFileSync(wal, `${destBase}${ext}`)
+  }
+  const all = fs
+    .readdirSync(BACKUPS_DIR)
+    .filter((f) => f.startsWith('workbench-') && f.endsWith('.db'))
+    .sort((a, b) => a.localeCompare(b))
+  for (const old of all.slice(0, Math.max(0, all.length - MAX_BACKUPS))) {
+    for (const ext of ['', '-wal', '-shm']) {
+      try { fs.unlinkSync(path.join(BACKUPS_DIR, old + ext)) } catch { /* already gone */ }
+    }
+  }
+  return path.basename(destBase)
+}
+
+export function deleteBackup(filename: string): void {
+  const target = path.join(BACKUPS_DIR, filename)
+  for (const ext of ['', '-wal', '-shm']) {
+    try { fs.unlinkSync(target + ext) } catch { /* already absent */ }
+  }
+}
+
+export function restoreFromBackup(filename: string): void {
+  const srcBase = path.join(BACKUPS_DIR, filename)
+  if (!srcBase.startsWith(BACKUPS_DIR + path.sep) && srcBase !== BACKUPS_DIR) {
+    throw new Error('invalid filename')
+  }
+  if (!fs.existsSync(srcBase)) throw new Error('backup not found')
+
+  _db.close()
+  fs.copyFileSync(srcBase, DB_PATH)
+  for (const ext of ['-wal', '-shm']) {
+    const src = `${srcBase}${ext}`
+    const dest = `${DB_PATH}${ext}`
+    if (fs.existsSync(src)) fs.copyFileSync(src, dest)
+    else try { fs.unlinkSync(dest) } catch { /* already absent */ }
+  }
+
+  _db = new Database(DB_PATH)
+  applyPragmas(_db)
 }
 
 export default db

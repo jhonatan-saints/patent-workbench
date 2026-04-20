@@ -1,10 +1,36 @@
 'use strict'
 
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, shell } = require('electron')
-const { autoUpdater } = require('electron-updater')
+// Crash logger registered BEFORE any other requires so module-load failures are captured.
+// Uses os.homedir() — never depends on Electron app state.
 const path = require('node:path')
-const { spawn } = require('node:child_process')
 const fs = require('node:fs')
+const os = require('node:os')
+
+const _earlyLogPath = path.join(os.homedir(), 'AppData', 'Roaming', 'patent-workbench-crash.log')
+
+function writeMainLog(msg) {
+  try {
+    // Prefer userData/logs once app is ready; fall back to the early log path.
+    let logFile = _earlyLogPath
+    try {
+      const logDir = path.join(app.getPath('userData'), 'logs')
+      fs.mkdirSync(logDir, { recursive: true })
+      logFile = path.join(logDir, 'main.log')
+    } catch { /* app not ready yet */ }
+    fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`)
+  } catch { /* ignore logging failures */ }
+}
+
+process.on('uncaughtException', (err) => {
+  writeMainLog(`uncaughtException: ${err?.stack || err}`)
+  try { app.quit() } catch { process.exit(1) }
+})
+process.on('unhandledRejection', (reason) => {
+  writeMainLog(`unhandledRejection: ${reason?.stack || reason}`)
+})
+
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, shell, utilityProcess } = require('electron')
+const { autoUpdater } = require('electron-updater')
 const http = require('node:http')
 
 // Constants
@@ -31,6 +57,44 @@ function getLogsDir() {
   return path.join(app.getPath('userData'), 'logs')
 }
 
+function getBackupsDir() {
+  return path.join(app.getPath('userData'), 'backups')
+}
+
+const MAX_BACKUPS = 5
+
+function backupDatabase() {
+  try {
+    const dbFile = path.join(getDataDir(), 'workbench.db')
+    if (!fs.existsSync(dbFile)) return
+
+    const backupsDir = getBackupsDir()
+    fs.mkdirSync(backupsDir, { recursive: true })
+
+    const stamp = new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-').slice(0, 19)
+    const destBase = path.join(backupsDir, `workbench-${stamp}.db`)
+
+    fs.copyFileSync(dbFile, destBase)
+    for (const ext of ['-wal', '-shm']) {
+      const src = `${dbFile}${ext}`
+      if (fs.existsSync(src)) fs.copyFileSync(src, `${destBase}${ext}`)
+    }
+
+    const all = fs.readdirSync(backupsDir)
+      .filter((f) => f.startsWith('workbench-') && f.endsWith('.db'))
+      .sort((a, b) => a.localeCompare(b))
+    for (const old of all.slice(0, Math.max(0, all.length - MAX_BACKUPS))) {
+      for (const ext of ['', '-wal', '-shm']) {
+        try { fs.unlinkSync(path.join(backupsDir, old + ext)) } catch { /* already gone */ }
+      }
+    }
+
+    writeMainLog(`backup created: ${destBase}`)
+  } catch (err) {
+    writeMainLog(`backup failed: ${err?.message}`)
+  }
+}
+
 // State
 let mainWindow = null
 let serverProcess = null
@@ -49,7 +113,6 @@ function startServer() {
 
   const env = {
     ...process.env,
-    ELECTRON_RUN_AS_NODE: '1',
     NODE_ENV: 'production',
     PORT: String(SERVER_PORT),
     HOST: SERVER_HOST,
@@ -57,14 +120,17 @@ function startServer() {
     CORS_ORIGIN: `http://${SERVER_HOST}:${SERVER_PORT}`,
     CLIENT_DIST_DIR: resourcePath('client'),
     DATA_DIR: dataDir,
+    LOGS_DIR: logsDir,
   }
 
-  serverProcess = spawn(process.execPath, [serverEntry], {
-    env,
-    stdio: 'ignore',
-  })
+  serverProcess = utilityProcess.fork(serverEntry, [], { env, stdio: 'pipe' })
 
+  serverProcess.stdout?.on('data', (d) => writeMainLog(`[server stdout] ${d.toString().trim()}`))
+  serverProcess.stderr?.on('data', (d) => writeMainLog(`[server stderr] ${d.toString().trim()}`))
+
+  serverProcess.on('spawn', () => writeMainLog('server spawned'))
   serverProcess.on('exit', (code) => {
+    writeMainLog(`server exited with code ${code}`)
     if (!app.isQuitting && code !== 0) app.quit()
   })
 }
@@ -118,6 +184,7 @@ function createWindow() {
     minWidth: 1024,
     minHeight: 700,
     show: false,
+    frame: IS_DEV,
     backgroundColor: '#0e0e0e',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -152,14 +219,10 @@ function createWindow() {
 // Tray
 
 function createTray() {
-  const iconCandidates = [
-    path.join(__dirname, '..', 'build', 'icon.png'),
-    path.join(__dirname, '..', 'client', 'src', 'assets', 'icons', 'favicon-32x32.png'),
-  ]
-  let icon = nativeImage.createEmpty()
-  for (const p of iconCandidates) {
-    if (fs.existsSync(p)) { icon = nativeImage.createFromPath(p); break }
-  }
+  const iconPath = resourcePath('icon.png')
+  const icon = fs.existsSync(iconPath)
+    ? nativeImage.createFromPath(iconPath)
+    : nativeImage.createEmpty()
 
   tray = new Tray(icon)
   tray.setToolTip('Patent Workbench')
@@ -167,11 +230,15 @@ function createTray() {
     Menu.buildFromTemplate([
       { label: 'Open Patent Workbench', click: () => { mainWindow?.show(); mainWindow?.focus() } },
       { type: 'separator' },
+      { label: 'Open Backup Folder', click: () => { shell.openPath(getBackupsDir()) } },
+      { type: 'separator' },
       { label: 'Quit', click: () => { app.isQuitting = true; app.quit() } },
     ])
   )
   tray.on('double-click', () => { mainWindow?.show(); mainWindow?.focus() })
 }
+
+if (!IS_DEV) Menu.setApplicationMenu(null)
 
 // IPC
 
@@ -184,24 +251,32 @@ ipcMain.handle('window-is-maximized',() => mainWindow?.isMaximized() ?? false)
 // App events
 
 app.on('ready', async () => {
-  createWindow()
-  createTray()
+  try {
+    writeMainLog('app ready')
+    createWindow()
+    writeMainLog('window created')
+    createTray()
+    writeMainLog('tray created')
 
-  if (IS_DEV) {
-    // Dev: server and Vite are started externally by `npm run electron:dev`.
-    const viteUrl = `http://${SERVER_HOST}:${VITE_DEV_PORT}/patent-workbench`
-    const ok = mainWindow && await loadUrlWithRetry(mainWindow, viteUrl, READY_TIMEOUT_MS)
-    if (!ok) { app.quit(); return }
-  } else {
-    // Production: own the server lifecycle, then load the React app from Express.
-    startServer()
-    const appUrl = `http://${SERVER_HOST}:${SERVER_PORT}/patent-workbench`
-    const ok = mainWindow && await loadUrlWithRetry(mainWindow, appUrl, READY_TIMEOUT_MS)
-    if (!ok) { app.quit(); return }
-    applyFirstRunConfig()
+    if (IS_DEV) {
+      const viteUrl = `http://${SERVER_HOST}:${VITE_DEV_PORT}/patent-workbench`
+      const ok = mainWindow && await loadUrlWithRetry(mainWindow, viteUrl, READY_TIMEOUT_MS)
+      if (!ok) { app.quit(); return }
+    } else {
+      startServer()
+      writeMainLog('server process forked')
+      const appUrl = `http://${SERVER_HOST}:${SERVER_PORT}/patent-workbench`
+      const ok = mainWindow && await loadUrlWithRetry(mainWindow, appUrl, READY_TIMEOUT_MS)
+      writeMainLog(`loadUrl result: ${ok}`)
+      if (!ok) { app.quit(); return }
+      applyFirstRunConfig()
+    }
+
+    if (!IS_DEV) autoUpdater.checkForUpdatesAndNotify()
+  } catch (err) {
+    writeMainLog(`ready handler error: ${err?.stack || err}`)
+    app.quit()
   }
-
-  if (!IS_DEV) autoUpdater.checkForUpdatesAndNotify()
 })
 
 app.on('window-all-closed', () => {
@@ -215,5 +290,6 @@ app.on('activate', () => {
 
 app.on('before-quit', () => {
   app.isQuitting = true
-  if (serverProcess) serverProcess.kill('SIGTERM')
+  if (serverProcess) serverProcess.kill()
+  backupDatabase()
 })

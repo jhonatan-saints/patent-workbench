@@ -14,6 +14,7 @@ import { getAppSettings } from './services/db'
 import sessionsRouter from './routes/sessions'
 import settingsRouter from './routes/settings'
 import templateRouter from './routes/template'
+import backupsRouter from './routes/backups'
 import logger from './logger'
 import errorHandler from './middleware/errorHandler'
 import { validateBody } from './middleware/validate'
@@ -236,6 +237,9 @@ app.use('/settings', settingsRouter)
 
 // Workflow template
 app.use('/template', templateRouter)
+
+// Backups
+app.use('/backups', backupsRouter)
 
 // Electron: serve the compiled React client and handle SPA deep-links.
 // Activated only when ELECTRON_MODE=true and CLIENT_DIST_DIR is provided by the

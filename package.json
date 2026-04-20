@@ -21,9 +21,10 @@
     "server:dev": "npm --workspace server run dev",
     "server:install": "npm --prefix server install",
     "electron": "electron .",
-    "electron:dev": "npm run i18n:generate && concurrently -k -n server,client,electron -c cyan,magenta,yellow \"npm run server:dev\" \"cross-env ELECTRON_DEV=true npm run client\" \"electron .\"",
-    "electron:build": "npm run server:build && npm run client:build:electron && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --config electron-builder.config.js --publish=never",
+    "electron:dev": "npm rebuild --workspace=server && npm run i18n:generate && concurrently -k -n server,client,electron -c cyan,magenta,yellow \"npm run server:dev\" \"cross-env ELECTRON_DEV=true npm run client\" \"electron .\"",
+    "electron:build": "npm run server:build && npm run client:build:electron && node scripts/prepare-native-deps.mjs && electron-rebuild -m server --force && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --config electron-builder.config.js --publish=never",
     "electron:pack": "npm run electron:build",
+    "installer:build": "npm run generate:favicons && npm run electron:build && \"%ProgramFiles(x86)%\\Inno Setup 6\\ISCC.exe\" installer\\patent-workbench.iss",
     "generate:favicons": "node scripts/generate-favicons.mjs",
     "i18n:generate": "node -e \"require('./scripts/i18n/translateHook.cjs').generateLanguage()\"",
     "setup": "npm install",
@@ -32,7 +33,7 @@
     "lint:eslint": "npx eslint --max-warnings=0 --no-error-on-unmatched-pattern .",
     "lint:markdown": "npx markdownlint-cli -i \"**/node_modules/**\" --config .markdownlint.json ./*.md ./**/*.md ./**/**/*.md ./**/**/**/*.md ./**/**/**/**/*.md",
     "lint:style": "npx stylelint **/*.scss **/*.css",
-    "start": "npm run i18n:generate && concurrently \"npm run server:dev\" \"npm run client\"",
+    "start": "npm rebuild && npm run i18n:generate && concurrently -k \"npm run server:dev\" \"wait-on http://127.0.0.1:3001/status -t 60000 && npm run client\"",
     "audit:check": "npm audit --audit-level=moderate"
   },
   "prepare": "git config core.hooksPath .githooks || true",
@@ -40,6 +41,7 @@
     "node": ">=20"
   },
   "devDependencies": {
+    "@electron/fuses": "^2.1.1",
     "@stylistic/stylelint-plugin": "^5.0.1",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
@@ -53,7 +55,8 @@
     "sharp": "^0.34.5",
     "stylelint": "^17.5.0",
     "stylelint-config-standard-scss": "^17.0.0",
-    "stylelint-scss": "^7.0.0"
+    "stylelint-scss": "^7.0.0",
+    "wait-on": "^9.0.5"
   },
   "dependencies": {
     "electron-updater": "^6.3.0"
