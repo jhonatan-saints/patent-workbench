@@ -1,6 +1,6 @@
 {
   "name": "patent-workbench-monorepo",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "private": true,
   "description": "Monorepo root for Patent Workbench (client + server)",
   "author": "Jhonatan Santos",
