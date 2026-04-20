@@ -14,7 +14,7 @@
 ; ============================================================
 
 #define AppName      "Patent Workbench"
-#define AppVersion   "2.1.0"
+#define AppVersion   "2.1.1"
 #define AppPublisher "Patent Workbench"
 #define AppURL       "https://github.com/jhonatan-saints/patent-workbench"
 #define AppExeName   "patent_workbench.exe"
