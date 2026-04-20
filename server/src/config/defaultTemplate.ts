@@ -6,7 +6,7 @@ const defaultTemplate = {
   meta: {
     company: 'Default',
     domain: 'patent',
-    version: '2.1.1',
+    version: '2.1.2',
     description:
       'Full workflow configuration for the Patent Workbench. Edit via the Settings panel to customise steps, labels, prompts, and RAG parameters.',
   },
