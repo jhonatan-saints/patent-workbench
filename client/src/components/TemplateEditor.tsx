@@ -2,6 +2,7 @@ import { Accordion, Textarea, Text, Stack } from '@mantine/core';
 import type { RegTemplate } from '@/types';
 import { WORKFLOW_ORDER } from '@/utils/workflowTemplates';
 import { useI18n } from '@/i18n';
+import { collectTemplateErrors } from '@/utils/templateValidation';
 
 const FIELD = { label: { fontFamily: 'monospace', fontSize: 11 } } as const;
 
@@ -18,6 +19,7 @@ export function TemplateEditor({ steps, patchStep }: Props) {
       {WORKFLOW_ORDER.map((id) => {
         const step = steps[id];
         if (!step) return null;
+        const errs = collectTemplateErrors({ [id]: step }, t)[id] ?? {};
         return (
           <Accordion.Item key={id} value={id}>
             <Accordion.Control py={6}>
@@ -36,6 +38,7 @@ export function TemplateEditor({ steps, patchStep }: Props) {
                   minRows={3}
                   maxRows={10}
                   styles={FIELD}
+                  error={errs.systemContext}
                 />
                 <Textarea
                   label={t('res_TemplatePromptSuffix')}
@@ -46,6 +49,7 @@ export function TemplateEditor({ steps, patchStep }: Props) {
                   minRows={2}
                   maxRows={5}
                   styles={FIELD}
+                  error={errs.promptSuffix}
                 />
                 {step.guidedPromptSuffix !== undefined && (
                   <Textarea
@@ -57,6 +61,7 @@ export function TemplateEditor({ steps, patchStep }: Props) {
                     minRows={2}
                     maxRows={5}
                     styles={FIELD}
+                    error={errs.guidedPromptSuffix}
                   />
                 )}
               </Stack>

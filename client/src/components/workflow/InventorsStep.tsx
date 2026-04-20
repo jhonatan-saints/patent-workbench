@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import {
   Stack,
   TextInput,
@@ -26,8 +26,7 @@ import { INPUT_STYLES, btnPrimary } from '@/theme/styles';
 import type { InventorInfo } from '@/types';
 import { generateId } from '@/utils/sanitize';
 import { useI18n } from '@/i18n/useI18n';
-import { buildArtifactContext } from '@/utils/workflowTemplates';
-import { generatePatentContent } from '@/api/client';
+import { useGenerateTitle } from '@/hooks/useGenerateTitle';
 
 function emptyInventor(): InventorInfo {
   return {
@@ -55,32 +54,10 @@ export function InventorsStep() {
   const [inventionTitle, setInventionTitle] = useState(artifact?.inventionTitle ?? '');
   const [idfNumber, setIdfNumber] = useState(artifact?.idfNumber ?? '');
   const [businessGroup, setBusinessGroup] = useState(artifact?.businessGroup ?? '');
-  const [generatingTitle, setGeneratingTitle] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
 
-  const handleGenerateTitle = async () => {
-    if (generatingTitle) {
-      abortRef.current?.abort();
-      setGeneratingTitle(false);
-      return;
-    }
-    if (!artifact) return;
-    abortRef.current = new AbortController();
-    setGeneratingTitle(true);
-    try {
-      const context = buildArtifactContext(artifact);
-      const prompt = `You are a patent title writer. Based on the invention below, generate a single concise and professional patent title (typically 5–15 words). Output ONLY the title text, with no quotes, no punctuation at the end, and no explanation.\n\n${context}`;
-      const result = await generatePatentContent(
-        { prompt, model: artifact.model },
-        abortRef.current.signal
-      );
-      if (result.success) {
-        setInventionTitle(result.data.response.trim());
-      }
-    } finally {
-      setGeneratingTitle(false);
-    }
-  };
+  const { generating: generatingTitle, generate: handleGenerateTitle } = useGenerateTitle((title) =>
+    setInventionTitle(title)
+  );
 
   const [inventors, setInventors] = useState<InventorInfo[]>(() =>
     artifact?.inventors.length ? artifact.inventors : [emptyInventor()]

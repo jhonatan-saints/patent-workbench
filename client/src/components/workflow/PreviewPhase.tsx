@@ -6,6 +6,9 @@ import {
   Group,
   Badge,
   Button,
+  ActionIcon,
+  Loader,
+  Tooltip,
   ScrollArea,
   Divider,
   Textarea,
@@ -19,9 +22,11 @@ import {
   IconCopy,
   IconClipboardCheck,
   IconHome,
+  IconWand,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n/useI18n';
+import { useGenerateTitle } from '@/hooks/useGenerateTitle';
 import { WORKFLOW_ORDER, resolveLabel } from '@/utils/workflowTemplates';
 import { ExportPanel } from '@/components/ExportPanel';
 
@@ -165,9 +170,13 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
 }
 
 export function PreviewPhase() {
-  const { artifact, resetWorkflow, steps, goToStep, workflowPhase } = useWorkbenchStore();
+  const { artifact, resetWorkflow, steps, goToStep, workflowPhase, updateInventionTitle } =
+    useWorkbenchStore();
   const [zoom, setZoom] = useState(1);
   const { t } = useI18n();
+  const { generating: generatingTitle, generate: handleRegenerateTitle } = useGenerateTitle(
+    (title) => updateInventionTitle(title)
+  );
   if (!artifact) return null;
 
   const completedSections = WORKFLOW_ORDER.filter((m) => artifact.sections[m]);
@@ -392,17 +401,29 @@ export function PreviewPhase() {
               {/* Invention Title + IDF metadata */}
               {(artifact.inventionTitle || artifact.idfNumber || artifact.businessGroup) && (
                 <Box>
-                  <Text
-                    style={{
-                      fontFamily: DOC_FONT,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: DOC_BLACK,
-                      marginBottom: 2,
-                    }}
-                  >
-                    {t('res_InventionTitle')}
-                  </Text>
+                  <Group justify="space-between" align="center" mb={2} wrap="nowrap">
+                    <Text
+                      style={{
+                        fontFamily: DOC_FONT,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: DOC_BLACK,
+                      }}
+                    >
+                      {t('res_InventionTitle')}
+                    </Text>
+                    <Tooltip label={t('res_RegenerateTitle')} withArrow position="top">
+                      <ActionIcon
+                        aria-label={t('res_RegenerateTitle')}
+                        variant="subtle"
+                        size="sm"
+                        onClick={() => void handleRegenerateTitle()}
+                        style={{ color: DOC_UI_MUTED }}
+                      >
+                        {generatingTitle ? <Loader size={12} /> : <IconWand size={12} />}
+                      </ActionIcon>
+                    </Tooltip>
+                  </Group>
                   <Text
                     style={{
                       fontFamily: DOC_FONT,

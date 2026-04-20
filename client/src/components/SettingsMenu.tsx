@@ -20,6 +20,7 @@ import { IconAdjustmentsCog, IconFileTextFilled } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n';
 import { TemplateEditor } from '@/components/TemplateEditor';
+import { collectTemplateErrors } from '@/utils/templateValidation';
 import { exportBackup, importBackup } from '@/api/client';
 import type { AppSettings, LogLevel, RegTemplate } from '@/types';
 
@@ -203,6 +204,10 @@ export function SettingsMenu() {
   const [templateDraft, setTemplateDraft] = useState<RegTemplate>(() => structuredClone(template));
   const [saving, setSaving] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
+  const templateErrors = useMemo(
+    () => collectTemplateErrors(templateDraft.steps, t),
+    [templateDraft, t]
+  );
   const [backupFile, setBackupFile] = useState<File | null>(null);
   const [backupImporting, setBackupImporting] = useState(false);
   const [backupStatus, setBackupStatus] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -382,7 +387,7 @@ export function SettingsMenu() {
             size="xs"
             ff="monospace"
             loading={templateSaving}
-            disabled={!isTemplateDirty}
+            disabled={!isTemplateDirty || Object.keys(templateErrors).length > 0}
             onClick={() => void handleSaveTemplate()}
             className="bg-accent text-bg"
           >
