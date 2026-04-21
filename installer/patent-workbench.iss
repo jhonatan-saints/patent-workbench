@@ -301,20 +301,22 @@ begin
   BarNode.Parent      := PageNode.Surface;
   BarNode.Left        := 0;
   BarNode.Top         := 64;
-  BarNode.Width       := PageNode.SurfaceWidth - 44;
+  BarNode.Width       := PageNode.SurfaceWidth;
   BarNode.Height      := 18;
   BarNode.Min         := 0;
   BarNode.Max         := 100;
   BarNode.Position    := 0;
+  BarNode.Visible     := False;
 
   LblNodePct          := TLabel.Create(PageNode);
   LblNodePct.Parent   := PageNode.Surface;
   LblNodePct.AutoSize := False;
-  LblNodePct.Left     := BarNode.Left + BarNode.Width + 6;
-  LblNodePct.Top      := BarNode.Top + 2;
-  LblNodePct.Width    := 36;
+  LblNodePct.Left     := 0;
+  LblNodePct.Top      := BarNode.Top + 24;
+  LblNodePct.Width    := PageNode.SurfaceWidth;
   LblNodePct.Height   := 18;
-  LblNodePct.Caption  := '0%';
+  LblNodePct.Caption  := '';
+  LblNodePct.Visible  := False;
 end;
 
 procedure CreateOllamaPage;
@@ -339,20 +341,22 @@ begin
   BarOllama.Parent      := PageOllama.Surface;
   BarOllama.Left        := 0;
   BarOllama.Top         := 64;
-  BarOllama.Width       := PageOllama.SurfaceWidth - 44;
+  BarOllama.Width       := PageOllama.SurfaceWidth;
   BarOllama.Height      := 18;
   BarOllama.Min         := 0;
   BarOllama.Max         := 100;
   BarOllama.Position    := 0;
+  BarOllama.Visible     := False;
 
   LblOllamaPct          := TLabel.Create(PageOllama);
   LblOllamaPct.Parent   := PageOllama.Surface;
   LblOllamaPct.AutoSize := False;
-  LblOllamaPct.Left     := BarOllama.Left + BarOllama.Width + 6;
-  LblOllamaPct.Top      := BarOllama.Top + 2;
-  LblOllamaPct.Width    := 36;
+  LblOllamaPct.Left     := 0;
+  LblOllamaPct.Top      := BarOllama.Top + 24;
+  LblOllamaPct.Width    := PageOllama.SurfaceWidth;
   LblOllamaPct.Height   := 18;
-  LblOllamaPct.Caption  := '0%';
+  LblOllamaPct.Caption  := '';
+  LblOllamaPct.Visible  := False;
 end;
 
 procedure CreateModelPage;
@@ -384,20 +388,22 @@ begin
   BarModel.Parent      := PageModel.Surface;
   BarModel.Left        := 0;
   BarModel.Top         := PageModel.SurfaceHeight - 36;
-  BarModel.Width       := PageModel.SurfaceWidth - 44;
+  BarModel.Width       := PageModel.SurfaceWidth;
   BarModel.Height      := 18;
   BarModel.Min         := 0;
   BarModel.Max         := 100;
   BarModel.Position    := 0;
+  BarModel.Visible     := False;
 
   LblModelPct          := TLabel.Create(PageModel);
   LblModelPct.Parent   := PageModel.Surface;
   LblModelPct.AutoSize := False;
-  LblModelPct.Left     := BarModel.Left + BarModel.Width + 6;
-  LblModelPct.Top      := BarModel.Top + 2;
-  LblModelPct.Width    := 36;
-  LblModelPct.Height   := 18;
-  LblModelPct.Caption  := '0%';
+  LblModelPct.Left     := 0;
+  LblModelPct.Top      := BarModel.Top - 18;
+  LblModelPct.Width    := PageModel.SurfaceWidth;
+  LblModelPct.Height   := 16;
+  LblModelPct.Caption  := '';
+  LblModelPct.Visible  := False;
 end;
 
 procedure CreateConfigPage;
@@ -507,28 +513,29 @@ begin
   if CurPageID = PageNode.ID then
   begin
     WizardForm.NextButton.Enabled := False;
-    SetProgress(BarNode, LblNodePct, 10);
+    BarNode.Visible    := False;
+    LblNodePct.Visible := False;
     LblNodeStatus.Caption := '';
+
     if DetectNode then
     begin
-      SetProgress(BarNode, LblNodePct, 100);
       LblNodeStatus.Caption := FmtMessage(CustomMessage('NodeFound'), [NodeVersion]);
       WizardForm.NextButton.Enabled := True;
     end
     else
     begin
-      SetProgress(BarNode, LblNodePct, 30);
       LblNodeStatus.Caption := CustomMessage('NodeMissing') + #13#10 + CustomMessage('NodeInstalling');
-      SetProgress(BarNode, LblNodePct, 50);
+      BarNode.Style   := pbstMarquee;
+      BarNode.Visible := True;
       if WingetInstall(NODE_WINGET_ID) and DetectNode then
       begin
-        SetProgress(BarNode, LblNodePct, 100);
+        BarNode.Visible := False;
         LblNodeStatus.Caption := FmtMessage(CustomMessage('NodeFound'), [NodeVersion]);
         WizardForm.NextButton.Enabled := True;
       end
       else
       begin
-        SetProgress(BarNode, LblNodePct, 60);
+        BarNode.Visible := False;
         LblNodeStatus.Caption := CustomMessage('NodeInstallFailed');
         // Leave Next disabled — user must resolve manually.
       end;
@@ -539,8 +546,11 @@ begin
   if CurPageID = PageOllama.ID then
   begin
     WizardForm.NextButton.Enabled := False;
+    BarOllama.Visible    := False;
+    LblOllamaPct.Visible := False;
     LblOllamaStatus.Caption := '';
     OllamaPresent := DetectOllama;
+
     if OllamaPresent then
     begin
       LblOllamaStatus.Caption := CustomMessage('OllamaFound');
@@ -549,24 +559,28 @@ begin
     else
     begin
       LblOllamaStatus.Caption := CustomMessage('OllamaMissing') + #13#10 + CustomMessage('OllamaInstalling');
+      BarOllama.Style   := pbstMarquee;
+      BarOllama.Visible := True;
       if WingetInstall(OLLAMA_WINGET_ID) then
       begin
-        OllamaPresent := True;
-        SetProgress(BarOllama, LblOllamaPct, 100);
+        OllamaPresent           := True;
+        BarOllama.Visible       := False;
         LblOllamaStatus.Caption := CustomMessage('OllamaFound');
         WizardForm.NextButton.Enabled := True;
       end
       else
       begin
-        SetProgress(BarOllama, LblOllamaPct, 60);
+        BarOllama.Visible       := False;
         LblOllamaStatus.Caption := CustomMessage('OllamaInstallFailed');
       end;
     end;
   end;
 
-  // Model page
+  // Model page — just populate list, progress bar only appears during pull (NextButtonClick)
   if CurPageID = PageModel.ID then
   begin
+    BarModel.Visible    := False;
+    LblModelPct.Visible := False;
     LstModels.Items.Clear;
     PopulateLocalModels;
 
@@ -584,7 +598,6 @@ begin
         LstModels.Items.Add(CURATED_MODELS[I]);
       LstModels.ItemIndex := 0;
     end;
-    SetProgress(BarModel, LblModelPct, 100);
   end;
 end;
 
@@ -621,13 +634,19 @@ begin
 
     // Pull the model — this is blocking and can take several minutes.
     WizardForm.NextButton.Enabled := False;
-    SetProgress(BarModel, LblModelPct, 10);
     LblModelHint.Caption := FmtMessage(CustomMessage('ModelPulling'), [ModelId]);
-    SetProgress(BarModel, LblModelPct, 20);
+    LstModels.Enabled := False;
+
+    BarModel.Style      := pbstNormal;
+    BarModel.Position   := 0;
+    BarModel.Visible    := True;
+    LblModelPct.Caption := '0%';
+    LblModelPct.Visible := True;
+    SetProgress(BarModel, LblModelPct, 10);
+
     ExecCapture('ollama', 'pull ' + ModelId, PullOutput);
 
-    // Verify pull succeeded.
-    SetProgress(BarModel, LblModelPct, 80);
+    SetProgress(BarModel, LblModelPct, 90);
     PopulateLocalModels;
     if LocalModels.IndexOf(ModelId) >= 0 then
     begin
@@ -637,7 +656,9 @@ begin
     end
     else
     begin
-      SetProgress(BarModel, LblModelPct, 60);
+      BarModel.Visible    := False;
+      LblModelPct.Visible := False;
+      LstModels.Enabled   := True;
       LblModelHint.Caption := CustomMessage('ModelPullFailed');
       WizardForm.NextButton.Enabled := True; // let the user proceed and pull later
     end;
