@@ -6,10 +6,6 @@ import { useShallow } from 'zustand/react/shallow';
 import { INPUT_STYLES, btnPrimary } from '@/theme/styles';
 import { useI18n } from '@/i18n/useI18n';
 
-function formatModelLabel(name: string): string {
-  return name.split(':')[0];
-}
-
 function useTypewriter(text: string, speed = 32) {
   const [displayed, setDisplayed] = useState('');
   const [done, setDone] = useState(false);
@@ -186,7 +182,7 @@ export function IdeaInputStep() {
                   label={t('res_Model')}
                   value={selectedModel}
                   onChange={(v) => v && setModel(v)}
-                  data={availableModels.map((m) => ({ value: m, label: formatModelLabel(m) }))}
+                  data={availableModels}
                   size="sm"
                   style={{ width: 200 }}
                   styles={{

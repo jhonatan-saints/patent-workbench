@@ -42,7 +42,7 @@ const dbHandler: ProxyHandler<Database.Database> = {
 }
 const db = new Proxy(_db, dbHandler)
 
-const SCHEMA_VERSION = 8
+const SCHEMA_VERSION = 9
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS sessions (
@@ -101,7 +101,8 @@ if (version < SCHEMA_VERSION) {
   try { db.exec(`ALTER TABLE app_settings ADD COLUMN log_level           TEXT    NOT NULL DEFAULT 'info'`) } catch { /* already exists */ }
   // v7: add reg_template column
   try { db.exec(`ALTER TABLE app_settings ADD COLUMN reg_template TEXT`) } catch { /* already exists */ }
-  // v8: add api_key column
+  // v8: add api_key column (moved to v9 — DBs already at v8 missed this)
+  // v9: ensure api_key column exists
   try { db.exec(`ALTER TABLE app_settings ADD COLUMN api_key TEXT`) } catch { /* already exists */ }
   db.pragma(`user_version = ${SCHEMA_VERSION}`)
 }
