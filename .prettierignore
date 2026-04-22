@@ -12,3 +12,4 @@
 
 server/dist/**
 client/dist/**
+dist-electron/**
