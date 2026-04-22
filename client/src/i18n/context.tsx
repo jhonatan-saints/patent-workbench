@@ -7,7 +7,10 @@ type Translations = Record<string, string>;
 
 // en-US is imported directly (synchronous, in main bundle).
 // All other locales are lazy — loaded only when the user switches to them.
-const localeModules = import.meta.glob<{ default: Translations }>('./locales/*.json');
+const localeModules = import.meta.glob<{ default: Translations }>([
+  './locales/*.json',
+  '!./locales/en-US.json',
+]);
 
 async function load(locale: Locale): Promise<Translations> {
   if (locale === 'en-US') return enUS as Translations;
