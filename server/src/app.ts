@@ -9,7 +9,7 @@ import pinoHttp from 'pino-http'
 import 'express-async-errors'
 import dotenv from 'dotenv'
 import { z } from 'zod'
-import { generate, checkLLM, listModels, getModelContextLength } from './services/llm.service'
+import { generate, generateStream, checkLLM, listModels, getModelContextLength } from './services/llm.service'
 import { getAppSettings } from './services/db'
 import sessionsRouter from './routes/sessions'
 import settingsRouter from './routes/settings'
@@ -233,6 +233,59 @@ app.post(
         completionTokens: result.completionTokens,
       },
     })
+  }
+)
+
+// POST /generate/stream — SSE streaming variant for the workflow steps
+const STREAM_ERROR_MESSAGES: Record<string, string> = {
+  timeout: 'The model took too long to respond. Try increasing the timeout in Settings.',
+  cancelled: 'Generation was cancelled.',
+  offline: 'Cannot reach the Ollama service. Make sure it is running.',
+  llm_error: 'The LLM service returned an error. Check that the selected model is available.',
+  invalid_response: 'The model returned an unexpected response. Try again or switch models.',
+}
+
+app.post(
+  '/generate/stream',
+  validateBody(generateSchema),
+  sanitizePrompt(),
+  async (req: Request, res: Response) => {
+    const { prompt, model } = req.body as GenerateBody
+
+    res.setHeader('Content-Type', 'text/event-stream')
+    res.setHeader('Cache-Control', 'no-cache')
+    res.setHeader('Connection', 'keep-alive')
+    res.flushHeaders()
+
+    const clientController = new AbortController()
+    req.on('close', () => clientController.abort())
+
+    const stream = generateStream({
+      model: model || getAppSettings().default_model,
+      prompt,
+      signal: clientController.signal,
+    })
+
+    const flushRes = () => { if (typeof (res as any).flush === 'function') (res as any).flush() }
+
+    for await (const event of stream) {
+      if (clientController.signal.aborted) break
+
+      if ('error' in event) {
+        res.write(`data: ${JSON.stringify({ error: STREAM_ERROR_MESSAGES[event.error] ?? 'Failed to generate response' })}\n\n`)
+        flushRes()
+        break
+      }
+
+      if (event.done) {
+        res.write(`data: ${JSON.stringify({ done: true, promptTokens: event.promptTokens, completionTokens: event.completionTokens })}\n\n`)
+      } else {
+        res.write(`data: ${JSON.stringify({ chunk: event.token })}\n\n`)
+      }
+      flushRes()
+    }
+
+    res.end()
   }
 )
 

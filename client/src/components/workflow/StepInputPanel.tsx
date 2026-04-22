@@ -253,7 +253,7 @@ export function StepInputPanel({ moduleId, hideModeSelector = false }: Props) {
       size="sm"
       style={BTN_STOP}
     >
-      STOP GENERATION
+      <span className="uppercase">{t('res_StopGeneration')}</span>
     </Button>
   ) : (
     <Button
@@ -262,7 +262,7 @@ export function StepInputPanel({ moduleId, hideModeSelector = false }: Props) {
       size="sm"
       style={btnPrimary(true)}
     >
-      GENERATE
+      <span className="uppercase">{t('res_Generate')}</span>
     </Button>
   );
 

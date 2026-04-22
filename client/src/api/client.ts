@@ -84,6 +84,103 @@ async function apiFetch<T>(
   }
 }
 
+type SseStreamEvent =
+  | { chunk: string }
+  | { done: true; promptTokens: number; completionTokens: number }
+  | { error: string };
+
+function parseSseEvent(raw: string): SseStreamEvent | null {
+  if (!raw.startsWith('data: ')) return null;
+  try {
+    return JSON.parse(raw.slice(6)) as SseStreamEvent;
+  } catch {
+    return null;
+  }
+}
+
+type SseApplyResult =
+  | { type: 'error'; error: string }
+  | { type: 'tokens'; promptTokens: number; completionTokens: number }
+  | null;
+
+function applySseEvent(event: SseStreamEvent, onChunk: (text: string) => void): SseApplyResult {
+  if ('error' in event) return { type: 'error', error: event.error };
+  if ('chunk' in event) { onChunk(event.chunk); return null; }
+  return { type: 'tokens', promptTokens: event.promptTokens, completionTokens: event.completionTokens };
+}
+
+async function readSseStream(
+  body: ReadableStream<Uint8Array>,
+  onChunk: (text: string) => void,
+): Promise<ApiResult<{ promptTokens: number; completionTokens: number }>> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalTokens = { promptTokens: 0, completionTokens: 0 };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split('\n\n');
+    buffer = parts.pop() ?? '';
+    for (const part of parts) {
+      const event = parseSseEvent(part);
+      if (!event) continue;
+      const result = applySseEvent(event, onChunk);
+      if (!result) continue;
+      if (result.type === 'error') return { success: false, error: result.error };
+      finalTokens = { promptTokens: result.promptTokens, completionTokens: result.completionTokens };
+    }
+  }
+
+  return finalTokens;
+}
+
+export async function streamPatentContent(
+  req: GenerateRequest,
+  onChunk: (text: string) => void,
+  signal?: AbortSignal,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+): Promise<ApiResult<{ promptTokens: number; completionTokens: number }>> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  if (signal?.aborted) {
+    clearTimeout(timer);
+    return { success: false, error: 'Generation cancelled.' };
+  }
+  signal?.addEventListener('abort', () => controller.abort(), { once: true });
+
+  try {
+    const res = await fetch(`${BASE_URL}/generate/stream`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(_apiKey ? { 'x-api-key': _apiKey } : {}),
+      },
+    });
+
+    clearTimeout(timer);
+
+    if (!res.ok || !res.body) {
+      const body = await res.json().catch(() => ({} as { error?: string }));
+      return { success: false, error: (body as { error?: string }).error ?? `HTTP ${res.status}` };
+    }
+
+    return readSseStream(res.body, onChunk);
+  } catch (err) {
+    clearTimeout(timer);
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      if (signal?.aborted) return { success: false, error: 'Generation cancelled.' };
+      return { success: false, error: 'Request timed out. The model may still be processing.' };
+    }
+    return { success: false, error: 'Unable to reach the local server. Is it running?' };
+  }
+}
+
 export async function generatePatentContent(
   req: GenerateRequest,
   signal?: AbortSignal,
