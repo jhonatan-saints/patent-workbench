@@ -51,6 +51,7 @@ export function OptionsPanel() {
     pendingCascadeFromStep,
     dismissCascade,
     cascadeRegenerateDownstream,
+    streamingOptions,
   } = useWorkbenchStore(
     useShallow((s) => ({
       steps: s.steps,
@@ -68,6 +69,7 @@ export function OptionsPanel() {
       pendingCascadeFromStep: s.pendingCascadeFromStep,
       dismissCascade: s.dismissCascade,
       cascadeRegenerateDownstream: s.cascadeRegenerateDownstream,
+      streamingOptions: s.streamingOptions,
     }))
   );
 
@@ -317,7 +319,7 @@ export function OptionsPanel() {
           </Box>
         )}
 
-        {/* Generating skeleton */}
+        {/* Generating: partial option cards when content arrives, skeletons while connecting */}
         {isGenerating && (
           <Box
             style={{
@@ -328,9 +330,16 @@ export function OptionsPanel() {
               alignItems: 'start',
             }}
           >
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
+            {streamingOptions.length > 0
+              ? streamingOptions.map((content, i) => (
+                  <OptionCard
+                    key={`streaming-${i}`}
+                    option={{ id: `streaming-${i}`, index: i, content }}
+                    onSelect={() => {}}
+                    disabled
+                  />
+                ))
+              : ['sk-0', 'sk-1', 'sk-2'].map((k) => <CardSkeleton key={k} />)}
           </Box>
         )}
 

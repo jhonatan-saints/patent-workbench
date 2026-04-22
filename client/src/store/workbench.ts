@@ -9,7 +9,7 @@ import type {
   StepStatus,
 } from '@/types';
 import {
-  generatePatentContent,
+  streamPatentContent,
   getModels,
   getStatus,
   getModelContextLength,
@@ -54,6 +54,17 @@ const DEFAULT_SETTINGS: AppSettings = {
 // Module-level abort controller — not in Zustand state to avoid re-renders
 let _abortController: AbortController | null = null;
 
+function parseStreamingOptions(text: string): string[] {
+  const re = /OPTION\s+\d+\s*:\s*\n?([\s\S]*?)(?=OPTION\s+\d+\s*:|$)/gi;
+  const results: string[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(text)) !== null) {
+    const content = match[1].replace(/^\[content\]\s*/i, '').trimStart();
+    results.push(content);
+  }
+  return results;
+}
+
 function emptyOptionsByMode() {
   return { auto: [] as GeneratedOption[], guided: [] as GeneratedOption[] };
 }
@@ -89,6 +100,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   artifact: null,
   generationStatus: 'idle',
   lastError: null,
+  streamingOptions: [],
 
   // Sessions
   sessions: [],
@@ -204,7 +216,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     // Create a fresh abort controller for this generation
     _abortController = new AbortController();
 
-    set({ generationStatus: 'loading', lastError: null });
+    set({ generationStatus: 'loading', lastError: null, streamingOptions: [] });
     set((state) => ({
       steps: state.steps.map((s, i) =>
         i === currentStepIndex ? { ...s, status: 'generating' } : s
@@ -215,11 +227,18 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       overridePrompt ??
       `${module.systemContext(appSettings.numOptions)}\n\n---\n\n${module.buildPrompt(artifact, appSettings.numOptions)}`;
 
-    const result = await generatePatentContent(
+    let accumulated = '';
+    const result = await streamPatentContent(
       { prompt, model: selectedModel },
+      (chunk) => {
+        accumulated += chunk;
+        set({ streamingOptions: parseStreamingOptions(accumulated) });
+      },
       _abortController.signal,
       appSettings.llmTimeoutMs
     );
+
+    set({ streamingOptions: [] });
 
     // If cancelled, error message will be 'Generation cancelled.'
     if (isApiError(result)) {
@@ -236,7 +255,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       return;
     }
 
-    const rawResponse = result.data.response;
+    const rawResponse = accumulated;
     const parsed = parseOptions(sanitizeOutput(rawResponse));
     const options: GeneratedOption[] = parsed.map((content, i) => ({
       id: generateId(),
@@ -253,8 +272,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
               status: 'selecting',
               inputMode: usedMode,
               optionsByMode: { ...s.optionsByMode, [usedMode]: options },
-              promptTokens: result.data.promptTokens,
-              completionTokens: result.data.completionTokens,
+              promptTokens: result.promptTokens,
+              completionTokens: result.completionTokens,
             }
           : s
       ),
@@ -266,7 +285,15 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       _abortController.abort();
       _abortController = null;
     }
-    // Step status reset is handled in generateStepOptions error path
+    const { currentStepIndex } = get();
+    set({ generationStatus: 'idle', lastError: null, streamingOptions: [] });
+    if (currentStepIndex >= 0) {
+      set((state) => ({
+        steps: state.steps.map((s, i) =>
+          i === currentStepIndex ? { ...s, status: 'input' } : s
+        ),
+      }));
+    }
   },
 
   submitManualContent: (content: string) => {
@@ -510,6 +537,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       artifact: null,
       generationStatus: 'idle',
       lastError: null,
+      streamingOptions: [],
       figuresDraft: { diagramNodes: [], diagramEdges: [], jsonText: '' },
       diagramGenerating: false,
     });

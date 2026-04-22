@@ -209,6 +209,7 @@ export interface WorkbenchState {
   artifact: PatentArtifact | null;
   generationStatus: GenerationStatus;
   lastError: string | null;
+  streamingOptions: string[];
 
   // Sessions (persisted via server SQLite)
   sessions: WorkflowSession[];
