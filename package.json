@@ -34,7 +34,8 @@
     "lint:markdown": "npx markdownlint-cli -i \"**/node_modules/**\" --config .markdownlint.json ./*.md ./**/*.md ./**/**/*.md ./**/**/**/*.md ./**/**/**/**/*.md",
     "lint:style": "npx stylelint **/*.scss **/*.css",
     "start": "npm rebuild && npm run i18n:generate && concurrently -k \"npm run server:dev\" \"wait-on http://127.0.0.1:3001/status -t 60000 && npm run client\"",
-    "audit:check": "npm audit --audit-level=moderate"
+    "audit:check": "npm audit --audit-level=moderate",
+    "tag:release": "bash ./scripts/tag-release.sh"
   },
   "prepare": "git config core.hooksPath .githooks || true",
   "engines": {
