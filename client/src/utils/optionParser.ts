@@ -20,7 +20,8 @@ export function parseOptions(response: string): string[] {
   let match: RegExpExecArray | null;
 
   while ((match = re.exec(response)) !== null) {
-    const content = match[1].trim();
+    // Strip literal "[content]" if the model echoed the format placeholder back
+    const content = match[1].trim().replace(/^\[content\]\s*/i, '');
     if (content) matches.push(content);
   }
 

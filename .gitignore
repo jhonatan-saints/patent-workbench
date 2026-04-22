@@ -23,6 +23,9 @@ settings.local.json
 # Docs
 reg-rag_algorithm.md
 
+# Local template override — not for distribution
+reg-templates.local.json
+
 # Environment files
 .env
 .env.*

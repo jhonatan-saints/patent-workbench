@@ -30,7 +30,7 @@ import {
 import { sanitizeOutput, generateId } from '@/utils/sanitize';
 import { WORKFLOW_MODULES, WORKFLOW_ORDER, reinitFromTemplate } from '@/utils/workflowTemplates';
 import { parseOptions } from '@/utils/optionParser';
-import bundledTemplates from '@/config/reg-templates.json';
+import bundledTemplates from '@templates/reg-templates.json';
 
 const DEFAULT_MODEL = (import.meta.env.VITE_DEFAULT_MODEL as string | undefined) || 'qwen2.5:7b';
 const DEFAULT_LLM_TIMEOUT_MS = Number(import.meta.env.VITE_LLM_TIMEOUT_MS) || 300_000;

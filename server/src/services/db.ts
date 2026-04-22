@@ -125,6 +125,20 @@ db.prepare(`
   UPDATE app_settings SET reg_template = ? WHERE id = 1 AND reg_template IS NULL
 `).run(JSON.stringify(defaultTemplate))
 
+// Apply local template override on every startup if the file exists.
+// Place the JSON file at <project-root>/templates/reg-templates.local.json
+// (gitignored). Override the path via LOCAL_TEMPLATE_PATH env var if needed.
+const TEMPLATES_DIR = process.env.TEMPLATES_DIR ?? path.resolve(__dirname, '..', '..', '..', 'templates')
+const LOCAL_TEMPLATE_PATH = process.env.LOCAL_TEMPLATE_PATH ?? path.join(TEMPLATES_DIR, 'reg-templates.local.json')
+if (fs.existsSync(LOCAL_TEMPLATE_PATH)) {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(LOCAL_TEMPLATE_PATH, 'utf-8'))
+    db.prepare('UPDATE app_settings SET reg_template = ? WHERE id = 1').run(JSON.stringify(parsed))
+  } catch {
+    // Malformed local template — silently keep the existing DB template
+  }
+}
+
 export interface AppSettingsRow {
   id: number
   default_model: string
