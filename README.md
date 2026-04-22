@@ -6,7 +6,7 @@
   ![License](https://img.shields.io/badge/license-Apache%202.0-%230a91ff)
   ![Node](https://img.shields.io/badge/node-%3E%3D24.14-%2301b701)
   ![Status](https://img.shields.io/badge/status-active-%2301b701)
-  ![Version](https://img.shields.io/badge/version-v2.1.3-%230a91ff)
+  ![Version](https://img.shields.io/badge/version-v2.1.4-%230a91ff)
   
   [![Download Now](https://img.shields.io/badge/-Download%20Now!-%230a91ff)](https://github.com/jhonatan-saints/patent-workbench/releases/latest)
 </div>
