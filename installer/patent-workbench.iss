@@ -67,8 +67,10 @@ NodeInstallFailed=Node.js installation failed. Please install Node.js v24 manual
 OllamaPageCaption=Ollama (Local LLM Runtime)
 OllamaPageDescription=Checking for Ollama.
 OllamaFound=Ollama is already installed.
-OllamaMissing=Ollama was not found. The installer will download and install it automatically.
-OllamaInstalling=Installing Ollama via winget...
+OllamaMissing=Ollama was not found. Downloading the Ollama installer...
+OllamaInstalling=Downloading Ollama installer (~1 GB). This may take several minutes...
+OllamaRunningSetup=Running Ollama setup silently. Please wait...
+OllamaInstallDone=Ollama installed successfully.
 OllamaInstallFailed=Ollama installation failed. Please install Ollama manually from https://ollama.com and re-run this installer.
 
 ; ── Model page ──
@@ -117,6 +119,11 @@ Filename: "{app}\{#AppExeName}"; Description: "Launch {#AppName}"; Flags: nowait
 ; ==============================================================
 [Code]
 
+// Force an immediate repaint of a window before a blocking operation.
+function UpdateWindow(Wnd: HWND): Boolean; external 'UpdateWindow@user32.dll stdcall';
+procedure Sleep(dwMilliseconds: DWORD); external 'Sleep@kernel32.dll stdcall';
+function GetTickCount: DWORD; external 'GetTickCount@kernel32.dll stdcall';
+
 const
   NODE_WINGET_ID   = 'OpenJS.NodeJS.LTS';
   OLLAMA_WINGET_ID = 'Ollama.Ollama';
@@ -157,10 +164,10 @@ var
   CboNumOptions:  TComboBox;
 
   // Runtime state
-  LocalModels:    TStringList;
-  SelectedModel:  string;
-  NodeVersion:    string;
-  OllamaPresent:  Boolean;
+  LocalModels:   TStringList;
+  SelectedModel: string;
+  NodeVersion:   string;
+  OllamaPresent: Boolean;
 
 // Utilities
 
@@ -503,11 +510,13 @@ begin
   CreateConfigPage;
 end;
 
+
 // Page activation (runs checks when the user arrives on each page)
 
 procedure CurPageChanged(CurPageID: Integer);
 var
-  I: Integer;
+  I:        Integer;
+  ExitCode: Integer;
 begin
   // Node.js page
   if CurPageID = PageNode.ID then
@@ -545,9 +554,11 @@ begin
   if CurPageID = PageOllama.ID then
   begin
     WizardForm.NextButton.Enabled := False;
-    BarOllama.Visible    := False;
-    LblOllamaPct.Visible := False;
-    LblOllamaStatus.Caption := '';
+    BarOllama.Visible       := False;
+    LblOllamaPct.Visible    := False;
+    LblOllamaStatus.Caption := 'Checking for Ollama...';
+    UpdateWindow(WizardForm.Handle);
+
     OllamaPresent := DetectOllama;
 
     if OllamaPresent then
@@ -557,18 +568,45 @@ begin
     end
     else
     begin
-      LblOllamaStatus.Caption := CustomMessage('OllamaMissing') + #13#10 + CustomMessage('OllamaInstalling');
-      BarOllama.Visible := True;
-      if WingetInstall(OLLAMA_WINGET_ID) then
-      begin
-        OllamaPresent           := True;
+      LblOllamaStatus.Caption := CustomMessage('OllamaInstalling');
+      BarOllama.Style         := npbstMarquee;
+      BarOllama.Visible       := True;
+      UpdateWindow(WizardForm.Handle);
+
+      try
+        DownloadTemporaryFile(
+          'https://ollama.com/download/OllamaSetup.exe',
+          'OllamaSetup.exe',
+          '',
+          nil
+        );
+
+        LblOllamaStatus.Caption := CustomMessage('OllamaRunningSetup');
+        UpdateWindow(WizardForm.Handle);
+
+        Exec(
+          ExpandConstant('{tmp}\OllamaSetup.exe'),
+          '/S',
+          '', SW_HIDE, ewWaitUntilTerminated, ExitCode
+        );
+
+        OllamaPresent := DetectOllama;
+        if OllamaPresent then
+        begin
+          BarOllama.Style         := npbstNormal;
+          BarOllama.Position      := 100;
+          LblOllamaStatus.Caption := CustomMessage('OllamaInstallDone');
+          WizardForm.NextButton.Enabled := True;
+        end
+        else
+        begin
+          BarOllama.Visible       := False;
+          LblOllamaPct.Visible    := False;
+          LblOllamaStatus.Caption := CustomMessage('OllamaInstallFailed');
+        end;
+      except
         BarOllama.Visible       := False;
-        LblOllamaStatus.Caption := CustomMessage('OllamaFound');
-        WizardForm.NextButton.Enabled := True;
-      end
-      else
-      begin
-        BarOllama.Visible       := False;
+        LblOllamaPct.Visible    := False;
         LblOllamaStatus.Caption := CustomMessage('OllamaInstallFailed');
       end;
     end;
@@ -603,8 +641,13 @@ end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
 var
-  SelIdx: Integer;
-  ModelId, PullOutput: string;
+  SelIdx:       Integer;
+  ModelId:      string;
+  BatchFile:    string;
+  SentinelFile: string;
+  PullExitCode: Integer;
+  StartTick:    DWORD;
+  ElapsedSec:   DWORD;
 begin
   Result := True;
 
@@ -630,34 +673,57 @@ begin
     if LocalModels.IndexOf(ModelId) >= 0 then
       Exit;
 
-    // Pull the model — this is blocking and can take several minutes.
     WizardForm.NextButton.Enabled := False;
-    LblModelHint.Caption := FmtMessage(CustomMessage('ModelPulling'), [ModelId]);
-    LstModels.Enabled := False;
+    LblModelHint.Caption          := FmtMessage(CustomMessage('ModelPulling'), [ModelId]);
+    LstModels.Enabled             := False;
+    BarModel.Style                := npbstMarquee;
+    BarModel.Visible              := True;
+    LblModelPct.Caption           := 'Starting...';
+    LblModelPct.Visible           := True;
+    UpdateWindow(WizardForm.Handle);
 
-    BarModel.Position   := 0;
-    BarModel.Visible    := True;
-    LblModelPct.Caption := '0%';
-    LblModelPct.Visible := True;
-    SetProgress(BarModel, LblModelPct, 10);
+    // Launch ollama pull in background; sentinel file signals completion.
+    BatchFile    := ExpandConstant('{tmp}\ollama_pull.bat');
+    SentinelFile := ExpandConstant('{tmp}\ollama_pull_done.txt');
+    DeleteFile(SentinelFile);
+    SaveStringToFile(BatchFile,
+      '@echo off' + #13#10 +
+      'ollama pull ' + ModelId + #13#10 +
+      'echo done > "' + SentinelFile + '"' + #13#10,
+      False);
+    Exec(ExpandConstant('{sys}\cmd.exe'),
+      '/C "' + BatchFile + '"',
+      '', SW_HIDE, ewNoWait, PullExitCode);
 
-    ExecCapture('ollama', 'pull ' + ModelId, PullOutput);
+    // Poll every second, updating elapsed time so the user sees progress.
+    StartTick := GetTickCount;
+    repeat
+      Sleep(1000);
+      ElapsedSec := (GetTickCount - StartTick) div 1000;
+      if ElapsedSec < 60 then
+        LblModelPct.Caption := IntToStr(ElapsedSec) + 's elapsed'
+      else
+        LblModelPct.Caption := IntToStr(ElapsedSec div 60) + 'm ' +
+          IntToStr(ElapsedSec mod 60) + 's elapsed';
+      UpdateWindow(WizardForm.Handle);
+    until FileExists(SentinelFile);
 
-    SetProgress(BarModel, LblModelPct, 90);
     PopulateLocalModels;
     if LocalModels.IndexOf(ModelId) >= 0 then
     begin
-      SetProgress(BarModel, LblModelPct, 100);
-      LblModelHint.Caption := FmtMessage(CustomMessage('ModelPullDone'), [ModelId]);
+      BarModel.Style        := npbstNormal;
+      BarModel.Position     := 100;
+      LblModelPct.Caption   := 'Done!';
+      LblModelHint.Caption  := FmtMessage(CustomMessage('ModelPullDone'), [ModelId]);
       WizardForm.NextButton.Enabled := True;
     end
     else
     begin
-      BarModel.Visible    := False;
-      LblModelPct.Visible := False;
-      LstModels.Enabled   := True;
-      LblModelHint.Caption := CustomMessage('ModelPullFailed');
-      WizardForm.NextButton.Enabled := True; // let the user proceed and pull later
+      BarModel.Visible      := False;
+      LblModelPct.Visible   := False;
+      LstModels.Enabled     := True;
+      LblModelHint.Caption  := CustomMessage('ModelPullFailed');
+      WizardForm.NextButton.Enabled := True;
     end;
   end;
 end;
