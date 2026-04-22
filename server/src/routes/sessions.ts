@@ -25,11 +25,24 @@ const figureSchema = z.object({
     }),
 })
 
+const generatedOptionSchema = z.object({
+  id: z.string(),
+  index: z.number(),
+  content: z.string(),
+})
+
 const stepInputStateSchema = z.object({
   moduleId: z.string().min(1),
   inputMode: z.enum(['auto', 'guided', 'manual']),
   guidedFields: z.record(z.string()).default({}),
   manualDraft: z.string().default(''),
+  optionsByMode: z
+    .object({
+      auto: z.array(generatedOptionSchema).default([]),
+      guided: z.array(generatedOptionSchema).default([]),
+    })
+    .optional(),
+  status: z.enum(['pending', 'input', 'generating', 'selecting', 'done']).optional(),
 })
 
 // Zod schema for saving a session

@@ -49,7 +49,8 @@ function makeImageFigure(dataUrl: string, img: HTMLImageElement, figureNumber: n
 
 export function FiguresStep() {
   const { t } = useI18n();
-  const { artifact, updateFigures, goToInventors, goToStep, steps } = useWorkbenchStore();
+  const { artifact, updateFigures, goToInventors, goToStep, steps, diagramGenerating } =
+    useWorkbenchStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [figures, setFigures] = useState<FigureItem[]>(() => artifact?.figures ?? []);
@@ -162,6 +163,7 @@ export function FiguresStep() {
               size="xs"
               leftSection={<IconArrowBackUp size={16} />}
               onClick={handleBack}
+              disabled={diagramGenerating}
               className="font-mono text-[11px] text-fg-muted uppercase"
             >
               {t('res_BackToSteps')}
@@ -176,6 +178,7 @@ export function FiguresStep() {
           classNames={{ root: 'step-seg' }}
           value={mode}
           onChange={(v) => setMode(v as 'upload' | 'diagram' | 'json')}
+          disabled={diagramGenerating}
           size="xs"
           data={[
             {
@@ -213,7 +216,12 @@ export function FiguresStep() {
             },
           ]}
           styles={{
-            root: { background: 'var(--surface)', border: '1px solid var(--border)' },
+            root: {
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              opacity: diagramGenerating ? 0.4 : 1,
+              cursor: diagramGenerating ? 'not-allowed' : undefined,
+            },
             indicator: { background: 'var(--accent)' },
             label: {
               fontFamily: 'var(--font-mono)',
@@ -378,6 +386,7 @@ export function FiguresStep() {
           <Button
             leftSection={<IconArrowRight size={14} />}
             onClick={handleConfirm}
+            disabled={diagramGenerating}
             size="sm"
             style={BTN_PRIMARY}
           >

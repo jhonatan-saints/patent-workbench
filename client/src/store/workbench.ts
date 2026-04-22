@@ -53,13 +53,17 @@ const DEFAULT_SETTINGS: AppSettings = {
 // Module-level abort controller — not in Zustand state to avoid re-renders
 let _abortController: AbortController | null = null;
 
+function emptyOptionsByMode() {
+  return { auto: [] as GeneratedOption[], guided: [] as GeneratedOption[] };
+}
+
 function getInitialSteps() {
   return WORKFLOW_ORDER.map((moduleId) => ({
     moduleId,
     label: WORKFLOW_MODULES[moduleId].label,
     description: WORKFLOW_MODULES[moduleId].description,
     status: 'pending' as const,
-    options: [],
+    optionsByMode: emptyOptionsByMode(),
     selectedOption: null,
     promptTokens: 0,
     completionTokens: 0,
@@ -90,6 +94,34 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
 
   // Figures workspace drafts
   figuresDraft: { diagramNodes: [], diagramEdges: [], jsonText: '' },
+
+  // Diagram AI generation lock
+  diagramGenerating: false,
+  setDiagramGenerating: (v) => set({ diagramGenerating: v }),
+
+  // Cascade update
+  pendingCascadeFromStep: null,
+  dismissCascade: () => set({ pendingCascadeFromStep: null }),
+  cascadeRegenerateDownstream: async () => {
+    const { steps, pendingCascadeFromStep } = get();
+    if (pendingCascadeFromStep === null) return;
+    set({ pendingCascadeFromStep: null });
+    // Iterate downstream steps that have a selectedOption and auto-regenerate + auto-select
+    for (let i = pendingCascadeFromStep + 1; i < steps.length; i++) {
+      if (!steps[i].selectedOption) continue;
+      set({ currentStepIndex: i });
+      // force auto mode for cascade
+      set((state) => ({
+        steps: state.steps.map((s, idx) =>
+          idx === i ? { ...s, inputMode: 'auto' as const } : s
+        ),
+      }));
+      await get().generateStepOptions();
+      const { steps: updated } = get();
+      const first = updated[i].optionsByMode.auto[0];
+      if (first) get().selectOption(first);
+    }
+  },
 
   // App settings
   appSettings: DEFAULT_SETTINGS,
@@ -165,6 +197,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     if (!artifact || currentStepIndex < 0 || currentStepIndex >= steps.length) return;
 
     const step = steps[currentStepIndex];
+    const usedMode = step.inputMode === 'guided' ? 'guided' : 'auto';
     const module = WORKFLOW_MODULES[step.moduleId];
 
     // Create a fresh abort controller for this generation
@@ -173,7 +206,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     set({ generationStatus: 'loading', lastError: null });
     set((state) => ({
       steps: state.steps.map((s, i) =>
-        i === currentStepIndex ? { ...s, status: 'generating', options: [] } : s
+        i === currentStepIndex ? { ...s, status: 'generating' } : s
       ),
     }));
 
@@ -217,7 +250,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
           ? {
               ...s,
               status: 'selecting',
-              options,
+              inputMode: usedMode,
+              optionsByMode: { ...s.optionsByMode, [usedMode]: options },
               promptTokens: result.data.promptTokens,
               completionTokens: result.data.completionTokens,
             }
@@ -264,22 +298,25 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     const nextIndex = currentStepIndex + 1;
     const isComplete = nextIndex >= steps.length;
 
+    // Cascade: if changing a prior step that already had a selection and downstream steps are done
+    const wasAlreadySelected = step.selectedOption !== null;
+    const hasDownstreamDone = steps.slice(currentStepIndex + 1).some((s) => s.selectedOption !== null);
+    const triggerCascade = wasAlreadySelected && hasDownstreamDone;
+
     set((state) => ({
       artifact: newArtifact,
       steps: state.steps.map((s, i) => {
         if (i === currentStepIndex) return { ...s, status: 'done', selectedOption: option };
-        // Mark next step as 'input' so it shows the input panel
         if (i === nextIndex && !isComplete) return { ...s, status: 'input' };
         return s;
       }),
       currentStepIndex: isComplete ? currentStepIndex : nextIndex,
-      // Stay in working phase; user navigates to figures/preview via sidebar
       workflowPhase: 'working',
       generationStatus: 'idle',
+      pendingCascadeFromStep: triggerCascade ? currentStepIndex : null,
     }));
 
     if (isComplete) {
-      // Auto-navigate to figures step when all 7 content steps are done
       set({ workflowPhase: 'figures' });
     }
   },
@@ -298,6 +335,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       inputMode: s.inputMode,
       guidedFields: s.guidedFields,
       manualDraft: s.manualDraft,
+      optionsByMode: s.optionsByMode,
+      status: s.status,
     }));
     set((state) => {
       const existingIndex = state.sessions.findIndex((s) => s.startedAt === artifact.startedAt);
@@ -335,6 +374,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       inputMode: s.inputMode,
       guidedFields: s.guidedFields,
       manualDraft: s.manualDraft,
+      optionsByMode: s.optionsByMode,
+      status: s.status,
     }));
     const existingIndex = sessions.findIndex((s) => s.startedAt === artifact.startedAt);
     const session: WorkflowSession = {
@@ -364,11 +405,13 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   },
 
   regenerateOptions: () => {
-    const { currentStepIndex } = get();
-    // Reset to input so user can choose mode again
+    const { currentStepIndex, steps } = get();
+    const mode = steps[currentStepIndex]?.inputMode === 'guided' ? 'guided' : 'auto';
     set((state) => ({
       steps: state.steps.map((s, i) =>
-        i === currentStepIndex ? { ...s, status: 'input', options: [] } : s
+        i === currentStepIndex
+          ? { ...s, status: 'input', optionsByMode: { ...s.optionsByMode, [mode]: [] } }
+          : s
       ),
       generationStatus: 'idle',
       lastError: null,
@@ -376,7 +419,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   },
 
   goToStep: (index: number) => {
-    const { steps } = get();
+    const { steps, diagramGenerating } = get();
+    if (diagramGenerating) return;
     if (index < 0 || index >= steps.length) return;
 
     const step = steps[index];
@@ -388,12 +432,11 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     });
 
     // Restore an actionable status so the panel always has something to show.
-    // Manual/guided steps always go back to 'input' so the form is shown.
-    const needsRestore = step.status === 'done' || step.status === 'pending' || step.options.length === 0;
+    const anyOptions = step.optionsByMode.auto.length > 0 || step.optionsByMode.guided.length > 0;
+    const needsRestore = step.status === 'done' || step.status === 'pending' || !anyOptions;
     let restoredStatus = step.status;
     if (needsRestore) {
-      const showOptions = step.options.length > 0 && step.inputMode !== 'manual' && step.inputMode !== 'guided';
-      restoredStatus = showOptions ? 'selecting' : 'input';
+      restoredStatus = anyOptions ? 'selecting' : 'input';
     }
 
     if (restoredStatus !== step.status) {
@@ -407,7 +450,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
 
   goToFigures: () => set({ workflowPhase: 'figures' }),
 
-  goToInventors: () => set({ workflowPhase: 'inventors' }),
+  goToInventors: () => { if (get().diagramGenerating) return; set({ workflowPhase: 'inventors' }); },
 
   updateInventors: (inventors) => {
     set((state) => {
@@ -444,6 +487,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   },
 
   goToPreview: () => {
+    if (get().diagramGenerating) return;
     set({ workflowPhase: 'preview' });
   },
 
@@ -463,6 +507,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       generationStatus: 'idle',
       lastError: null,
       figuresDraft: { diagramNodes: [], diagramEdges: [], jsonText: '' },
+      diagramGenerating: false,
     });
   },
 
@@ -555,16 +600,36 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
         ? { id: generateId(), index: section.optionIndex, content: section.content }
         : null;
       const saved = s.stepInputStates?.find((si) => si.moduleId === moduleId);
+      const savedMode = saved?.inputMode ?? 'auto';
+      const optionMode = savedMode === 'guided' ? 'guided' : 'auto';
+
+      // Restore status: 'done' is authoritative from artifact.sections;
+      // 'selecting' and 'input' are restored from saved state; everything else → 'pending'
+      let resolvedStatus: StepStatus = 'pending';
+      if (section) {
+        resolvedStatus = 'done';
+      } else if (saved?.status === 'selecting' || saved?.status === 'input') {
+        resolvedStatus = saved.status;
+      }
+
+      // Restore full options list when available; fall back to single selected option for
+      // sessions saved before this field was added
+      const resolvedOptions: { auto: GeneratedOption[]; guided: GeneratedOption[] } =
+        saved?.optionsByMode ?? {
+          auto: optionMode === 'auto' && selectedOption ? [selectedOption] : [],
+          guided: optionMode === 'guided' && selectedOption ? [selectedOption] : [],
+        };
+
       return {
         moduleId,
         label: mod.label,
         description: mod.description,
-        status: section ? ('done' as const) : ('pending' as const),
-        options: selectedOption ? [selectedOption] : [],
+        status: resolvedStatus,
+        optionsByMode: resolvedOptions,
         selectedOption,
         promptTokens: 0,
         completionTokens: 0,
-        inputMode: saved?.inputMode ?? ('auto' as const),
+        inputMode: savedMode,
         guidedFields: saved?.guidedFields ?? ({} as Record<string, string>),
         manualDraft: saved?.manualDraft ?? '',
       };

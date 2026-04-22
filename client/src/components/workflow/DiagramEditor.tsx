@@ -22,9 +22,20 @@ import {
   getViewportForBounds,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Button, Group, Text, Box, TextInput, Switch, ColorInput, Select } from '@mantine/core';
+import {
+  Button,
+  Group,
+  Text,
+  Box,
+  TextInput,
+  ColorInput,
+  Select,
+  Tooltip,
+  Loader,
+} from '@mantine/core';
 import { useI18n } from '@/i18n/useI18n';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useGenerateDiagram } from '@/hooks/useGenerateDiagram';
 import {
   IconTrash,
   IconCheck,
@@ -33,13 +44,19 @@ import {
   IconPlayerPlay,
   IconPlayerStop,
   IconArrowsRightLeft,
+  IconWand,
+  IconLayersIntersect,
 } from '@tabler/icons-react';
 import { toPng } from 'html-to-image';
 import { generateId } from '@/utils/sanitize';
 import type { FigureItem } from '@/types';
 
-const IMAGE_W = 900;
-const IMAGE_H = 500;
+const EXPORT_SCALE = 1.5; // px per canvas unit — higher = more readable text
+const EXPORT_PADDING = 60;
+const EXPORT_MIN_W = 900;
+const EXPORT_MIN_H = 500;
+const EXPORT_MAX_W = 4000;
+const EXPORT_MAX_H = 6000;
 
 const H_STYLE: React.CSSProperties = {
   width: 10,
@@ -325,6 +342,13 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
   const [edgeLabelInput, setEdgeLabelInput] = useState('');
 
   const [transparentBg, setTransparentBg] = useState(false);
+  const {
+    generating: aiGenerating,
+    error: aiError,
+    generate: generateDiagram,
+    cancel: cancelAI,
+    canGenerate,
+  } = useGenerateDiagram();
   const { getNodes, getNodesBounds, getEdges, fitView } = useReactFlow();
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -468,7 +492,15 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
     const rfViewport = canvasRef.current?.querySelector<HTMLElement>('.react-flow__viewport');
     if (!rfViewport) return;
     const bounds = getNodesBounds(allNodes);
-    const vp = getViewportForBounds(bounds, IMAGE_W, IMAGE_H, 0.5, 2, 0.2);
+
+    // Scale image to content so text stays readable regardless of diagram length
+    const imgW = Math.round(
+      Math.max(EXPORT_MIN_W, Math.min(EXPORT_MAX_W, bounds.width * EXPORT_SCALE))
+    );
+    const imgH = Math.round(
+      Math.max(EXPORT_MIN_H, Math.min(EXPORT_MAX_H, bounds.height * EXPORT_SCALE))
+    );
+    const vp = getViewportForBounds(bounds, imgW, imgH, 0.1, 4, EXPORT_PADDING / imgH);
 
     // Build set of handles that have at least one connection
     const connectedHandles = new Set<string>();
@@ -493,11 +525,11 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
     try {
       const dataUrl = await toPng(rfViewport, {
         backgroundColor: transparentBg ? undefined : '#ffffff',
-        width: IMAGE_W,
-        height: IMAGE_H,
+        width: imgW,
+        height: imgH,
         style: {
-          width: `${IMAGE_W}px`,
-          height: `${IMAGE_H}px`,
+          width: `${imgW}px`,
+          height: `${imgH}px`,
           transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`,
           transformOrigin: '0 0',
         },
@@ -507,8 +539,8 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
         dataUrl,
         name: `Figure ${figureNumber}`,
         caption: '',
-        width: IMAGE_W,
-        height: IMAGE_H,
+        width: imgW,
+        height: imgH,
         type: 'diagram',
       });
     } catch (err) {
@@ -517,6 +549,19 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
       hiddenHandles.forEach((el) => (el.style.visibility = ''));
     }
   }, [getNodes, getNodesBounds, getEdges, onAddFigure, figureNumber, transparentBg]);
+
+  const handleGenerateAI = async () => {
+    if (aiGenerating) {
+      cancelAI();
+      return;
+    }
+    const result = await generateDiagram();
+    if (!result) return;
+    setNodes(result.nodes);
+    setEdges(result.edges);
+    setDiagramDraft(result.nodes, result.edges);
+    setTimeout(() => fitView({ padding: 0.2 }), 80);
+  };
 
   const hasSelection = selectedNodeId !== null || selectedEdgeId !== null;
 
@@ -543,6 +588,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
             color="teal"
             leftSection={<IconPlayerPlay size={11} />}
             onClick={() => addNode('start')}
+            disabled={aiGenerating}
             style={BTN}
             className="uppercase"
           >
@@ -554,6 +600,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
             color="indigo"
             leftSection={<IconSquare size={11} />}
             onClick={() => addNode('process')}
+            disabled={aiGenerating}
             style={BTN}
             className="uppercase"
           >
@@ -565,6 +612,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
             color="orange"
             leftSection={<IconDiamond size={11} />}
             onClick={() => addNode('decision')}
+            disabled={aiGenerating}
             style={BTN}
             className="uppercase"
           >
@@ -576,6 +624,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
             color="blue"
             leftSection={<IconArrowsRightLeft size={11} />}
             onClick={() => addNode('io')}
+            disabled={aiGenerating}
             style={BTN}
             className="uppercase"
           >
@@ -587,6 +636,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
             color="red"
             leftSection={<IconPlayerStop size={11} />}
             onClick={() => addNode('end')}
+            disabled={aiGenerating}
             style={BTN}
             className="uppercase"
           >
@@ -595,48 +645,79 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
 
           <Box style={{ flex: 1 }} />
 
-          <Group gap={8}>
-            <Switch
-              size="xs"
-              checked={transparentBg}
-              onChange={(e) => setTransparentBg(e.currentTarget.checked)}
-              label={
-                <Text size="xs" ff="monospace" c="dimmed" className="uppercase">
-                  {t('res_DiagramTransparentBg')}
-                </Text>
-              }
-            />
-            <Button
-              size="xs"
-              variant="outline"
-              color="red"
-              leftSection={<IconTrash size={11} />}
-              onClick={() => {
-                setNodes([]);
-                setEdges([]);
-                setDiagramDraft([], []);
-              }}
-              disabled={nodes.length === 0}
-              style={BTN}
-              className="uppercase"
+          <Group gap={6} align="center">
+            {aiError && (
+              <Text size="xs" c="red" ff="monospace" style={{ flexShrink: 0 }}>
+                {aiError}
+              </Text>
+            )}
+            <Tooltip
+              label={aiGenerating ? t('res_DiagramGenerating') : t('res_DiagramGenerateAI')}
+              withArrow
+              position="bottom"
             >
-              {t('res_DiagramClearAll')}
-            </Button>
-            <Button
-              size="xs"
-              leftSection={<IconCheck size={11} />}
-              onClick={handleExport}
-              disabled={nodes.length === 0}
-              style={{
-                ...BTN,
-                background: 'var(--accent)',
-                color: 'var(--accent-text)',
-                border: 'none',
-              }}
-              className="uppercase"
-            >
-              {t('res_DiagramAddToFigures')}
-            </Button>
+              <Button
+                size="xs"
+                variant={aiGenerating ? 'filled' : 'light'}
+                color={aiGenerating ? 'red' : 'blue'}
+                onClick={() => void handleGenerateAI()}
+                disabled={!canGenerate && !aiGenerating}
+                style={{ ...BTN, padding: '0 8px' }}
+              >
+                {aiGenerating ? (
+                  <Loader size={12} color="white" type="dots" />
+                ) : (
+                  <IconWand size={13} />
+                )}
+              </Button>
+            </Tooltip>
+            <Tooltip label={t('res_DiagramTransparentBg')} withArrow position="bottom">
+              <Button
+                size="xs"
+                variant={transparentBg ? 'filled' : 'light'}
+                color={transparentBg ? 'indigo' : 'gray'}
+                onClick={() => setTransparentBg((v) => !v)}
+                disabled={aiGenerating}
+                style={{ ...BTN, padding: '0 8px' }}
+              >
+                <IconLayersIntersect size={13} />
+              </Button>
+            </Tooltip>
+            <Tooltip label={t('res_DiagramClearAll')} withArrow position="bottom">
+              <Button
+                size="xs"
+                variant="light"
+                color="red"
+                onClick={() => {
+                  setNodes([]);
+                  setEdges([]);
+                  setDiagramDraft([], []);
+                }}
+                disabled={nodes.length === 0}
+                style={{ ...BTN, padding: '0 8px' }}
+              >
+                <IconTrash size={13} />
+              </Button>
+            </Tooltip>
+            <Tooltip label={t('res_DiagramAddToFigures')} withArrow position="bottom">
+              <Button
+                size="xs"
+                variant="filled"
+                onClick={handleExport}
+                disabled={nodes.length === 0}
+                style={{
+                  ...BTN,
+                  padding: '0 8px',
+                  border: 'none',
+                  ...(nodes.length > 0 && {
+                    background: 'var(--accent)',
+                    color: 'var(--accent-text)',
+                  }),
+                }}
+              >
+                <IconCheck size={13} />
+              </Button>
+            </Tooltip>
           </Group>
         </Group>
 

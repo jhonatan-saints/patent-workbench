@@ -1,15 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import {
-  Box,
-  Textarea,
-  Button,
-  Group,
-  Text,
-  NumberInput,
-  Switch,
-  useMantineColorScheme,
-} from '@mantine/core';
-import { IconCheck, IconAlertCircle } from '@tabler/icons-react';
+import { Box, Textarea, Button, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core';
+import { IconCheck, IconAlertCircle, IconLayersIntersect, IconTrash } from '@tabler/icons-react';
 import { toPng } from 'html-to-image';
 import { generateId } from '@/utils/sanitize';
 import type { FigureItem } from '@/types';
@@ -17,7 +8,6 @@ import { useI18n } from '@/i18n/useI18n';
 import { useWorkbenchStore } from '@/store/workbench';
 
 const DEFAULT_W = 900;
-const DEFAULT_H = 500;
 
 const INPUT_STYLES = {
   label: {
@@ -32,18 +22,6 @@ const INPUT_STYLES = {
     background: 'var(--surface-raised)',
     border: '1px solid var(--border)',
     color: 'var(--text-primary)',
-  },
-};
-
-const TOOLBAR_INPUT_STYLES = {
-  input: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: 12,
-    background: 'var(--surface)',
-    border: '1px solid var(--border)',
-    color: 'var(--text-primary)',
-    height: 28,
-    minHeight: 28,
   },
 };
 
@@ -159,8 +137,6 @@ interface Props {
 export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
   const { figuresDraft, setJsonDraftText } = useWorkbenchStore();
   const [jsonText, setJsonText] = useState(figuresDraft.jsonText);
-  const [exportW, setExportW] = useState<number>(DEFAULT_W);
-  const [exportH, setExportH] = useState<number>(DEFAULT_H);
   const [transparentBg, setTransparentBg] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [parsed, setParsed] = useState<unknown>(() => {
@@ -203,13 +179,15 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
   const handleExport = useCallback(async () => {
     if (!previewRef.current || parsed === null) return;
     try {
+      // Use actual rendered content height so the image fits tightly around the content
+      const contentH = previewRef.current.scrollHeight;
       const dataUrl = await toPng(previewRef.current, {
         backgroundColor: transparentBg ? undefined : colors.bg,
-        width: exportW,
-        height: exportH,
+        width: DEFAULT_W,
+        height: contentH,
         style: {
-          width: `${exportW}px`,
-          minHeight: `${exportH}px`,
+          width: `${DEFAULT_W}px`,
+          height: `${contentH}px`,
           overflow: 'hidden',
         },
       });
@@ -218,14 +196,14 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
         dataUrl,
         name: `Figure ${figureNumber}`,
         caption: '',
-        width: exportW,
-        height: exportH,
+        width: DEFAULT_W,
+        height: contentH,
         type: 'json',
       });
     } catch (err) {
       console.error('JSON export failed:', err);
     }
-  }, [parsed, exportW, exportH, transparentBg, onAddFigure, figureNumber, colors.bg]);
+  }, [parsed, transparentBg, onAddFigure, figureNumber, colors.bg]);
 
   return (
     <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -240,67 +218,50 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
           flexShrink: 0,
         }}
       >
-        <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)' }}>
-          {t('res_ExportSize')}
-        </Text>
-        <NumberInput
-          size="xs"
-          value={exportW}
-          onChange={(v) => setExportW(Number(v) || DEFAULT_W)}
-          min={200}
-          max={2400}
-          allowDecimal={false}
-          placeholder="W"
-          style={{ width: 80 }}
-          styles={TOOLBAR_INPUT_STYLES}
-          aria-label="Export width"
-        />
-        <Text size="xs" ff="monospace" style={{ color: 'var(--text-muted)' }}>
-          ×
-        </Text>
-        <NumberInput
-          size="xs"
-          value={exportH}
-          onChange={(v) => setExportH(Number(v) || DEFAULT_H)}
-          min={100}
-          max={2400}
-          allowDecimal={false}
-          placeholder="H"
-          style={{ width: 80 }}
-          styles={TOOLBAR_INPUT_STYLES}
-          aria-label="Export height"
-        />
         <Box style={{ flex: 1 }} />
-        <Switch
-          size="xs"
-          checked={transparentBg}
-          onChange={(e) => setTransparentBg(e.currentTarget.checked)}
-          label={
-            <Text
-              size="xs"
-              ff="monospace"
-              style={{ color: 'var(--text-muted)' }}
-              className="uppercase"
-            >
-              {t('res_TransparentBg')}
-            </Text>
-          }
-        />
-        <Button
-          size="xs"
-          leftSection={<IconCheck size={14} />}
-          onClick={() => void handleExport()}
-          disabled={parsed === null}
-          style={{
-            background: parsed === null ? 'var(--surface-raised)' : 'var(--accent)',
-            color: parsed === null ? 'var(--text-muted)' : 'var(--accent-text)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            border: 'none',
-          }}
-        >
-          {t('res_AddToFigures')}
-        </Button>
+        <Tooltip label={t('res_TransparentBg')} withArrow position="bottom">
+          <Button
+            size="xs"
+            variant={transparentBg ? 'filled' : 'light'}
+            color={transparentBg ? 'indigo' : 'gray'}
+            onClick={() => setTransparentBg((v) => !v)}
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0 8px' }}
+          >
+            <IconLayersIntersect size={13} />
+          </Button>
+        </Tooltip>
+        <Tooltip label={t('res_DiagramClearAll')} withArrow position="bottom">
+          <Button
+            size="xs"
+            variant="light"
+            color="red"
+            onClick={() => handleJsonChange('')}
+            disabled={!jsonText.trim()}
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '0 8px' }}
+          >
+            <IconTrash size={13} />
+          </Button>
+        </Tooltip>
+        <Tooltip label={t('res_DiagramAddToFigures')} withArrow position="bottom">
+          <Button
+            size="xs"
+            variant="filled"
+            onClick={() => void handleExport()}
+            disabled={parsed === null}
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              padding: '0 8px',
+              border: 'none',
+              ...(parsed !== null && {
+                background: 'var(--accent)',
+                color: 'var(--accent-text)',
+              }),
+            }}
+          >
+            <IconCheck size={13} />
+          </Button>
+        </Tooltip>
       </Group>
 
       {/* Body: editor (left) + preview (right) */}
@@ -375,7 +336,7 @@ export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
             style={{ color: 'var(--text-muted)', letterSpacing: '0.08em' }}
             className="uppercase"
           >
-            {t('res_Preview')} · {exportW} × {exportH} px
+            {t('res_Preview')}
           </Text>
           <Box
             ref={previewRef}
