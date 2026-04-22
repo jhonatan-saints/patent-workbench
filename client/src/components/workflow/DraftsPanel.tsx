@@ -18,8 +18,9 @@ import {
   IconGripVertical,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useShallow } from 'zustand/react/shallow';
 import { useI18n } from '@/i18n/useI18n';
-import { WORKFLOW_ORDER } from '@/utils/workflowTemplates';
+import { WORKFLOW_ORDER } from '@/utils';
 import type { WorkflowSession } from '@/types';
 
 function formatTime(ts: number): string {
@@ -254,7 +255,13 @@ function DraftItem({
 }
 
 export function DraftsPanel() {
-  const { sessions, loadSession, deleteSession } = useWorkbenchStore();
+  const { sessions, loadSession, deleteSession } = useWorkbenchStore(
+    useShallow((s) => ({
+      sessions: s.sessions,
+      loadSession: s.loadSession,
+      deleteSession: s.deleteSession,
+    }))
+  );
   const { t } = useI18n();
 
   const [ordered, setOrdered] = useState<WorkflowSession[]>([]);

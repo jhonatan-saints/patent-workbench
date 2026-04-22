@@ -18,9 +18,10 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { IconAdjustmentsCog, IconFileTextFilled } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useShallow } from 'zustand/react/shallow';
 import { useI18n } from '@/i18n';
 import { TemplateEditor } from '@/components/TemplateEditor';
-import { collectTemplateErrors } from '@/utils/templateValidation';
+import { collectTemplateErrors } from '@/utils';
 import { exportBackup, importBackup } from '@/api/client';
 import type { AppSettings, LogLevel, RegTemplate } from '@/types';
 
@@ -197,7 +198,20 @@ export function SettingsMenu() {
     initSessions,
     loadSettings,
     loadTemplate,
-  } = useWorkbenchStore();
+  } = useWorkbenchStore(
+    useShallow((s) => ({
+      appSettings: s.appSettings,
+      saveSettings: s.saveSettings,
+      resetSettings: s.resetSettings,
+      availableModels: s.availableModels,
+      template: s.template,
+      saveTemplate: s.saveTemplate,
+      resetTemplate: s.resetTemplate,
+      initSessions: s.initSessions,
+      loadSettings: s.loadSettings,
+      loadTemplate: s.loadTemplate,
+    }))
+  );
 
   const { t } = useI18n();
   const [form, setForm] = useState<AppSettings>({ ...appSettings });

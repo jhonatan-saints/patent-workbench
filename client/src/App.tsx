@@ -21,30 +21,52 @@ import {
   IconLogout,
   IconTrash,
 } from '@tabler/icons-react';
-import React, { useRef, useState, useEffect, useCallback, type ReactNode } from 'react';
+import React, {
+  lazy,
+  Suspense,
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from 'react';
 import { useHotkeys } from '@mantine/hooks';
 import { StatusIndicator } from '@/components/StatusIndicator';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SettingsMenu } from '@/components/SettingsMenu';
 import { StepProgress } from '@/components/workflow/StepProgress';
-import { IdeaInputStep } from '@/components/workflow/IdeaInputStep';
-import { OptionsPanel } from '@/components/workflow/OptionsPanel';
-import { ArtifactPreview } from '@/components/workflow/ArtifactPreview';
-import { PreviewPhase } from '@/components/workflow/PreviewPhase';
-import { InventorsStep } from '@/components/workflow/InventorsStep';
-import { FiguresStep } from '@/components/workflow/FiguresStep';
 import { DraftsPanel } from '@/components/workflow/DraftsPanel';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useShallow } from 'zustand/react/shallow';
 import { AppLoader } from '@/components/AppLoader';
 import { BrandSplash } from '@/components/BrandSplash';
 import { OAuthLoginDemo } from '@/components/OAuthLoginDemo';
 import { WindowControls } from '@/components/WindowControls';
 import { useI18n } from '@/i18n';
 
+const IdeaInputStep = lazy(() =>
+  import('@/components/workflow/IdeaInputStep').then((m) => ({ default: m.IdeaInputStep }))
+);
+const OptionsPanel = lazy(() =>
+  import('@/components/workflow/OptionsPanel').then((m) => ({ default: m.OptionsPanel }))
+);
+const ArtifactPreview = lazy(() =>
+  import('@/components/workflow/ArtifactPreview').then((m) => ({ default: m.ArtifactPreview }))
+);
+const FiguresStep = lazy(() =>
+  import('@/components/workflow/FiguresStep').then((m) => ({ default: m.FiguresStep }))
+);
+const InventorsStep = lazy(() =>
+  import('@/components/workflow/InventorsStep').then((m) => ({ default: m.InventorsStep }))
+);
+const PreviewPhase = lazy(() =>
+  import('@/components/workflow/PreviewPhase').then((m) => ({ default: m.PreviewPhase }))
+);
+
 // Set VITE_DEMO_OAUTH=true to preview the OAuth2 login -> loader -> app flow
 const DEMO_OAUTH = import.meta.env.VITE_DEMO_OAUTH === 'true';
 
-const IS_ELECTRON = window.electronAPI?.isElectron === true;
+const IS_ELECTRON = globalThis.electronAPI?.isElectron === true;
 
 type AppPhase = 'splash' | 'login' | 'loading' | 'ready';
 
@@ -161,12 +183,22 @@ export function App() {
     clearSessions,
     sessions,
     persistDraft,
-  } = useWorkbenchStore();
+  } = useWorkbenchStore(
+    useShallow((s) => ({
+      workflowPhase: s.workflowPhase,
+      initSessions: s.initSessions,
+      loadSettings: s.loadSettings,
+      loadTemplate: s.loadTemplate,
+      clearSessions: s.clearSessions,
+      sessions: s.sessions,
+      persistDraft: s.persistDraft,
+    }))
+  );
   const [clearDraftsOpen, setClearDraftsOpen] = useState(false);
   const logoutBtnRef = useRef<HTMLButtonElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
   const draftsRef = useRef<HTMLDivElement>(null);
-  const { t } = useI18n();
+  const { t, ready: i18nReady } = useI18n();
   const isWorking = workflowPhase === 'working';
   const isFigures = workflowPhase === 'figures';
   const isInventors = workflowPhase === 'inventors';
@@ -179,6 +211,11 @@ export function App() {
   }
 
   const [phase, setPhase] = useState<AppPhase>(getInitialPhase);
+  const [animDone, setAnimDone] = useState(false);
+
+  useEffect(() => {
+    if (animDone && i18nReady) setPhase('ready');
+  }, [animDone, i18nReady]);
 
   useEffect(() => {
     void initSessions();
@@ -230,11 +267,11 @@ export function App() {
 
   if (phase === 'login') return <OAuthLoginDemo onAuthenticated={() => setPhase('loading')} />;
 
-  if (phase === 'loading') return <AppLoader onDone={() => setPhase('ready')} />;
+  if (phase === 'loading') return <AppLoader onDone={() => setAnimDone(true)} />;
 
   return (
     <>
-      {phase === 'splash' && <BrandSplash onDone={() => setPhase('ready')} />}
+      {phase === 'splash' && <BrandSplash onDone={() => setAnimDone(true)} />}
       <AppShell
         header={{ height: 44 }}
         navbar={{ width: navCollapsed ? 52 : 240, breakpoint: 'sm' }}
@@ -373,35 +410,46 @@ export function App() {
 
         {/* MAIN */}
         <AppShell.Main>
-          {workflowPhase === 'input' && (
-            <ScrollArea style={{ height: 'calc(100vh - 44px)' }}>
-              <IdeaInputStep />
-            </ScrollArea>
-          )}
+          <Suspense fallback={null}>
+            {workflowPhase === 'input' && (
+              <ScrollArea style={{ height: 'calc(100vh - 44px)' }}>
+                <IdeaInputStep />
+              </ScrollArea>
+            )}
 
-          {isWorking && (
-            <Box style={{ height: 'calc(100vh - 44px)', overflow: 'hidden' }}>
-              <ResizableSplit left={<OptionsPanel />} right={<ArtifactPreview />} />
-            </Box>
-          )}
+            {isWorking && (
+              <Box style={{ height: 'calc(100vh - 44px)', overflow: 'hidden' }}>
+                <ResizableSplit left={<OptionsPanel />} right={<ArtifactPreview />} />
+              </Box>
+            )}
 
-          {isFigures && (
-            <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 44px)' }}>
-              <FiguresStep />
-            </Box>
-          )}
+            {isFigures && (
+              <Box
+                className="flex flex-col overflow-hidden"
+                style={{ height: 'calc(100vh - 44px)' }}
+              >
+                <FiguresStep />
+              </Box>
+            )}
 
-          {isInventors && (
-            <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 44px)' }}>
-              <InventorsStep />
-            </Box>
-          )}
+            {isInventors && (
+              <Box
+                className="flex flex-col overflow-hidden"
+                style={{ height: 'calc(100vh - 44px)' }}
+              >
+                <InventorsStep />
+              </Box>
+            )}
 
-          {isPreview && (
-            <Box className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 44px)' }}>
-              <PreviewPhase />
-            </Box>
-          )}
+            {isPreview && (
+              <Box
+                className="flex flex-col overflow-hidden"
+                style={{ height: 'calc(100vh - 44px)' }}
+              >
+                <PreviewPhase />
+              </Box>
+            )}
+          </Suspense>
         </AppShell.Main>
 
         {/* RIGHT ASIDE */}

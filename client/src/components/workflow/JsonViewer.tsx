@@ -2,10 +2,11 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Box, Textarea, Button, Group, Text, Tooltip, useMantineColorScheme } from '@mantine/core';
 import { IconCheck, IconAlertCircle, IconLayersIntersect, IconTrash } from '@tabler/icons-react';
 import { toPng } from 'html-to-image';
-import { generateId } from '@/utils/sanitize';
+import { generateId } from '@/utils';
 import type { FigureItem } from '@/types';
 import { useI18n } from '@/i18n/useI18n';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useShallow } from 'zustand/react/shallow';
 
 const DEFAULT_W = 900;
 
@@ -135,7 +136,9 @@ interface Props {
 }
 
 export function JsonViewer({ onAddFigure, figureNumber }: Readonly<Props>) {
-  const { figuresDraft, setJsonDraftText } = useWorkbenchStore();
+  const { figuresDraft, setJsonDraftText } = useWorkbenchStore(
+    useShallow((s) => ({ figuresDraft: s.figuresDraft, setJsonDraftText: s.setJsonDraftText }))
+  );
   const [jsonText, setJsonText] = useState(figuresDraft.jsonText);
   const [transparentBg, setTransparentBg] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -26,6 +26,8 @@ function applyPragmas(instance: Database.Database) {
   instance.pragma('synchronous = NORMAL')
   instance.pragma('wal_autocheckpoint = 1000')
   instance.pragma('foreign_keys = ON')
+  instance.pragma('cache_size = -64000')
+  instance.pragma('mmap_size = 30000000')
 }
 
 applyPragmas(_db)
@@ -66,6 +68,8 @@ db.exec(`
     data_url   TEXT    NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0
   );
+
+  CREATE INDEX IF NOT EXISTS idx_figures_session_id ON figures(session_id);
 
   CREATE TABLE IF NOT EXISTS app_settings (
     id                  INTEGER PRIMARY KEY CHECK (id = 1),
@@ -189,6 +193,7 @@ export function createBackup(): string {
 
 export function deleteBackup(filename: string): void {
   const target = path.join(BACKUPS_DIR, filename)
+  if (!target.startsWith(BACKUPS_DIR + path.sep)) throw new Error('invalid filename')
   for (const ext of ['', '-wal', '-shm']) {
     try { fs.unlinkSync(target + ext) } catch { /* already absent */ }
   }

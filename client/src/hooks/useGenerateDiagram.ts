@@ -2,7 +2,8 @@ import { useRef, useState } from 'react';
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
 import { generatePatentContent } from '@/api/client';
 import { useWorkbenchStore } from '@/store/workbench';
-import { generateId } from '@/utils/sanitize';
+import { useShallow } from 'zustand/react/shallow';
+import { generateId } from '@/utils';
 
 
 const DIAGRAM_PROMPT_PREFIX = `Read the following patent Full Description carefully and identify the key steps of the process.
@@ -74,12 +75,13 @@ function autoLayout(nodes: Node[], edges: Edge[]): Node[] {
   }
   const roots = nodes.filter(n => parentsOf[n.id].length === 0);
   (roots.length ? roots : [nodes[0]]).forEach(r => visit(r.id, 0));
-  nodes.forEach(n => { if (depth[n.id] === undefined) depth[n.id] = 0; });
+  nodes.forEach(n => { depth[n.id] ??= 0; });
 
   // Group nodes by depth level
   const byLevel: Record<number, string[]> = {};
   for (const [id, d] of Object.entries(depth)) {
-    (byLevel[d] ??= []).push(id);
+    byLevel[d] ??= [];
+    byLevel[d].push(id);
   }
 
   const positions: Record<string, { x: number; y: number }> = {};
@@ -159,7 +161,9 @@ function parseAIResponse(text: string): DiagramResult | null {
 }
 
 export function useGenerateDiagram() {
-  const { artifact, setDiagramGenerating } = useWorkbenchStore();
+  const { artifact, setDiagramGenerating } = useWorkbenchStore(
+    useShallow(s => ({ artifact: s.artifact, setDiagramGenerating: s.setDiagramGenerating }))
+  );
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);

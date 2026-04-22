@@ -22,9 +22,10 @@ import {
   IconWand,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useShallow } from 'zustand/react/shallow';
 import { INPUT_STYLES, btnPrimary } from '@/theme/styles';
 import type { InventorInfo } from '@/types';
-import { generateId } from '@/utils/sanitize';
+import { generateId } from '@/utils';
 import { useI18n } from '@/i18n/useI18n';
 import { useGenerateTitle } from '@/hooks/useGenerateTitle';
 
@@ -49,7 +50,16 @@ export function InventorsStep() {
     updateInventionTitle,
     goToPreview,
     goToFigures,
-  } = useWorkbenchStore();
+  } = useWorkbenchStore(
+    useShallow((s) => ({
+      artifact: s.artifact,
+      updateInventors: s.updateInventors,
+      updatePatentMeta: s.updatePatentMeta,
+      updateInventionTitle: s.updateInventionTitle,
+      goToPreview: s.goToPreview,
+      goToFigures: s.goToFigures,
+    }))
+  );
 
   const [inventionTitle, setInventionTitle] = useState(artifact?.inventionTitle ?? '');
   const [idfNumber, setIdfNumber] = useState(artifact?.idfNumber ?? '');

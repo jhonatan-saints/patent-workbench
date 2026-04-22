@@ -6,6 +6,7 @@ export interface I18nCtx {
   setLocale: (l: Locale) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
   localeOptions: { value: Locale; label: string }[];
+  ready: boolean;
 }
 
 export const I18nContext = createContext<I18nCtx | null>(null);

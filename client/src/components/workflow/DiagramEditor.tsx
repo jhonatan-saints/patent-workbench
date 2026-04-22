@@ -35,6 +35,7 @@ import {
 } from '@mantine/core';
 import { useI18n } from '@/i18n/useI18n';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useShallow } from 'zustand/react/shallow';
 import { useGenerateDiagram } from '@/hooks/useGenerateDiagram';
 import {
   IconTrash,
@@ -47,9 +48,11 @@ import {
   IconWand,
   IconLayersIntersect,
 } from '@tabler/icons-react';
-import { toPng } from 'html-to-image';
-import { generateId } from '@/utils/sanitize';
+import { generateId } from '@/utils';
 import type { FigureItem } from '@/types';
+
+const MONO_INPUT_STYLES_12 = { input: { fontFamily: 'var(--font-mono)', fontSize: 12 } } as const;
+const MONO_INPUT_STYLES_11 = { input: { fontFamily: 'var(--font-mono)', fontSize: 11 } } as const;
 
 const EXPORT_SCALE = 1.5; // px per canvas unit — higher = more readable text
 const EXPORT_PADDING = 60;
@@ -319,7 +322,9 @@ interface DiagramEditorProps {
 }
 
 function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<DiagramEditorProps>) {
-  const { figuresDraft, setDiagramDraft } = useWorkbenchStore();
+  const { figuresDraft, setDiagramDraft } = useWorkbenchStore(
+    useShallow((s) => ({ figuresDraft: s.figuresDraft, setDiagramDraft: s.setDiagramDraft }))
+  );
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>(figuresDraft.diagramNodes as Node[]);
   const [edges, setEdges, onEdgesChange] = useEdgesState(figuresDraft.diagramEdges as Edge[]);
 
@@ -523,6 +528,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
     });
 
     try {
+      const { toPng } = await import('html-to-image');
       const dataUrl = await toPng(rfViewport, {
         backgroundColor: transparentBg ? undefined : '#ffffff',
         width: imgW,
@@ -744,7 +750,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
                   }}
                   placeholder={t('res_DiagramPlaceholderLabel')}
                   style={{ width: 140, flexShrink: 0 }}
-                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 12 } }}
+                  styles={MONO_INPUT_STYLES_12}
                 />
                 <Button
                   size="xs"
@@ -780,7 +786,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
                     '#111827',
                     '#374151',
                   ]}
-                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
+                  styles={MONO_INPUT_STYLES_11}
                 />
                 <ColorInput
                   size="xs"
@@ -806,7 +812,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
                     '#111827',
                     '#000000',
                   ]}
-                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
+                  styles={MONO_INPUT_STYLES_11}
                 />
                 <ColorInput
                   size="xs"
@@ -832,7 +838,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
                     '#8b5cf6',
                     '#ec4899',
                   ]}
-                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
+                  styles={MONO_INPUT_STYLES_11}
                 />
               </>
             )}
@@ -872,7 +878,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
                     '#ec4899',
                     '#ffffff',
                   ]}
-                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
+                  styles={MONO_INPUT_STYLES_11}
                 />
                 <Select
                   size="xs"
@@ -884,7 +890,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
                     applyEdgeStyle(edgeColor, v, edgeLabelInput);
                   }}
                   style={{ width: 120, flexShrink: 0 }}
-                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
+                  styles={MONO_INPUT_STYLES_11}
                 />
                 <TextInput
                   size="xs"
@@ -895,7 +901,7 @@ function DiagramEditorInner({ onAddFigure, figureNumber, visible }: Readonly<Dia
                   }}
                   placeholder={t('res_DiagramPlaceholderEdgeLabel')}
                   style={{ width: 170, flexShrink: 0 }}
-                  styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 11 } }}
+                  styles={MONO_INPUT_STYLES_11}
                 />
                 <Button
                   size="xs"

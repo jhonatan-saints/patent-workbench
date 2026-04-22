@@ -10,7 +10,8 @@ import {
   IconAlertTriangle,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
-import { resolveLabel, resolveDescription } from '@/utils/workflowTemplates';
+import { useShallow } from 'zustand/react/shallow';
+import { resolveLabel, resolveDescription } from '@/utils';
 import { OptionCard } from '@/components/workflow/OptionCard';
 import { StepInputPanel } from '@/components/workflow/StepInputPanel';
 import { useI18n } from '@/i18n/useI18n';
@@ -50,7 +51,25 @@ export function OptionsPanel() {
     pendingCascadeFromStep,
     dismissCascade,
     cascadeRegenerateDownstream,
-  } = useWorkbenchStore();
+  } = useWorkbenchStore(
+    useShallow((s) => ({
+      steps: s.steps,
+      currentStepIndex: s.currentStepIndex,
+      generationStatus: s.generationStatus,
+      lastError: s.lastError,
+      selectOption: s.selectOption,
+      regenerateOptions: s.regenerateOptions,
+      generateStepOptions: s.generateStepOptions,
+      goToStep: s.goToStep,
+      resetWorkflow: s.resetWorkflow,
+      cancelGeneration: s.cancelGeneration,
+      setStepInputState: s.setStepInputState,
+      llmStatus: s.llmStatus,
+      pendingCascadeFromStep: s.pendingCascadeFromStep,
+      dismissCascade: s.dismissCascade,
+      cascadeRegenerateDownstream: s.cascadeRegenerateDownstream,
+    }))
+  );
 
   const { t } = useI18n();
 

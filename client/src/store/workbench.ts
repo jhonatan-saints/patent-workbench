@@ -134,7 +134,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
 
   setModel: (model) => {
     set({ selectedModel: model });
-    void get().fetchModelContextLength(model);
+    get().fetchModelContextLength(model);
   },
 
   fetchModelContextLength: async (model) => {
@@ -159,7 +159,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
         if (best !== state.selectedModel) next.selectedModel = best;
       }
 
-      if (next.selectedModel) void get().fetchModelContextLength(next.selectedModel);
+      if (next.selectedModel) get().fetchModelContextLength(next.selectedModel);
       return next;
     });
   },
@@ -656,14 +656,14 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   clearSessions: () => {
     // Only delete persisted ones from the server; cached ones just disappear from memory
     const { sessions } = get();
-    if (sessions.some((s) => s.persisted)) void clearAllSessions();
+    if (sessions.some((s) => s.persisted)) clearAllSessions();
     set({ sessions: [] });
   },
 
   deleteSession: (id: string) => {
     const { sessions } = get();
     const target = sessions.find((s) => s.id === id);
-    if (target?.persisted) void apiDeleteSession(id);
+    if (target?.persisted) apiDeleteSession(id);
     set((state) => ({ sessions: state.sessions.filter((s) => s.id !== id) }));
   },
 

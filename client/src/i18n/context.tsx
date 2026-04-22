@@ -1,15 +1,18 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { LOCALE_LABELS, type Locale } from './locales';
 import { I18nContext } from './i18nCtx';
+import enUS from './locales/en-US.json';
 
 type Translations = Record<string, string>;
 
-const localeModules = import.meta.glob<{ default: Translations }>('./locales/*.json', {
-  eager: true,
-});
+// en-US is imported directly (synchronous, in main bundle).
+// All other locales are lazy — loaded only when the user switches to them.
+const localeModules = import.meta.glob<{ default: Translations }>('./locales/*.json');
 
-function load(locale: Locale): Translations {
-  return localeModules[`./locales/${locale}.json`]?.default ?? {};
+async function load(locale: Locale): Promise<Translations> {
+  if (locale === 'en-US') return enUS as Translations;
+  const mod = await localeModules[`./locales/${locale}.json`]?.();
+  return mod?.default ?? (enUS as Translations);
 }
 
 const STORAGE_KEY = 'pw-locale';
@@ -39,12 +42,23 @@ function detectLocale(): Locale {
 }
 
 export function I18nProvider({ children }: { readonly children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(detectLocale);
-  const [translations, setTranslations] = useState<Translations>(() => load(detectLocale()));
+  const [activeLocale, setActiveLocale] = useState<Locale>(detectLocale);
+  const [translations, setTranslations] = useState<Translations>(enUS as Translations);
+  const [ready, setReady] = useState(() => detectLocale() === 'en-US');
+
+  useEffect(() => {
+    const initial = detectLocale();
+    if (initial !== 'en-US') {
+      void load(initial).then((t) => {
+        setTranslations(t);
+        setReady(true);
+      });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setLocale = useCallback((l: Locale) => {
-    setLocaleState(l);
-    setTranslations(load(l));
+    setActiveLocale(l);
+    void load(l).then(setTranslations);
     try {
       localStorage.setItem(STORAGE_KEY, l);
     } catch {
@@ -75,8 +89,8 @@ export function I18nProvider({ children }: { readonly children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ locale, setLocale, t, localeOptions }),
-    [locale, setLocale, t, localeOptions]
+    () => ({ locale: activeLocale, setLocale, t, localeOptions, ready }),
+    [activeLocale, setLocale, t, localeOptions, ready]
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

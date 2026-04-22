@@ -4,6 +4,10 @@ import db from '../services/db'
 
 const router = Router()
 
+function tryParse<T = unknown>(s: string): T | undefined {
+  try { return JSON.parse(s) as T } catch { return undefined }
+}
+
 // Safe data URL MIME types
 // We explicitly excluded text/html and text/javascript to prevent stored XSS.
 const SAFE_DATA_URL_RE =
@@ -86,38 +90,48 @@ router.get('/', (_req: Request, res: Response) => {
     nav_state: string | null
   }>
 
-  const result = sessions.map((row) => {
-    const artifact = JSON.parse(row.artifact)
-    // Attach figure metadata (without dataUrl) so client can show figure count
-    const figureMeta = (
-      db
-        .prepare(
-          `SELECT id, name, caption, width, height, type, sort_order
-           FROM figures WHERE session_id = ? ORDER BY sort_order`
-        )
-        .all(row.id) as Array<{
-        id: string
-        name: string
-        caption: string
-        width: number
-        height: number
-        type: string
-        sort_order: number
-      }>
-    ).map(({ sort_order: _so, ...f }) => f)
+  // Batch-load all figure metadata in a single query instead of one per session
+  const figuresBySession = new Map<string, Array<{ id: string; name: string; caption: string; width: number; height: number; type: string }>>()
+  if (sessions.length > 0) {
+    const placeholders = sessions.map(() => '?').join(',')
+    const sessionIds = sessions.map((s) => s.id)
+    const allFigures = db
+      .prepare(
+        `SELECT id, session_id, name, caption, width, height, type, sort_order
+         FROM figures WHERE session_id IN (${placeholders}) ORDER BY sort_order`
+      )
+      .all(...sessionIds) as Array<{
+      id: string
+      session_id: string
+      name: string
+      caption: string
+      width: number
+      height: number
+      type: string
+      sort_order: number
+    }>
+    for (const { sort_order: _so, session_id, ...fig } of allFigures) {
+      const arr = figuresBySession.get(session_id) ?? []
+      arr.push(fig)
+      figuresBySession.set(session_id, arr)
+    }
+  }
 
-    return {
+  const result = sessions.flatMap((row) => {
+    const artifact = tryParse<Record<string, unknown>>(row.artifact)
+    if (!artifact) return []
+    return [{
       id: row.id,
       startedAt: row.started_at,
       completedAt: row.completed_at,
       baseIdea: row.base_idea,
       model: row.model,
       totalTokens: row.total_tokens,
-      artifact: { ...artifact, figures: figureMeta },
-      stepInputStates: row.step_input_states ? JSON.parse(row.step_input_states) : undefined,
-      figuresDraft: row.figures_draft ? JSON.parse(row.figures_draft) : undefined,
-      ...(row.nav_state ? (JSON.parse(row.nav_state) as { lastPhase: string; lastStepIndex: number | null }) : {}),
-    }
+      artifact: { ...artifact, figures: figuresBySession.get(row.id) ?? [] },
+      stepInputStates: row.step_input_states ? tryParse(row.step_input_states) : undefined,
+      figuresDraft: row.figures_draft ? tryParse(row.figures_draft) : undefined,
+      ...(row.nav_state ? tryParse<{ lastPhase: string; lastStepIndex: number | null }>(row.nav_state) ?? {} : {}),
+    }]
   })
 
   return res.json({ success: true, data: result })
@@ -144,7 +158,10 @@ router.get('/:id', (req: Request, res: Response) => {
 
   if (!row) return res.status(404).json({ success: false, error: 'Session not found' })
 
-  const artifact = JSON.parse(row.artifact)
+  let artifact: Record<string, unknown>
+  try { artifact = JSON.parse(row.artifact) as Record<string, unknown> } catch {
+    return res.status(500).json({ success: false, error: 'Corrupted session data' })
+  }
   const figures = (
     db
       .prepare('SELECT * FROM figures WHERE session_id = ? ORDER BY sort_order')
@@ -170,9 +187,9 @@ router.get('/:id', (req: Request, res: Response) => {
       model: row.model,
       totalTokens: row.total_tokens,
       artifact: { ...artifact, figures },
-      stepInputStates: row.step_input_states ? JSON.parse(row.step_input_states) : undefined,
-      figuresDraft: row.figures_draft ? JSON.parse(row.figures_draft) : undefined,
-      ...(row.nav_state ? (JSON.parse(row.nav_state) as { lastPhase: string; lastStepIndex: number | null }) : {}),
+      stepInputStates: row.step_input_states ? tryParse(row.step_input_states) : undefined,
+      figuresDraft: row.figures_draft ? tryParse(row.figures_draft) : undefined,
+      ...(row.nav_state ? tryParse<{ lastPhase: string; lastStepIndex: number | null }>(row.nav_state) ?? {} : {}),
     },
   })
 })

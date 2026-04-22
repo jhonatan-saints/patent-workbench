@@ -4,10 +4,10 @@ import { IconMinus, IconSquare, IconCopy, IconX } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { useI18n } from '@/i18n';
 
-const api = window.electronAPI;
+const api = globalThis.electronAPI;
 
 export function WindowControls() {
-  const { sessions } = useWorkbenchStore();
+  const sessions = useWorkbenchStore((s) => s.sessions);
   const { t } = useI18n();
   const [isMaximized, setIsMaximized] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
