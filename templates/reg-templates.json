@@ -7,11 +7,11 @@
   },
 
   "rag": {
-    "maxPriorSections": 3,
+    "maxPriorSections": 6,
     "maxContextFileChars": 40000,
-    "maxSectionChars": 200,
-    "maxIdeaChars": 200,
-    "maxConstraintsChars": 120
+    "maxSectionChars": 600,
+    "maxIdeaChars": 400,
+    "maxConstraintsChars": 300
   },
 
   "workflow": {
