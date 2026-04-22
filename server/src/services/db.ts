@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import AdmZip from 'adm-zip'
 import path from 'node:path'
 import fs from 'node:fs'
 import defaultTemplate from '../config/defaultTemplate'
@@ -175,7 +176,7 @@ export function listBackups(): BackupEntry[] {
   if (!fs.existsSync(BACKUPS_DIR)) return []
   return fs
     .readdirSync(BACKUPS_DIR)
-    .filter((f) => f.startsWith('workbench-') && f.endsWith('.db'))
+    .filter((f) => f.startsWith('workbench-') && f.endsWith('.zip'))
     .sort((a, b) => b.localeCompare(a))
     .map((filename) => {
       const stats = fs.statSync(path.join(BACKUPS_DIR, filename))
@@ -187,47 +188,40 @@ export function createBackup(): string {
   fs.mkdirSync(BACKUPS_DIR, { recursive: true })
   _db.pragma('wal_checkpoint(FULL)')
   const stamp = new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-').slice(0, 19)
-  const destBase = path.join(BACKUPS_DIR, `workbench-${stamp}.db`)
-  fs.copyFileSync(DB_PATH, destBase)
-  for (const ext of ['-wal', '-shm']) {
-    const wal = `${DB_PATH}${ext}`
-    if (fs.existsSync(wal)) fs.copyFileSync(wal, `${destBase}${ext}`)
-  }
+  const destPath = path.join(BACKUPS_DIR, `workbench-${stamp}.zip`)
+  const zip = new AdmZip()
+  zip.addLocalFile(DB_PATH, '', 'workbench.db')
+  zip.writeZip(destPath)
   const all = fs
     .readdirSync(BACKUPS_DIR)
-    .filter((f) => f.startsWith('workbench-') && f.endsWith('.db'))
+    .filter((f) => f.startsWith('workbench-') && f.endsWith('.zip'))
     .sort((a, b) => a.localeCompare(b))
   for (const old of all.slice(0, Math.max(0, all.length - MAX_BACKUPS))) {
-    for (const ext of ['', '-wal', '-shm']) {
-      try { fs.unlinkSync(path.join(BACKUPS_DIR, old + ext)) } catch { /* already gone */ }
-    }
+    try { fs.unlinkSync(path.join(BACKUPS_DIR, old)) } catch { /* already gone */ }
   }
-  return path.basename(destBase)
+  return path.basename(destPath)
 }
 
 export function deleteBackup(filename: string): void {
   const target = path.join(BACKUPS_DIR, filename)
   if (!target.startsWith(BACKUPS_DIR + path.sep)) throw new Error('invalid filename')
-  for (const ext of ['', '-wal', '-shm']) {
-    try { fs.unlinkSync(target + ext) } catch { /* already absent */ }
-  }
+  try { fs.unlinkSync(target) } catch { /* already absent */ }
 }
 
 export function restoreFromBackup(filename: string): void {
-  const srcBase = path.join(BACKUPS_DIR, filename)
-  if (!srcBase.startsWith(BACKUPS_DIR + path.sep) && srcBase !== BACKUPS_DIR) {
-    throw new Error('invalid filename')
-  }
-  if (!fs.existsSync(srcBase)) throw new Error('backup not found')
+  const srcPath = path.join(BACKUPS_DIR, filename)
+  if (!srcPath.startsWith(BACKUPS_DIR + path.sep)) throw new Error('invalid filename')
+  if (!fs.existsSync(srcPath)) throw new Error('backup not found')
+
+  const zip = new AdmZip(srcPath)
+  const entry = zip.getEntry('workbench.db')
+  if (!entry) throw new Error('backup ZIP does not contain workbench.db')
 
   _db.close()
-  fs.copyFileSync(srcBase, DB_PATH)
   for (const ext of ['-wal', '-shm']) {
-    const src = `${srcBase}${ext}`
-    const dest = `${DB_PATH}${ext}`
-    if (fs.existsSync(src)) fs.copyFileSync(src, dest)
-    else try { fs.unlinkSync(dest) } catch { /* already absent */ }
+    try { fs.unlinkSync(DB_PATH + ext) } catch { /* already absent */ }
   }
+  zip.extractEntryTo(entry, path.dirname(DB_PATH), false, true)
 
   _db = new Database(DB_PATH)
   applyPragmas(_db)
