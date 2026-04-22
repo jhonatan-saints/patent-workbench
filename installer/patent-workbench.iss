@@ -525,7 +525,6 @@ begin
     else
     begin
       LblNodeStatus.Caption := CustomMessage('NodeMissing') + #13#10 + CustomMessage('NodeInstalling');
-      BarNode.Style   := pbstMarquee;
       BarNode.Visible := True;
       if WingetInstall(NODE_WINGET_ID) and DetectNode then
       begin
@@ -559,7 +558,6 @@ begin
     else
     begin
       LblOllamaStatus.Caption := CustomMessage('OllamaMissing') + #13#10 + CustomMessage('OllamaInstalling');
-      BarOllama.Style   := pbstMarquee;
       BarOllama.Visible := True;
       if WingetInstall(OLLAMA_WINGET_ID) then
       begin
@@ -637,7 +635,6 @@ begin
     LblModelHint.Caption := FmtMessage(CustomMessage('ModelPulling'), [ModelId]);
     LstModels.Enabled := False;
 
-    BarModel.Style      := pbstNormal;
     BarModel.Position   := 0;
     BarModel.Visible    := True;
     LblModelPct.Caption := '0%';

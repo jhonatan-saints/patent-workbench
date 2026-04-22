@@ -6,6 +6,7 @@ import type {
   GeneratedOption,
   AppSettings,
   RegTemplate,
+  StepStatus,
 } from '@/types';
 import {
   generatePatentContent,
@@ -450,7 +451,10 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
 
   goToFigures: () => set({ workflowPhase: 'figures' }),
 
-  goToInventors: () => { if (get().diagramGenerating) return; set({ workflowPhase: 'inventors' }); },
+  goToInventors: () => {
+    if (get().diagramGenerating) return;
+    set({ workflowPhase: 'inventors' });
+  },
 
   updateInventors: (inventors) => {
     set((state) => {
