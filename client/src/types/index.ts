@@ -52,7 +52,8 @@ export interface WorkflowStep {
   label: string;
   description: string;
   status: StepStatus;
-  options: GeneratedOption[];
+  /** Options stored independently per generation mode */
+  optionsByMode: { auto: GeneratedOption[]; guided: GeneratedOption[] };
   selectedOption: GeneratedOption | null;
   promptTokens: number;
   completionTokens: number;
@@ -130,6 +131,8 @@ export interface WorkflowSession {
     inputMode: InputMode;
     guidedFields: Record<string, string>;
     manualDraft: string;
+    optionsByMode?: { auto: GeneratedOption[]; guided: GeneratedOption[] };
+    status?: StepStatus;
   }>;
   figuresDraft?: FiguresDraft;
   lastPhase?: WorkflowPhase;
@@ -215,6 +218,10 @@ export interface WorkbenchState {
   setDiagramDraft: (nodes: unknown[], edges: unknown[]) => void;
   setJsonDraftText: (text: string) => void;
 
+  // Diagram AI generation lock (blocks cross-section navigation while in progress)
+  diagramGenerating: boolean;
+  setDiagramGenerating: (v: boolean) => void;
+
   // Actions
   setModel: (model: string) => void;
   checkStatus: () => Promise<void>;
@@ -232,6 +239,10 @@ export interface WorkbenchState {
   setStepInputState: (index: number, patch: { inputMode?: InputMode; guidedFields?: Record<string, string>; manualDraft?: string }) => void;
   selectOption: (option: GeneratedOption) => void;
   regenerateOptions: () => void;
+  // Cascade: offer to regenerate downstream steps after changing a prior selection
+  pendingCascadeFromStep: number | null;
+  dismissCascade: () => void;
+  cascadeRegenerateDownstream: () => Promise<void>;
   goToStep: (index: number) => void;
   goToPreview: () => void;
   resetWorkflow: () => void;

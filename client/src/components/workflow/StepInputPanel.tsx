@@ -152,9 +152,10 @@ function ContextSummary({
 
 interface Props {
   readonly moduleId: string;
+  readonly hideModeSelector?: boolean;
 }
 
-export function StepInputPanel({ moduleId }: Props) {
+export function StepInputPanel({ moduleId, hideModeSelector = false }: Props) {
   const {
     artifact,
     steps,
@@ -253,59 +254,61 @@ export function StepInputPanel({ moduleId }: Props) {
   return (
     <Box style={{ maxWidth: 540, margin: '0 auto', padding: '24px 0' }}>
       {/* Mode selector — active label color set via .step-seg CSS in styles.css */}
-      <SegmentedControl
-        classNames={{ root: 'step-seg' }}
-        fullWidth
-        value={mode}
-        onChange={(v) => setMode(v as InputMode)}
-        disabled={isGenerating}
-        mb={20}
-        data={[
-          {
-            value: 'auto',
-            disabled: llmOffline,
-            label: (
-              <Group gap={5} justify="center">
-                <IconWand size={14} />
-                <span>{t('res_Mode_Auto')}</span>
-              </Group>
-            ),
-          },
-          {
-            value: 'guided',
-            disabled: llmOffline,
-            label: (
-              <Group gap={5} justify="center">
-                <IconForms size={14} />
-                <span>{t('res_Mode_Guided')}</span>
-              </Group>
-            ),
-          },
-          {
-            value: 'manual',
-            label: (
-              <Group gap={5} justify="center">
-                <IconPencil size={14} />
-                <span>{t('res_Mode_Manual')}</span>
-              </Group>
-            ),
-          },
-        ]}
-        styles={{
-          root: {
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-          },
-          indicator: { background: 'var(--accent)' },
-          label: {
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.05em',
-            color: 'var(--text-secondary)',
-          },
-        }}
-      />
+      {!hideModeSelector && (
+        <SegmentedControl
+          classNames={{ root: 'step-seg' }}
+          fullWidth
+          value={mode}
+          onChange={(v) => setMode(v as InputMode)}
+          disabled={isGenerating}
+          mb={20}
+          data={[
+            {
+              value: 'auto',
+              disabled: llmOffline,
+              label: (
+                <Group gap={5} justify="center">
+                  <IconWand size={14} />
+                  <span>{t('res_Mode_Auto')}</span>
+                </Group>
+              ),
+            },
+            {
+              value: 'guided',
+              disabled: llmOffline,
+              label: (
+                <Group gap={5} justify="center">
+                  <IconForms size={14} />
+                  <span>{t('res_Mode_Guided')}</span>
+                </Group>
+              ),
+            },
+            {
+              value: 'manual',
+              label: (
+                <Group gap={5} justify="center">
+                  <IconPencil size={14} />
+                  <span>{t('res_Mode_Manual')}</span>
+                </Group>
+              ),
+            },
+          ]}
+          styles={{
+            root: {
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+            },
+            indicator: { background: 'var(--accent)' },
+            label: {
+              fontFamily: 'var(--font-mono)',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.05em',
+              color: 'var(--text-secondary)',
+            },
+          }}
+        />
+      )}
 
       {/* AUTO mode */}
       {mode === 'auto' && (

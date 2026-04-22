@@ -1,10 +1,20 @@
-import { Box, Stack, Text, Group, Button, Skeleton, Alert } from '@mantine/core';
-import { IconArrowBackUp, IconAlertCircle, IconRefresh, IconPlayerStop } from '@tabler/icons-react';
+import { Box, Stack, Text, Group, Button, Skeleton, Alert, SegmentedControl } from '@mantine/core';
+import {
+  IconArrowBackUp,
+  IconAlertCircle,
+  IconRefresh,
+  IconPlayerStop,
+  IconWand,
+  IconForms,
+  IconPencil,
+  IconAlertTriangle,
+} from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
 import { resolveLabel, resolveDescription } from '@/utils/workflowTemplates';
 import { OptionCard } from '@/components/workflow/OptionCard';
 import { StepInputPanel } from '@/components/workflow/StepInputPanel';
 import { useI18n } from '@/i18n/useI18n';
+import type { InputMode } from '@/types';
 
 function CardSkeleton() {
   return (
@@ -31,9 +41,15 @@ export function OptionsPanel() {
     lastError,
     selectOption,
     regenerateOptions,
+    generateStepOptions,
     goToStep,
     resetWorkflow,
     cancelGeneration,
+    setStepInputState,
+    llmStatus,
+    pendingCascadeFromStep,
+    dismissCascade,
+    cascadeRegenerateDownstream,
   } = useWorkbenchStore();
 
   const { t } = useI18n();
@@ -42,9 +58,27 @@ export function OptionsPanel() {
   if (!step) return null;
 
   const isGenerating = generationStatus === 'loading' || step.status === 'generating';
-  const showInputPanel = step.status === 'input' || step.status === 'pending';
-  const hasOptions = step.options.length > 0;
   const isFirstStep = currentStepIndex === 0;
+  const llmOffline = llmStatus !== 'ok';
+
+  const currentModeOptions =
+    step.inputMode === 'guided' ? step.optionsByMode.guided : step.optionsByMode.auto;
+  const anyOptionsExist =
+    step.optionsByMode.auto.length > 0 || step.optionsByMode.guided.length > 0;
+
+  // Show the mode tab bar whenever any options have been generated
+  const hasPreviouslyGenerated = anyOptionsExist || step.status === 'selecting';
+
+  // Body logic: per-tab — show options if the current mode has them, else show input form
+  const showOptionsBody =
+    hasPreviouslyGenerated && currentModeOptions.length > 0 && step.inputMode !== 'manual';
+  const showAltInputBody =
+    hasPreviouslyGenerated &&
+    !isGenerating &&
+    (currentModeOptions.length === 0 || step.inputMode === 'manual');
+
+  // Normal input panel: before any generation
+  const showRegularInput = !hasPreviouslyGenerated && !isGenerating;
 
   const handleBack = () => {
     if (isFirstStep) {
@@ -54,11 +88,32 @@ export function OptionsPanel() {
     }
   };
 
+  const handleModeChange = (mode: InputMode) => {
+    setStepInputState(currentStepIndex, { inputMode: mode });
+  };
+
+  // Regenerate: shown per tab only when that tab has previously generated options
+  const handleRegenerate = () => {
+    if (step.inputMode === 'auto') {
+      void generateStepOptions();
+    } else {
+      regenerateOptions();
+    }
+  };
+
+  const showRegenerate =
+    hasPreviouslyGenerated && step.inputMode !== 'manual' && currentModeOptions.length > 0;
+
   return (
     <Stack gap={0} style={{ height: '100%' }}>
       {/* Header */}
-      <Box className="px-5 py-3.5 border-b border-stroke bg-surface-raised shrink-0">
-        <Group justify="space-between" align="center" wrap="nowrap">
+      <Box className="px-5 pt-3.5 border-b border-stroke bg-surface-raised shrink-0">
+        <Group
+          justify="space-between"
+          align="center"
+          wrap="nowrap"
+          mb={hasPreviouslyGenerated ? 10 : 14}
+        >
           <Stack gap={2} className="min-w-0">
             <Text size="xs" ff="monospace" className="text-fg-muted tracking-widest">
               {t('res_Step')} {currentStepIndex + 1} {t('res_Of')} {steps.length}
@@ -68,7 +123,7 @@ export function OptionsPanel() {
             </Text>
             <Text size="xs" c="var(--text-muted)">
               {resolveDescription(step.moduleId, t)}
-              {!showInputPanel && !isGenerating && ` · ${t('res_SelectOneOption')}`}
+              {showOptionsBody && ` · ${t('res_SelectOneOption')}`}
             </Text>
           </Stack>
 
@@ -96,20 +151,93 @@ export function OptionsPanel() {
                 {t('res_Stop')}
               </Button>
             )}
+          </Group>
+        </Group>
 
-            {!showInputPanel && !isGenerating && hasOptions && (
+        {/* Mode tab bar — only shown after options have been generated */}
+        {hasPreviouslyGenerated && (
+          <Group gap={8} pb={10} justify="space-between">
+            <SegmentedControl
+              classNames={{ root: 'step-seg' }}
+              value={step.inputMode}
+              onChange={(v) => handleModeChange(v as InputMode)}
+              size="xs"
+              data={[
+                {
+                  value: 'auto',
+                  label: (
+                    <Group gap={4} px={2} wrap="nowrap">
+                      <IconWand size={12} />
+                      <Text
+                        ff="monospace"
+                        size="xs"
+                        fw={600}
+                        className="tracking-[0.05em] uppercase"
+                      >
+                        {t('res_Mode_Auto')}
+                      </Text>
+                    </Group>
+                  ),
+                },
+                {
+                  value: 'guided',
+                  disabled: llmOffline,
+                  label: (
+                    <Group gap={4} px={2} wrap="nowrap">
+                      <IconForms size={12} />
+                      <Text
+                        ff="monospace"
+                        size="xs"
+                        fw={600}
+                        className="tracking-[0.05em] uppercase"
+                      >
+                        {t('res_Mode_Guided')}
+                      </Text>
+                    </Group>
+                  ),
+                },
+                {
+                  value: 'manual',
+                  label: (
+                    <Group gap={4} px={2} wrap="nowrap">
+                      <IconPencil size={12} />
+                      <Text
+                        ff="monospace"
+                        size="xs"
+                        fw={600}
+                        className="tracking-[0.05em] uppercase"
+                      >
+                        {t('res_Mode_Manual')}
+                      </Text>
+                    </Group>
+                  ),
+                },
+              ]}
+              styles={{
+                root: { background: 'var(--surface)', border: '1px solid var(--border)' },
+                indicator: { background: 'var(--accent)' },
+                label: {
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: '0.05em',
+                  color: 'var(--text-secondary)',
+                },
+              }}
+            />
+            {showRegenerate && (
               <Button
                 variant="outline"
                 size="xs"
                 leftSection={<IconRefresh size={14} />}
-                onClick={regenerateOptions}
-                className="uppercase border-stroke text-fg-secondary font-mono text-[11px] tracking-[0.06em]"
+                onClick={handleRegenerate}
+                className="uppercase border-stroke text-fg-secondary font-mono text-[11px] tracking-[0.06em] shrink-0"
               >
                 {t('res_Regenerate')}
               </Button>
             )}
           </Group>
-        </Group>
+        )}
       </Box>
 
       {/* Body */}
@@ -126,12 +254,51 @@ export function OptionsPanel() {
           </Alert>
         )}
 
-        {showInputPanel && !isGenerating && (
+        {/* Cascade update banner */}
+        {pendingCascadeFromStep !== null && (
+          <Alert
+            icon={<IconAlertTriangle size={14} />}
+            color="yellow"
+            m={20}
+            mb={0}
+            styles={{ message: { fontFamily: 'var(--font-mono)', fontSize: 12 } }}
+          >
+            <Group justify="space-between" wrap="nowrap">
+              <Text size="xs" ff="monospace">
+                {t('res_CascadeUpdatePrompt')}
+              </Text>
+              <Group gap={8} wrap="nowrap">
+                <Button
+                  size="xs"
+                  variant="filled"
+                  color="yellow"
+                  onClick={() => void cascadeRegenerateDownstream()}
+                  className="font-mono text-[11px] uppercase"
+                >
+                  {t('res_CascadeUpdateConfirm')}
+                </Button>
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  color="yellow"
+                  onClick={dismissCascade}
+                  className="font-mono text-[11px] uppercase"
+                >
+                  {t('res_Dismiss')}
+                </Button>
+              </Group>
+            </Group>
+          </Alert>
+        )}
+
+        {/* Normal input panel (before first generation) */}
+        {showRegularInput && (
           <Box style={{ padding: '0 20px' }}>
             <StepInputPanel moduleId={step.moduleId} />
           </Box>
         )}
 
+        {/* Generating skeleton */}
         {isGenerating && (
           <Box
             style={{
@@ -148,7 +315,8 @@ export function OptionsPanel() {
           </Box>
         )}
 
-        {!showInputPanel && !isGenerating && hasOptions && (
+        {/* AUTO tab: show generated options */}
+        {showOptionsBody && (
           <Box
             style={{
               padding: 20,
@@ -158,9 +326,16 @@ export function OptionsPanel() {
               alignItems: 'start',
             }}
           >
-            {step.options.map((option) => (
+            {currentModeOptions.map((option) => (
               <OptionCard key={option.id} option={option} onSelect={selectOption} />
             ))}
+          </Box>
+        )}
+
+        {/* GUIDED or MANUAL tab: show input form without internal mode selector */}
+        {showAltInputBody && (
+          <Box style={{ padding: '0 20px' }}>
+            <StepInputPanel moduleId={step.moduleId} hideModeSelector />
           </Box>
         )}
       </Box>

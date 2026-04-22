@@ -158,12 +158,8 @@ function buildPDFHTML(artifact: PatentArtifact, labels: Record<string, string>):
         <h2>Figures</h2>
         ${artifact.figures
           .map((fig) => {
-            let imgStyle = 'max-width:100%; height:auto; border:1px solid #ddd;';
-            if (fig.width && fig.height) {
-              imgStyle = `width:${fig.width}px; height:${fig.height}px; max-width:100%; object-fit:contain; border:1px solid #ddd;`;
-            } else if (fig.width) {
-              imgStyle = `width:${fig.width}px; max-width:100%; height:auto; border:1px solid #ddd;`;
-            }
+            const imgStyle =
+              'max-width:100%; height:auto; border:1px solid #ddd; display:block; margin:0 auto;';
             return `
           <div style="text-align:center; margin-bottom: 20pt;">
             <img src="${escapeHtml(fig.dataUrl)}" alt="${escapeHtml(fig.name)}" style="${imgStyle}"/>

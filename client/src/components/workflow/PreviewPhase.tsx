@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Stack,
@@ -508,17 +508,20 @@ export function PreviewPhase() {
                   </Text>
                   <Stack gap={20}>
                     {artifact.figures.map((fig) => {
-                      const figImgStyle: CSSProperties = {
-                        maxWidth: '100%',
-                        border: '1px solid #ddd',
-                        borderRadius: 4,
-                      };
-                      if (fig.width) figImgStyle.width = fig.width;
-                      if (fig.height) figImgStyle.height = fig.height;
-                      if (fig.width && fig.height) figImgStyle.objectFit = 'contain';
                       return (
                         <Box key={fig.id} className="text-center">
-                          <img src={fig.dataUrl} alt={fig.name} style={figImgStyle} />
+                          <img
+                            src={fig.dataUrl}
+                            alt={fig.name}
+                            style={{
+                              maxWidth: '100%',
+                              height: 'auto',
+                              border: '1px solid #ddd',
+                              borderRadius: 4,
+                              display: 'block',
+                              margin: '0 auto',
+                            }}
+                          />
                           <Text
                             style={{
                               fontFamily: DOC_FONT,
