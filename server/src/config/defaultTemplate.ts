@@ -1,6 +1,6 @@
 // Default workflow template — seeded into the DB on first run.
-// Edit via the client Settings panel after installation; this file is only
-// used once to populate app_settings.reg_template when the DB is empty.
+// Human-editable source of truth: <project-root>/templates/reg-templates.json
+// Keep this object in sync with that file when changing defaults.
 
 const defaultTemplate = {
   meta: {

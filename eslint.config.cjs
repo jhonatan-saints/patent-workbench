@@ -4,8 +4,20 @@ const reactHooks = require('eslint-plugin-react-hooks');
 const reactRefresh = require('eslint-plugin-react-refresh');
 
 module.exports = [
+  // ESLint 9: global ignores must be the sole key in their own config object.
   {
-    ignores: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
+    ignores: [
+      '**/node_modules/**',
+      '**/.git/**',
+      '**/dist/**',
+      'dist-electron/**',
+      'scripts/**',
+    ],
+  },
+  {
+    linterOptions: {
+      reportUnusedDisableDirectives: 'off',
+    },
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',

@@ -2,14 +2,30 @@ import { Group, Button, Text, Box, Select } from '@mantine/core';
 import type { Dispatch, SetStateAction } from 'react';
 import { IconFileText, IconFileTypePdf, IconFileWord, IconMarkdown } from '@tabler/icons-react';
 import { useState } from 'react';
-import { Document, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
+import type { Paragraph } from 'docx';
 import { useWorkbenchStore } from '@/store/workbench';
-import { WORKFLOW_ORDER, resolveLabel } from '@/utils/workflowTemplates';
-import { escapeHtml } from '@/utils/sanitize';
+import { useShallow } from 'zustand/react/shallow';
+import { WORKFLOW_ORDER, resolveLabel, escapeHtml } from '@/utils';
 import { useI18n } from '@/i18n';
 import type { PatentArtifact } from '@/types';
 
 type ExportFormat = 'md' | 'txt' | 'pdf' | 'docx';
+
+const SELECT_STYLES = {
+  input: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: 12,
+    background: 'var(--surface)',
+    border: '1px solid var(--border)',
+    color: 'var(--text-primary)',
+    height: 28,
+    minHeight: 28,
+  },
+  dropdown: {
+    background: 'var(--surface)',
+    border: '1px solid var(--border)',
+  },
+} as const;
 
 // IDF-style formatters
 function inventorBlock(artifact: PatentArtifact): string {
@@ -216,6 +232,7 @@ function buildPDFHTML(artifact: PatentArtifact, labels: Record<string, string>):
 }
 
 async function buildDocx(artifact: PatentArtifact, labels: Record<string, string>): Promise<Blob> {
+  const { Document, Packer, Paragraph, TextRun, AlignmentType } = await import('docx');
   const titleContent = artifact.inventionTitle ?? artifact.baseIdea;
   const BLUE = '4472C4';
   const fieldSize = 22; // 11pt
@@ -441,7 +458,9 @@ export function ExportPanel({
   zoom?: number;
   setZoom?: Dispatch<SetStateAction<number>>;
 }>) {
-  const { artifact, saveCurrentSession } = useWorkbenchStore();
+  const { artifact, saveCurrentSession } = useWorkbenchStore(
+    useShallow((s) => ({ artifact: s.artifact, saveCurrentSession: s.saveCurrentSession }))
+  );
   const { t } = useI18n();
   const [format, setFormat] = useState<ExportFormat>('docx');
   const [exporting, setExporting] = useState(false);
@@ -530,21 +549,7 @@ export function ExportPanel({
             { value: 'txt', label: t('res_Format_txt') },
           ]}
           style={{ width: 90 }}
-          styles={{
-            input: {
-              fontFamily: 'var(--font-mono)',
-              fontSize: 12,
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              color: 'var(--text-primary)',
-              height: 28,
-              minHeight: 28,
-            },
-            dropdown: {
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-            },
-          }}
+          styles={SELECT_STYLES}
         />
         <Button
           size="xs"

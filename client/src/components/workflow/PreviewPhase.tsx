@@ -25,9 +25,10 @@ import {
   IconWand,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useShallow } from 'zustand/react/shallow';
 import { useI18n } from '@/i18n/useI18n';
 import { useGenerateTitle } from '@/hooks/useGenerateTitle';
-import { WORKFLOW_ORDER, resolveLabel } from '@/utils/workflowTemplates';
+import { WORKFLOW_ORDER, resolveLabel } from '@/utils';
 import { ExportPanel } from '@/components/ExportPanel';
 
 // Document-level styles intentionally use print/IDF brand colors (not theme tokens)
@@ -48,7 +49,7 @@ interface EditableSectionProps {
 }
 
 function EditableSection({ moduleId, content }: EditableSectionProps) {
-  const { updateSectionContent } = useWorkbenchStore();
+  const updateSectionContent = useWorkbenchStore((s) => s.updateSectionContent);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(content);
   const [copied, setCopied] = useState(false);
@@ -171,7 +172,16 @@ function EditableSection({ moduleId, content }: EditableSectionProps) {
 
 export function PreviewPhase() {
   const { artifact, resetWorkflow, steps, goToStep, workflowPhase, updateInventionTitle } =
-    useWorkbenchStore();
+    useWorkbenchStore(
+      useShallow((s) => ({
+        artifact: s.artifact,
+        resetWorkflow: s.resetWorkflow,
+        steps: s.steps,
+        goToStep: s.goToStep,
+        workflowPhase: s.workflowPhase,
+        updateInventionTitle: s.updateInventionTitle,
+      }))
+    );
   const [zoom, setZoom] = useState(1);
   const { t } = useI18n();
   const { generating: generatingTitle, generate: handleRegenerateTitle } = useGenerateTitle(

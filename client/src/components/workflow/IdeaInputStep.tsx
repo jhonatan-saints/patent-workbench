@@ -2,12 +2,9 @@ import { useState, useEffect } from 'react';
 import { Stack, Textarea, TextInput, Button, Text, Group, Box, Select } from '@mantine/core';
 import { IconWand, IconFileTextFilled } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useShallow } from 'zustand/react/shallow';
 import { INPUT_STYLES, btnPrimary } from '@/theme/styles';
 import { useI18n } from '@/i18n/useI18n';
-
-function formatModelLabel(name: string): string {
-  return name.split(':')[0];
-}
 
 function useTypewriter(text: string, speed = 32) {
   const [displayed, setDisplayed] = useState('');
@@ -32,8 +29,15 @@ function useTypewriter(text: string, speed = 32) {
 }
 
 export function IdeaInputStep() {
-  const { startWorkflow, llmStatus, selectedModel, availableModels, setModel } =
-    useWorkbenchStore();
+  const { startWorkflow, llmStatus, selectedModel, availableModels, setModel } = useWorkbenchStore(
+    useShallow((s) => ({
+      startWorkflow: s.startWorkflow,
+      llmStatus: s.llmStatus,
+      selectedModel: s.selectedModel,
+      availableModels: s.availableModels,
+      setModel: s.setModel,
+    }))
+  );
 
   const { t } = useI18n();
 
@@ -178,7 +182,7 @@ export function IdeaInputStep() {
                   label={t('res_Model')}
                   value={selectedModel}
                   onChange={(v) => v && setModel(v)}
-                  data={availableModels.map((m) => ({ value: m, label: formatModelLabel(m) }))}
+                  data={availableModels}
                   size="sm"
                   style={{ width: 200 }}
                   styles={{

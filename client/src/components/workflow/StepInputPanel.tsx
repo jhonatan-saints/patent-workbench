@@ -20,10 +20,10 @@ import {
   IconFile,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
-import { WORKFLOW_MODULES, WORKFLOW_ORDER, resolveLabel } from '@/utils/workflowTemplates';
+import { useShallow } from 'zustand/react/shallow';
+import { WORKFLOW_MODULES, WORKFLOW_ORDER, resolveLabel, generateId } from '@/utils';
 import { INPUT_STYLES, BTN_STOP, btnPrimary } from '@/theme/styles';
 import type { InputMode, PatentArtifact } from '@/types';
-import { generateId } from '@/utils/sanitize';
 import { useI18n } from '@/i18n/useI18n';
 
 const MAX_FILE_BYTES = 500_000;
@@ -169,7 +169,22 @@ export function StepInputPanel({ moduleId, hideModeSelector = false }: Props) {
     updateContextFiles,
     llmStatus,
     appSettings,
-  } = useWorkbenchStore();
+  } = useWorkbenchStore(
+    useShallow((s) => ({
+      artifact: s.artifact,
+      steps: s.steps,
+      currentStepIndex: s.currentStepIndex,
+      generationStatus: s.generationStatus,
+      generateStepOptions: s.generateStepOptions,
+      cancelGeneration: s.cancelGeneration,
+      submitManualContent: s.submitManualContent,
+      setStepInputState: s.setStepInputState,
+      updateArtifactBase: s.updateArtifactBase,
+      updateContextFiles: s.updateContextFiles,
+      llmStatus: s.llmStatus,
+      appSettings: s.appSettings,
+    }))
+  );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const module = WORKFLOW_MODULES[moduleId];

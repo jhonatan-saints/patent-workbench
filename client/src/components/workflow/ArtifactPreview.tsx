@@ -2,10 +2,13 @@ import { Box, Stack, Text, Group, ScrollArea, Badge, Divider } from '@mantine/co
 import { useI18n } from '@/i18n/useI18n';
 import { IconFileText } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
-import { WORKFLOW_ORDER, resolveLabel } from '@/utils/workflowTemplates';
+import { useShallow } from 'zustand/react/shallow';
+import { WORKFLOW_ORDER, resolveLabel } from '@/utils';
 
 export function ArtifactPreview() {
-  const { artifact, steps } = useWorkbenchStore();
+  const { artifact, steps } = useWorkbenchStore(
+    useShallow((s) => ({ artifact: s.artifact, steps: s.steps }))
+  );
 
   const completedModules = WORKFLOW_ORDER.filter((m) => artifact?.sections[m]);
   const totalTokens = steps.reduce((acc, s) => acc + s.promptTokens + s.completionTokens, 0);

@@ -202,10 +202,17 @@ app.post(
     // Client disconnected — socket is gone, nothing to send
     if (clientController.signal.aborted) return
 
-    if (!result) {
+    if (!result.ok) {
+      const errorMessages: Record<string, string> = {
+        timeout: 'The model took too long to respond. Try increasing the timeout in Settings.',
+        cancelled: 'Generation was cancelled.',
+        offline: 'Cannot reach the Ollama service. Make sure it is running.',
+        llm_error: 'The LLM service returned an error. Check that the selected model is available.',
+        invalid_response: 'The model returned an unexpected response. Try again or switch models.',
+      }
       return res.status(502).json({
         success: false,
-        error: 'Failed to generate response',
+        error: errorMessages[result.reason] ?? 'Failed to generate response',
       })
     }
 

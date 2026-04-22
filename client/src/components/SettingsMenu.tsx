@@ -1,4 +1,5 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { TimeInput } from '@mantine/dates';
 import {
   ActionIcon,
   Tooltip,
@@ -18,9 +19,10 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { IconAdjustmentsCog, IconFileTextFilled } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useShallow } from 'zustand/react/shallow';
 import { useI18n } from '@/i18n';
 import { TemplateEditor } from '@/components/TemplateEditor';
-import { collectTemplateErrors } from '@/utils/templateValidation';
+import { collectTemplateErrors } from '@/utils';
 import { exportBackup, importBackup } from '@/api/client';
 import type { AppSettings, LogLevel, RegTemplate } from '@/types';
 
@@ -34,6 +36,48 @@ const LOG_LEVEL_OPTIONS: { value: LogLevel; label: string }[] = [
 ];
 
 const FIELD = { label: { fontFamily: 'monospace', fontSize: 11 } } as const;
+
+function DurationInput({
+  label,
+  valueMs,
+  onChange,
+  units,
+}: Readonly<{
+  label: string;
+  valueMs: number;
+  onChange: (ms: number) => void;
+  units: 'min:sec' | 'h:min';
+}>) {
+  const withSeconds = units === 'min:sec';
+
+  const toTime = (ms: number): string => {
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    const hh = String(h).padStart(2, '0');
+    const mm = String(m).padStart(2, '0');
+    const ss = String(s).padStart(2, '0');
+    return withSeconds ? `${hh}:${mm}:${ss}` : `${hh}:${mm}`;
+  };
+
+  const fromTime = (value: string): number => {
+    const parts = value.split(':').map(Number);
+    if (withSeconds) return (parts[0] * 3600 + parts[1] * 60 + (parts[2] ?? 0)) * 1000;
+    return (parts[0] * 3600 + parts[1] * 60) * 1000;
+  };
+
+  return (
+    <TimeInput
+      label={label}
+      value={toTime(valueMs)}
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+        onChange(fromTime(e.currentTarget.value))
+      }
+      withSeconds={withSeconds}
+      styles={FIELD}
+    />
+  );
+}
 const TAB_STYLES = { tab: { fontFamily: 'monospace', fontSize: 11 } } as const;
 
 const MODAL_BASE = {
@@ -197,7 +241,20 @@ export function SettingsMenu() {
     initSessions,
     loadSettings,
     loadTemplate,
-  } = useWorkbenchStore();
+  } = useWorkbenchStore(
+    useShallow((s) => ({
+      appSettings: s.appSettings,
+      saveSettings: s.saveSettings,
+      resetSettings: s.resetSettings,
+      availableModels: s.availableModels,
+      template: s.template,
+      saveTemplate: s.saveTemplate,
+      resetTemplate: s.resetTemplate,
+      initSessions: s.initSessions,
+      loadSettings: s.loadSettings,
+      loadTemplate: s.loadTemplate,
+    }))
+  );
 
   const { t } = useI18n();
   const [form, setForm] = useState<AppSettings>({ ...appSettings });
@@ -526,14 +583,11 @@ export function SettingsMenu() {
                       max={5}
                       styles={FIELD}
                     />
-                    <NumberInput
+                    <DurationInput
                       label={t('res_SettingsLlmTimeout')}
-                      value={Math.round(form.llmTimeoutMs / 1000)}
-                      onChange={(v) => patch('llmTimeoutMs', Number(v) * 1000)}
-                      min={5}
-                      max={600}
-                      step={5}
-                      styles={FIELD}
+                      valueMs={form.llmTimeoutMs}
+                      onChange={(v) => patch('llmTimeoutMs', v)}
+                      units="min:sec"
                     />
                     <NumberInput
                       label={t('res_SettingsPromptMaxLength')}
@@ -563,14 +617,11 @@ export function SettingsMenu() {
                 <Box>
                   <SectionLabel>{t('res_SettingsSectionServer')}</SectionLabel>
                   <SimpleGrid cols={2} spacing="xs" mt="xs">
-                    <NumberInput
+                    <DurationInput
                       label={t('res_SettingsShutdownTimeout')}
-                      value={Math.round(form.shutdownTimeoutMs / 1000)}
-                      onChange={(v) => patch('shutdownTimeoutMs', Number(v) * 1000)}
-                      min={1}
-                      max={86_400}
-                      step={60}
-                      styles={FIELD}
+                      valueMs={form.shutdownTimeoutMs}
+                      onChange={(v) => patch('shutdownTimeoutMs', v)}
+                      units="h:min"
                     />
                     <Select
                       label={t('res_SettingsLogLevel')}

@@ -1,5 +1,5 @@
 import type { PatentArtifact, RegTemplate } from '@/types';
-import bundledTemplates from '@/config/reg-templates.json';
+import bundledTemplates from '@templates/reg-templates.json';
 
 export interface GuidedField {
   key: string;

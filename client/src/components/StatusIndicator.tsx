@@ -2,10 +2,17 @@ import { useEffect } from 'react';
 import { Group, Badge, Tooltip, ActionIcon } from '@mantine/core';
 import { IconRefresh, IconCircleFilled } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useShallow } from 'zustand/react/shallow';
 import { useI18n } from '@/i18n';
 
 export function StatusIndicator() {
-  const { llmStatus, llmLatency, checkStatus } = useWorkbenchStore();
+  const { llmStatus, llmLatency, checkStatus } = useWorkbenchStore(
+    useShallow((s) => ({
+      llmStatus: s.llmStatus,
+      llmLatency: s.llmLatency,
+      checkStatus: s.checkStatus,
+    }))
+  );
   const { t } = useI18n();
 
   useEffect(() => {

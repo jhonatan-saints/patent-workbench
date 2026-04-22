@@ -21,8 +21,9 @@ import {
 import type { ComponentType } from 'react';
 import { useState, useCallback } from 'react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useShallow } from 'zustand/react/shallow';
 import { useI18n } from '@/i18n/useI18n';
-import { resolveLabel } from '@/utils/workflowTemplates';
+import { resolveLabel } from '@/utils';
 import { BTN_PRIMARY } from '@/theme/styles';
 import type { StepStatus } from '@/types';
 
@@ -312,7 +313,20 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
     artifact,
     persistDraft,
     resetWorkflow,
-  } = useWorkbenchStore();
+  } = useWorkbenchStore(
+    useShallow((s) => ({
+      steps: s.steps,
+      currentStepIndex: s.currentStepIndex,
+      workflowPhase: s.workflowPhase,
+      goToStep: s.goToStep,
+      goToPreview: s.goToPreview,
+      goToInventors: s.goToInventors,
+      goToFigures: s.goToFigures,
+      artifact: s.artifact,
+      persistDraft: s.persistDraft,
+      resetWorkflow: s.resetWorkflow,
+    }))
+  );
   const { t } = useI18n();
 
   const [saving, setSaving] = useState(false);

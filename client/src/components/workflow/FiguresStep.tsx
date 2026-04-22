@@ -23,9 +23,10 @@ import {
   IconDownload,
 } from '@tabler/icons-react';
 import { useWorkbenchStore } from '@/store/workbench';
+import { useShallow } from 'zustand/react/shallow';
 import { INPUT_STYLES, BTN_PRIMARY } from '@/theme/styles';
 import type { FigureItem } from '@/types';
-import { generateId } from '@/utils/sanitize';
+import { generateId } from '@/utils';
 import { DiagramEditor } from './DiagramEditor';
 import { JsonViewer } from './JsonViewer';
 import { useI18n } from '@/i18n/useI18n';
@@ -50,7 +51,16 @@ function makeImageFigure(dataUrl: string, img: HTMLImageElement, figureNumber: n
 export function FiguresStep() {
   const { t } = useI18n();
   const { artifact, updateFigures, goToInventors, goToStep, steps, diagramGenerating } =
-    useWorkbenchStore();
+    useWorkbenchStore(
+      useShallow((s) => ({
+        artifact: s.artifact,
+        updateFigures: s.updateFigures,
+        goToInventors: s.goToInventors,
+        goToStep: s.goToStep,
+        steps: s.steps,
+        diagramGenerating: s.diagramGenerating,
+      }))
+    );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [figures, setFigures] = useState<FigureItem[]>(() => artifact?.figures ?? []);

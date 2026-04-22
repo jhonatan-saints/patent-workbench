@@ -9,6 +9,31 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
+      '@templates': path.resolve(__dirname, '..', 'templates'),
+    },
+  },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/') || id.includes('/node_modules/scheduler/')) {
+            return 'vendor-react';
+          }
+          if (id.includes('/node_modules/@mantine/')) {
+            return 'vendor-mantine';
+          }
+          if (id.includes('/node_modules/@tabler/')) {
+            return 'vendor-icons';
+          }
+          if (id.includes('/node_modules/@xyflow/') || id.includes('/node_modules/@reactflow/')) {
+            return 'vendor-xyflow';
+          }
+          if (id.includes('/node_modules/docx/') || id.includes('/node_modules/html-to-image/')) {
+            return 'vendor-docx';
+          }
+        },
+      },
     },
   },
   server: {

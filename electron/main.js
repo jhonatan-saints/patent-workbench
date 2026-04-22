@@ -63,21 +63,21 @@ function getBackupsDir() {
 
 const MAX_BACKUPS = 5
 
-function backupDatabase() {
+async function backupDatabase() {
   try {
     const dbFile = path.join(getDataDir(), 'workbench.db')
     if (!fs.existsSync(dbFile)) return
 
     const backupsDir = getBackupsDir()
-    fs.mkdirSync(backupsDir, { recursive: true })
+    await fs.promises.mkdir(backupsDir, { recursive: true })
 
     const stamp = new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-').slice(0, 19)
     const destBase = path.join(backupsDir, `workbench-${stamp}.db`)
 
-    fs.copyFileSync(dbFile, destBase)
+    await fs.promises.copyFile(dbFile, destBase)
     for (const ext of ['-wal', '-shm']) {
       const src = `${dbFile}${ext}`
-      if (fs.existsSync(src)) fs.copyFileSync(src, `${destBase}${ext}`)
+      if (fs.existsSync(src)) await fs.promises.copyFile(src, `${destBase}${ext}`)
     }
 
     const all = fs.readdirSync(backupsDir)
@@ -85,7 +85,7 @@ function backupDatabase() {
       .sort((a, b) => a.localeCompare(b))
     for (const old of all.slice(0, Math.max(0, all.length - MAX_BACKUPS))) {
       for (const ext of ['', '-wal', '-shm']) {
-        try { fs.unlinkSync(path.join(backupsDir, old + ext)) } catch { /* already gone */ }
+        try { await fs.promises.unlink(path.join(backupsDir, old + ext)) } catch { /* already gone */ }
       }
     }
 
@@ -288,8 +288,14 @@ app.on('activate', () => {
   else mainWindow?.show()
 })
 
-app.on('before-quit', () => {
+let _backupDone = false
+app.on('before-quit', (event) => {
+  if (_backupDone) return
+  event.preventDefault()
   app.isQuitting = true
   if (serverProcess) serverProcess.kill()
-  backupDatabase()
+  backupDatabase().finally(() => {
+    _backupDone = true
+    app.quit()
+  })
 })

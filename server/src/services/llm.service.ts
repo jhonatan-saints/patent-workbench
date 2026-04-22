@@ -5,10 +5,18 @@ type GenerateParams = {
 };
 
 type GenerateResult = {
+  ok: true;
   response: string;
   promptTokens: number;
   completionTokens: number;
 };
+
+type GenerateFailure = {
+  ok: false;
+  reason: 'timeout' | 'cancelled' | 'offline' | 'llm_error' | 'invalid_response';
+};
+
+export type GenerateOutcome = GenerateResult | GenerateFailure;
 
 import logger from '../logger';
 import { getAppSettings } from './db';
@@ -17,19 +25,21 @@ export async function generate({
   model,
   prompt,
   signal: clientSignal,
-}: GenerateParams): Promise<GenerateResult | null> {
+}: GenerateParams): Promise<GenerateOutcome> {
   const settings = getAppSettings();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), settings.llm_timeout_ms);
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, settings.llm_timeout_ms);
 
   // Abort the Ollama request when the HTTP client disconnects
-  if (clientSignal) {
-    if (clientSignal.aborted) {
-      clearTimeout(timeout);
-      return null;
-    }
-    clientSignal.addEventListener('abort', () => controller.abort(), { once: true });
+  if (clientSignal?.aborted) {
+    clearTimeout(timeout);
+    return { ok: false, reason: 'cancelled' };
   }
+  clientSignal?.addEventListener('abort', () => controller.abort(), { once: true });
 
   try {
     const res = await fetch(`${settings.ollama_url}/api/generate`, {
@@ -47,13 +57,16 @@ export async function generate({
 
     if (!res.ok) {
       logger.error({ statusText: res.statusText }, 'LLM service error');
-      return null;
+      return { ok: false, reason: 'llm_error' };
     }
 
     const data = await res.json();
-    if (!data?.response) return null;
+    if (!data?.response) {
+      return { ok: false, reason: 'invalid_response' };
+    }
 
     return {
+      ok: true,
       response: data.response,
       promptTokens: data.prompt_eval_count ?? 0,
       completionTokens: data.eval_count ?? 0,
@@ -61,11 +74,17 @@ export async function generate({
   } catch (err) {
     clearTimeout(timeout);
     if ((err as Error).name === 'AbortError') {
-      logger.info({ cancelled: !!clientSignal?.aborted }, 'LLM request aborted');
-    } else {
-      logger.error({ err }, 'LLM request failed');
+      const reason = timedOut ? 'timeout' : 'cancelled';
+      logger.info({ reason }, 'LLM request aborted');
+      return { ok: false, reason };
     }
-    return null;
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'ECONNREFUSED' || code === 'ENOTFOUND') {
+      logger.error({ err }, 'Ollama unreachable');
+      return { ok: false, reason: 'offline' };
+    }
+    logger.error({ err }, 'LLM request failed');
+    return { ok: false, reason: 'llm_error' };
   }
 }
 

@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import AdmZip from 'adm-zip'
 import path from 'node:path'
 import fs from 'node:fs'
 import defaultTemplate from '../config/defaultTemplate'
@@ -26,6 +27,8 @@ function applyPragmas(instance: Database.Database) {
   instance.pragma('synchronous = NORMAL')
   instance.pragma('wal_autocheckpoint = 1000')
   instance.pragma('foreign_keys = ON')
+  instance.pragma('cache_size = -64000')
+  instance.pragma('mmap_size = 30000000')
 }
 
 applyPragmas(_db)
@@ -39,7 +42,7 @@ const dbHandler: ProxyHandler<Database.Database> = {
 }
 const db = new Proxy(_db, dbHandler)
 
-const SCHEMA_VERSION = 8
+const SCHEMA_VERSION = 9
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS sessions (
@@ -66,6 +69,8 @@ db.exec(`
     data_url   TEXT    NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0
   );
+
+  CREATE INDEX IF NOT EXISTS idx_figures_session_id ON figures(session_id);
 
   CREATE TABLE IF NOT EXISTS app_settings (
     id                  INTEGER PRIMARY KEY CHECK (id = 1),
@@ -96,7 +101,8 @@ if (version < SCHEMA_VERSION) {
   try { db.exec(`ALTER TABLE app_settings ADD COLUMN log_level           TEXT    NOT NULL DEFAULT 'info'`) } catch { /* already exists */ }
   // v7: add reg_template column
   try { db.exec(`ALTER TABLE app_settings ADD COLUMN reg_template TEXT`) } catch { /* already exists */ }
-  // v8: add api_key column
+  // v8: add api_key column (moved to v9 — DBs already at v8 missed this)
+  // v9: ensure api_key column exists
   try { db.exec(`ALTER TABLE app_settings ADD COLUMN api_key TEXT`) } catch { /* already exists */ }
   db.pragma(`user_version = ${SCHEMA_VERSION}`)
 }
@@ -120,6 +126,20 @@ db.prepare(`
 db.prepare(`
   UPDATE app_settings SET reg_template = ? WHERE id = 1 AND reg_template IS NULL
 `).run(JSON.stringify(defaultTemplate))
+
+// Apply local template override on every startup if the file exists.
+// Place the JSON file at <project-root>/templates/reg-templates.local.json
+// (gitignored). Override the path via LOCAL_TEMPLATE_PATH env var if needed.
+const TEMPLATES_DIR = process.env.TEMPLATES_DIR ?? path.resolve(__dirname, '..', '..', '..', 'templates')
+const LOCAL_TEMPLATE_PATH = process.env.LOCAL_TEMPLATE_PATH ?? path.join(TEMPLATES_DIR, 'reg-templates.local.json')
+if (fs.existsSync(LOCAL_TEMPLATE_PATH)) {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(LOCAL_TEMPLATE_PATH, 'utf-8'))
+    db.prepare('UPDATE app_settings SET reg_template = ? WHERE id = 1').run(JSON.stringify(parsed))
+  } catch {
+    // Malformed local template — silently keep the existing DB template
+  }
+}
 
 export interface AppSettingsRow {
   id: number
@@ -157,7 +177,7 @@ export function listBackups(): BackupEntry[] {
   if (!fs.existsSync(BACKUPS_DIR)) return []
   return fs
     .readdirSync(BACKUPS_DIR)
-    .filter((f) => f.startsWith('workbench-') && f.endsWith('.db'))
+    .filter((f) => f.startsWith('workbench-') && f.endsWith('.zip'))
     .sort((a, b) => b.localeCompare(a))
     .map((filename) => {
       const stats = fs.statSync(path.join(BACKUPS_DIR, filename))
@@ -169,46 +189,40 @@ export function createBackup(): string {
   fs.mkdirSync(BACKUPS_DIR, { recursive: true })
   _db.pragma('wal_checkpoint(FULL)')
   const stamp = new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-').slice(0, 19)
-  const destBase = path.join(BACKUPS_DIR, `workbench-${stamp}.db`)
-  fs.copyFileSync(DB_PATH, destBase)
-  for (const ext of ['-wal', '-shm']) {
-    const wal = `${DB_PATH}${ext}`
-    if (fs.existsSync(wal)) fs.copyFileSync(wal, `${destBase}${ext}`)
-  }
+  const destPath = path.join(BACKUPS_DIR, `workbench-${stamp}.zip`)
+  const zip = new AdmZip()
+  zip.addLocalFile(DB_PATH, '', 'workbench.db')
+  zip.writeZip(destPath)
   const all = fs
     .readdirSync(BACKUPS_DIR)
-    .filter((f) => f.startsWith('workbench-') && f.endsWith('.db'))
+    .filter((f) => f.startsWith('workbench-') && f.endsWith('.zip'))
     .sort((a, b) => a.localeCompare(b))
   for (const old of all.slice(0, Math.max(0, all.length - MAX_BACKUPS))) {
-    for (const ext of ['', '-wal', '-shm']) {
-      try { fs.unlinkSync(path.join(BACKUPS_DIR, old + ext)) } catch { /* already gone */ }
-    }
+    try { fs.unlinkSync(path.join(BACKUPS_DIR, old)) } catch { /* already gone */ }
   }
-  return path.basename(destBase)
+  return path.basename(destPath)
 }
 
 export function deleteBackup(filename: string): void {
   const target = path.join(BACKUPS_DIR, filename)
-  for (const ext of ['', '-wal', '-shm']) {
-    try { fs.unlinkSync(target + ext) } catch { /* already absent */ }
-  }
+  if (!target.startsWith(BACKUPS_DIR + path.sep)) throw new Error('invalid filename')
+  try { fs.unlinkSync(target) } catch { /* already absent */ }
 }
 
 export function restoreFromBackup(filename: string): void {
-  const srcBase = path.join(BACKUPS_DIR, filename)
-  if (!srcBase.startsWith(BACKUPS_DIR + path.sep) && srcBase !== BACKUPS_DIR) {
-    throw new Error('invalid filename')
-  }
-  if (!fs.existsSync(srcBase)) throw new Error('backup not found')
+  const srcPath = path.join(BACKUPS_DIR, filename)
+  if (!srcPath.startsWith(BACKUPS_DIR + path.sep)) throw new Error('invalid filename')
+  if (!fs.existsSync(srcPath)) throw new Error('backup not found')
+
+  const zip = new AdmZip(srcPath)
+  const entry = zip.getEntry('workbench.db')
+  if (!entry) throw new Error('backup ZIP does not contain workbench.db')
 
   _db.close()
-  fs.copyFileSync(srcBase, DB_PATH)
   for (const ext of ['-wal', '-shm']) {
-    const src = `${srcBase}${ext}`
-    const dest = `${DB_PATH}${ext}`
-    if (fs.existsSync(src)) fs.copyFileSync(src, dest)
-    else try { fs.unlinkSync(dest) } catch { /* already absent */ }
+    try { fs.unlinkSync(DB_PATH + ext) } catch { /* already absent */ }
   }
+  zip.extractEntryTo(entry, path.dirname(DB_PATH), false, true)
 
   _db = new Database(DB_PATH)
   applyPragmas(_db)

@@ -1,8 +1,7 @@
 import { Accordion, Textarea, Text, Stack } from '@mantine/core';
 import type { RegTemplate } from '@/types';
-import { WORKFLOW_ORDER } from '@/utils/workflowTemplates';
+import { WORKFLOW_ORDER, collectTemplateErrors } from '@/utils';
 import { useI18n } from '@/i18n';
-import { collectTemplateErrors } from '@/utils/templateValidation';
 
 const FIELD = { label: { fontFamily: 'monospace', fontSize: 11 } } as const;
 
