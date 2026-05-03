@@ -13,7 +13,7 @@ const settingsSchema = z.object({
     .min(1)
     .max(128)
     .regex(/^[a-zA-Z0-9._:/-]+$/, 'Invalid model name'),
-  llmTimeoutMs: z.number().int().min(5_000).max(600_000),
+  llmTimeoutMs: z.number().int().min(5_000).max(86_400_000),
   numOptions: z.number().int().min(1).max(5),
   ollamaUrl: z.string().url('Invalid Ollama URL').max(512),
   promptMaxLength: z.number().int().min(1_000).max(200_000),

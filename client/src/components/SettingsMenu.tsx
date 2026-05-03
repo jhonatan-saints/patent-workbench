@@ -260,6 +260,7 @@ export function SettingsMenu() {
   const [form, setForm] = useState<AppSettings>({ ...appSettings });
   const [templateDraft, setTemplateDraft] = useState<RegTemplate>(() => structuredClone(template));
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [templateSaving, setTemplateSaving] = useState(false);
   const templateErrors = useMemo(
     () => collectTemplateErrors(templateDraft.steps, t),
@@ -368,9 +369,14 @@ export function SettingsMenu() {
 
   const handleSave = async () => {
     setSaving(true);
-    await saveSettings(form);
+    setSaveError(null);
+    const ok = await saveSettings(form);
     setSaving(false);
-    close();
+    if (ok) {
+      close();
+    } else {
+      setSaveError('Failed to save settings. Check that all values are within allowed limits.');
+    }
   };
 
   const handleResetSettings = async () => {
@@ -455,6 +461,11 @@ export function SettingsMenu() {
     }
     return (
       <>
+        {saveError && (
+          <span style={{ color: 'var(--color-error, red)', fontSize: 11, fontFamily: 'monospace' }}>
+            {saveError}
+          </span>
+        )}
         <Button
           variant="subtle"
           size="xs"
