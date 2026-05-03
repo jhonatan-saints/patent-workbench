@@ -32,7 +32,7 @@ let RAG = bundledTemplates.rag;
 
 function buildOptionsFormat(n: number): string {
   const header = `\n\nReturn EXACTLY ${n} distinct option${n === 1 ? '' : 's'}. Use this format with no other text:\n`;
-  const blocks = Array.from({ length: n }, (_, i) => `OPTION ${i + 1}:\n[content]`).join('\n\n');
+  const blocks = Array.from({ length: n }, (_, i) => `OPTION ${i + 1}:`).join('\n\n');
   return header + '\n' + blocks;
 }
 
@@ -83,6 +83,52 @@ const MODULE_DESCRIPTION_RESOURCE_KEYS: Record<string, string> = Object.fromEntr
 
 // RAG context builder
 
+type ScoredSection = { moduleId: string; position_j: number; content: string; score: number };
+
+function selectPriorSections(artifact: PatentArtifact, stepIdx: number): ScoredSection[] {
+  const perSourceBudget = RAG.maxSectionChars;
+  const stepBudget = RAG.maxPriorSections * perSourceBudget;
+
+  // s_j = w(position_j, i) × min(|c_j|, perSourceBudget)
+  // w(position_j, i) = (maxPriorSections − (i − position_j − 1)) / maxPriorSections
+  const scored = WORKFLOW_ORDER.slice(0, stepIdx)
+    .map((moduleId, position_j): ScoredSection | null => {
+      const section = artifact.sections[moduleId];
+      if (!section) return null;
+      const w = (RAG.maxPriorSections - (stepIdx - position_j - 1)) / RAG.maxPriorSections;
+      if (w <= 0) return null;
+      const boundedLen = Math.min(section.content.length, perSourceBudget);
+      return { moduleId, position_j, content: section.content, score: w * boundedLen };
+    })
+    .filter((c): c is ScoredSection => c !== null)
+    .sort((a, b) => b.score - a.score);
+
+  // Bounded Context Injector: accumulate until step budget exhausted
+  let accumulated = 0;
+  const selected: ScoredSection[] = [];
+  for (const candidate of scored) {
+    const chars = Math.min(candidate.content.length, perSourceBudget);
+    if (accumulated + chars > stepBudget) break;
+    selected.push(candidate);
+    accumulated += chars;
+  }
+
+  return selected.sort((a, b) => a.position_j - b.position_j); // restore document order
+}
+
+function buildContextFileLines(artifact: PatentArtifact): string[] {
+  if (!artifact.contextFiles?.length) return [];
+  const lines: string[] = ['', 'Reference documents:'];
+  let remaining = RAG.maxContextFileChars;
+  for (const file of artifact.contextFiles) {
+    if (remaining <= 0) break;
+    const content = file.content.slice(0, remaining);
+    lines.push(`[${file.name}]\n${content}`);
+    remaining -= content.length;
+  }
+  return lines;
+}
+
 export function buildArtifactContext(artifact: PatentArtifact, upToModule?: string): string {
   const stopIdx = upToModule ? WORKFLOW_ORDER.indexOf(upToModule) : WORKFLOW_ORDER.length;
 
@@ -94,29 +140,19 @@ export function buildArtifactContext(artifact: PatentArtifact, upToModule?: stri
     lines.push(`Inventor(s): ${artifact.inventors.map((inv) => inv.name).join(', ')}`);
   }
 
-  const priorModules = WORKFLOW_ORDER.slice(0, stopIdx)
-    .filter((m) => artifact.sections[m])
-    .slice(-RAG.maxPriorSections);
-
-  if (priorModules.length > 0) {
-    lines.push('', 'Prior sections:');
-    for (const m of priorModules) {
-      const section = artifact.sections[m]!;
-      const label = SECTION_LABELS_EN[m] ?? m;
-      lines.push(`[${label}] ${truncate(section.content, RAG.maxSectionChars)}`);
+  // D-3: step 0 has no prior sections — Because of that we skip context selection entirely
+  if (stopIdx > 0) {
+    const selected = selectPriorSections(artifact, stopIdx);
+    if (selected.length > 0) {
+      lines.push('', 'Prior sections:');
+      for (const { moduleId, content } of selected) {
+        const label = SECTION_LABELS_EN[moduleId] ?? moduleId;
+        lines.push(`[${label}] ${truncate(content, RAG.maxSectionChars)}`);
+      }
     }
   }
 
-  if (artifact.contextFiles?.length) {
-    lines.push('', 'Reference documents:');
-    let remaining = RAG.maxContextFileChars;
-    for (const file of artifact.contextFiles) {
-      if (remaining <= 0) break;
-      const content = file.content.slice(0, remaining);
-      lines.push(`[${file.name}]\n${content}`);
-      remaining -= content.length;
-    }
-  }
+  lines.push(...buildContextFileLines(artifact));
 
   return lines.join('\n');
 }

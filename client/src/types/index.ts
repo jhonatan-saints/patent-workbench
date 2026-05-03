@@ -260,7 +260,7 @@ export interface WorkbenchState {
   // App settings
   appSettings: AppSettings;
   loadSettings: () => Promise<void>;
-  saveSettings: (patch: Partial<AppSettings>) => Promise<void>;
+  saveSettings: (patch: Partial<AppSettings>) => Promise<boolean>;
 
   // Workflow template
   template: RegTemplate;

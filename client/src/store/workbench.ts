@@ -210,6 +210,13 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     if (!artifact || currentStepIndex < 0 || currentStepIndex >= steps.length) return;
 
     const step = steps[currentStepIndex];
+
+    // D-4: manual draft present — bypass generation pipeline entirely
+    if (step.inputMode === 'manual' && step.manualDraft.trim().length > 0) {
+      get().submitManualContent(step.manualDraft);
+      return;
+    }
+
     const usedMode = step.inputMode === 'guided' ? 'guided' : 'auto';
     const module = WORKFLOW_MODULES[step.moduleId];
 
@@ -710,7 +717,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     const current = get().appSettings;
     const next = { ...current, ...patch };
     const confirmed = await apiUpdateSettings(next);
-    if (confirmed) set({ appSettings: confirmed });
+    if (confirmed) { set({ appSettings: confirmed }); return true; }
+    return false;
   },
 
   resetSettings: async () => {

@@ -21,6 +21,25 @@ export type GenerateOutcome = GenerateResult | GenerateFailure;
 import logger from '../logger';
 import { getAppSettings } from './db';
 
+// Disable undici's built-in headersTimeout and bodyTimeout on all LLM requests.
+// Our AbortController already enforces llm_timeout_ms; the undici defaults (~5 min)
+// fire before long model-loading or generation can complete.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let ollamaAgent: any;
+try {
+  // undici is bundled with Node.js 18+ but may not be in local node_modules
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Agent } = require('undici') as { Agent: new (opts: object) => unknown };
+  ollamaAgent = new Agent({ headersTimeout: 0, bodyTimeout: 0 });
+} catch {
+  ollamaAgent = undefined;
+}
+
+function withDispatcher(init: RequestInit): RequestInit {
+  if (!ollamaAgent) return init;
+  return { ...init, dispatcher: ollamaAgent } as RequestInit & { dispatcher: unknown };
+}
+
 export async function generate({
   model,
   prompt,
@@ -42,16 +61,12 @@ export async function generate({
   clientSignal?.addEventListener('abort', () => controller.abort(), { once: true });
 
   try {
-    const res = await fetch(`${settings.ollama_url}/api/generate`, {
+    const res = await fetch(`${settings.ollama_url}/api/generate`, withDispatcher({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
-      body: JSON.stringify({
-        model,
-        prompt,
-        stream: false,
-      }),
-    });
+      body: JSON.stringify({ model, prompt, stream: false }),
+    }));
 
     clearTimeout(timeout);
 
@@ -135,12 +150,12 @@ export async function* generateStream({
 
   let res: Response;
   try {
-    res = await fetch(`${settings.ollama_url}/api/generate`, {
+    res = await fetch(`${settings.ollama_url}/api/generate`, withDispatcher({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
       body: JSON.stringify({ model, prompt, stream: true }),
-    });
+    }));
   } catch (err) {
     clearTimeout(timeout);
     const reason = classifyStreamError(err, timedOut);

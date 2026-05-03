@@ -21,11 +21,7 @@ export function parseOptions(response: string): string[] {
   let match: RegExpExecArray | null;
 
   while ((match = re.exec(response)) !== null) {
-    const content = match[1]
-      .trim()
-      // Strip literal "[content]" placeholder if the model echoed it back
-      .replace(/^\[content\]\s*/i, '')
-      .trim();
+    const content = match[1].trim();
     if (content.length >= MIN_OPTION_LENGTH) matches.push(content);
   }
 
@@ -34,10 +30,7 @@ export function parseOptions(response: string): string[] {
   if (matches.length >= 1) return matches;
 
   // Fallback: treat the whole response as a single option
-  const trimmed = response
-    .trim()
-    .replace(/^\[content\]\s*/i, '')
-    .trim();
+  const trimmed = response.trim();
   return trimmed.length >= MIN_OPTION_LENGTH ? [trimmed] : [];
 }
 
