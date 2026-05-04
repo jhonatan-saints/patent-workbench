@@ -411,7 +411,9 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
           isFuture={!isAllDone}
           canNavigate={isAllDone}
           onClick={goToReview}
-          icon={<IconListCheckFilled size={15} className={accentIconClass(isReviewActive, false)} />}
+          icon={
+            <IconListCheckFilled size={15} className={accentIconClass(isReviewActive, false)} />
+          }
         />
 
         <SaveSection

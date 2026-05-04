@@ -233,7 +233,9 @@ export function App() {
   // Covers figures upload, manual content, inline edits, inventors, etc.
   useEffect(() => {
     if (!artifact || workflowPhase === 'input') return;
-    const timer = setTimeout(() => { void persistDraft(); }, 2000);
+    const timer = setTimeout(() => {
+      void persistDraft();
+    }, 2000);
     return () => clearTimeout(timer);
   }, [artifact, workflowPhase, persistDraft]);
 

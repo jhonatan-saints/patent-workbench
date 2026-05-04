@@ -1,14 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import {
-  Stack,
-  Text,
-  Group,
-  ActionIcon,
-  Box,
-  Tooltip,
-  Modal,
-  Button,
-} from '@mantine/core';
+import { Stack, Text, Group, ActionIcon, Box, Tooltip, Modal, Button } from '@mantine/core';
 import {
   IconClock,
   IconX,
@@ -89,7 +80,9 @@ function DraftItem({
           borderLeft: `2px solid ${session.persisted ? 'var(--accent)' : 'var(--text-muted)'}`,
           opacity: isDragging ? 0.35 : baseOpacity,
           transform: isDragging ? 'scale(0.98)' : undefined,
-          boxShadow: showGlow ? '0 4px 20px var(--accent-glow), 0 0 0 1px var(--accent)' : undefined,
+          boxShadow: showGlow
+            ? '0 4px 20px var(--accent-glow), 0 0 0 1px var(--accent)'
+            : undefined,
         }}
       >
         {/* Clickable / focusable load area */}
