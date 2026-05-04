@@ -54,7 +54,7 @@ Design, validate and refine invention concepts in a unified workspace built for 
 
 Patent Workbench guides inventors through a structured five-phase workflow, composed of seven core drafting steps that produce a complete patent application draft. Each step uses a dedicated prompt template built on the REG (Role + Examples + Goal) pattern, instructing the model to reason like a USPTO patent analyst or attorney and generate output aligned with standard IDF language conventions.
 
-In addition to the core workflow, three supporting steps are included: figure creation (step 08), inventor and naming details (step 09), and final preview and export (step 10).
+In addition to the core workflow, four supporting steps are included: figure creation (step 08), inventor and naming details (step 09), final preview and export (step 10), and IDF Review (accessible after all seven sections are complete).
 
 At every step the LLM generates **three distinct options** to compare. You pick the one that best fits your intent — or regenerate — before the workflow advances automatically.
 
@@ -67,7 +67,7 @@ Context from earlier steps and any uploaded reference documents is injected into
 ### Phases
 
 ```text
-input → working (steps 1–7) → figures → inventors → preview / export
+input → working (steps 1–7) → figures → inventors → preview → review
 ```
 
 | Phase | Description |
@@ -77,6 +77,7 @@ input → working (steps 1–7) → figures → inventors → preview / export
 | **figures** | Create flowcharts with the built-in diagram editor, upload images, or attach structured JSON diagrams; add captions |
 | **inventors** | Add inventor details (name, address, citizenship, employee ID, etc.) and optional patent metadata (IDF number, business group) |
 | **preview** | Review the fully assembled artifact, edit any section inline, and export as `.md` or `.docx` |
+| **review** | Run a multi-pass LLM quality analysis of the completed draft; receive an overall score (1–10), a written summary, and categorised findings (critical, warning, suggestion, strength) per section. Only accessible after all seven sections are complete; prior results are preserved with the session and used as context on re-runs. |
 
 ### Seven drafting steps
 
@@ -114,6 +115,7 @@ input → working (steps 1–7) → figures → inventors → preview / export
 - **LLM status indicator** — real-time connectivity check with latency; polls every 30 seconds.
 - **Persistent sessions** — sessions are saved to a local SQLite database and survive page reload and browser restart; browse, restore, or delete from the Drafts sidebar.
 - **Diagram editor** — in-app flowchart creator (`@xyflow/react`); exports as PNG for embedding in figures.
+- **IDF Review** — after all seven sections are drafted, run a scored LLM quality analysis of the full document; shows an overall score (1–10), written summary, and categorised findings (critical, warning, suggestion, strength) per section; prior results are persisted with the session and used as context when re-running the analysis.
 - **Export** — save as `.txt`, `.pdf` (print dialog), or `.docx` (Word document with embedded figures and inventors block).
 - **Prompt injection protection** — server-side detection and rejection of jailbreak/override patterns.
 - **Cancellation** — abort an in-progress generation at any time via AbortController.
