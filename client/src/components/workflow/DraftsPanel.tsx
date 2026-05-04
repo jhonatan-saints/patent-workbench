@@ -6,7 +6,6 @@ import {
   ActionIcon,
   Box,
   Tooltip,
-  ScrollArea,
   Modal,
   Button,
 } from '@mantine/core';
@@ -43,6 +42,7 @@ function DraftItem({
   onDelete,
   onLoad,
   isDragging,
+  isActive,
   onDragStart,
   onDragOver,
   onDragEnd,
@@ -51,12 +51,15 @@ function DraftItem({
   onDelete: () => void;
   onLoad: () => void;
   isDragging: boolean;
+  isActive: boolean;
   onDragStart: () => void;
   onDragOver: (e: React.DragEvent) => void;
   onDragEnd: () => void;
 }>) {
   const { t } = useI18n();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const completedCount = WORKFLOW_ORDER.filter((m) => session.artifact.sections[m]).length;
   const progress = Math.round((completedCount / WORKFLOW_ORDER.length) * 100);
   const tokensLabel =
@@ -65,12 +68,15 @@ function DraftItem({
       : `${session.totalTokens}`;
 
   const baseOpacity = session.persisted ? 1 : 0.75;
+  const showGlow = (isActive || isHovered || isFocused) && !isDragging;
 
   return (
     <>
       <Box
         component="article"
         draggable
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         onDragStart={(e) => {
           e.dataTransfer.effectAllowed = 'move';
           onDragStart();
@@ -83,6 +89,7 @@ function DraftItem({
           borderLeft: `2px solid ${session.persisted ? 'var(--accent)' : 'var(--text-muted)'}`,
           opacity: isDragging ? 0.35 : baseOpacity,
           transform: isDragging ? 'scale(0.98)' : undefined,
+          boxShadow: showGlow ? '0 4px 20px var(--accent-glow), 0 0 0 1px var(--accent)' : undefined,
         }}
       >
         {/* Clickable / focusable load area */}
@@ -92,25 +99,8 @@ function DraftItem({
           onKeyDown={(e) => e.key === 'Enter' && onLoad()}
           aria-label={session.artifact.inventionTitle ?? session.baseIdea}
           className="block w-full text-left bg-transparent border-0 p-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent focus-visible:-outline-offset-2 rounded-md"
-          onFocus={(e) => {
-            (e.currentTarget.closest('article') as HTMLElement).style.boxShadow =
-              '0 4px 20px var(--accent-glow), 0 0 0 1px var(--accent)';
-          }}
-          onBlur={(e) => {
-            if (!e.currentTarget.closest('article')?.contains(e.relatedTarget as Node)) {
-              (e.currentTarget.closest('article') as HTMLElement).style.boxShadow = 'none';
-            }
-          }}
-          onMouseEnter={(e) => {
-            if (!isDragging)
-              (e.currentTarget.closest('article') as HTMLElement).style.boxShadow =
-                '0 4px 20px var(--accent-glow), 0 0 0 1px var(--accent)';
-          }}
-          onMouseLeave={(e) => {
-            if (!e.currentTarget.closest('article')?.contains(e.relatedTarget as Node)) {
-              (e.currentTarget.closest('article') as HTMLElement).style.boxShadow = 'none';
-            }
-          }}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
         >
           <Box className="px-3 py-2.5 relative">
             {/* Title + delete */}
@@ -255,11 +245,12 @@ function DraftItem({
 }
 
 export function DraftsPanel() {
-  const { sessions, loadSession, deleteSession } = useWorkbenchStore(
+  const { sessions, loadSession, deleteSession, artifact } = useWorkbenchStore(
     useShallow((s) => ({
       sessions: s.sessions,
       loadSession: s.loadSession,
       deleteSession: s.deleteSession,
+      artifact: s.artifact,
     }))
   );
   const { t } = useI18n();
@@ -304,14 +295,15 @@ export function DraftsPanel() {
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
-    if (dragIndexRef.current === null || dragIndexRef.current === index) return;
+    const fromIndex = dragIndexRef.current;
+    if (fromIndex === null || fromIndex === index) return;
+    dragIndexRef.current = index;
     setOrdered((prev) => {
       const next = [...prev];
-      const [moved] = next.splice(dragIndexRef.current!, 1);
+      const [moved] = next.splice(fromIndex, 1);
       next.splice(index, 0, moved);
       return next;
     });
-    dragIndexRef.current = index;
   };
 
   const handleDragEnd = () => {
@@ -336,23 +328,20 @@ export function DraftsPanel() {
   }
 
   return (
-    <Stack>
-      <ScrollArea.Autosize mah={440}>
-        <Stack gap={7}>
-          {ordered.map((session, index) => (
-            <DraftItem
-              key={session.id}
-              session={session}
-              isDragging={draggingId === session.id}
-              onLoad={() => loadSession(session)}
-              onDelete={() => deleteSession(session.id)}
-              onDragStart={() => handleDragStart(index, session.id)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDragEnd={handleDragEnd}
-            />
-          ))}
-        </Stack>
-      </ScrollArea.Autosize>
+    <Stack gap={7}>
+      {ordered.map((session, index) => (
+        <DraftItem
+          key={session.id}
+          session={session}
+          isDragging={draggingId === session.id}
+          isActive={artifact?.startedAt === session.startedAt}
+          onLoad={() => loadSession(session)}
+          onDelete={() => deleteSession(session.id)}
+          onDragStart={() => handleDragStart(index, session.id)}
+          onDragOver={(e) => handleDragOver(e, index)}
+          onDragEnd={handleDragEnd}
+        />
+      ))}
     </Stack>
   );
 }

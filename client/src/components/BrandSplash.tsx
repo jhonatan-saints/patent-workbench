@@ -10,8 +10,8 @@ const REVEAL_HOLD_MS = 3800; // text fully in at ~2000ms; holds ~1800ms more bef
 const FADE_MS = 500; // matches OAuthLoginDemo exit transition
 
 // Layout — kept as JS constants for grid template literals
-const CELL_PX = 96;
-const GAP_PX = 12;
+const CELL_PX = 72;
+const GAP_PX = 9;
 
 type Phase = 'build' | 'spin' | 'reveal' | 'out';
 
@@ -120,7 +120,7 @@ export function BrandSplash({ onDone }: BrandSplashProps) {
       <div
         className="relative"
         style={{
-          transform: revealing ? 'translateX(-155px)' : 'translateX(0)',
+          transform: revealing ? 'translateX(-117px)' : 'translateX(0)',
           transition: revealing ? 'transform 1400ms cubic-bezier(0.16,1,0.3,1)' : undefined,
         }}
       >

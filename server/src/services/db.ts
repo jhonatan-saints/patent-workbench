@@ -42,7 +42,7 @@ const dbHandler: ProxyHandler<Database.Database> = {
 }
 const db = new Proxy(_db, dbHandler)
 
-const SCHEMA_VERSION = 9
+const SCHEMA_VERSION = 11
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS sessions (
@@ -55,7 +55,8 @@ db.exec(`
     artifact           TEXT    NOT NULL,
     step_input_states  TEXT,
     figures_draft      TEXT,
-    nav_state          TEXT
+    nav_state          TEXT,
+    review_result      TEXT
   );
 
   CREATE TABLE IF NOT EXISTS figures (
@@ -104,6 +105,10 @@ if (version < SCHEMA_VERSION) {
   // v8: add api_key column (moved to v9 — DBs already at v8 missed this)
   // v9: ensure api_key column exists
   try { db.exec(`ALTER TABLE app_settings ADD COLUMN api_key TEXT`) } catch { /* already exists */ }
+  // v10: add review_result column to sessions
+  try { db.exec(`ALTER TABLE sessions ADD COLUMN review_result TEXT`) } catch { /* already exists */ }
+  // v11: ensure review_result exists for DBs that were at v10 before this migration was added
+  try { db.exec(`ALTER TABLE sessions ADD COLUMN review_result TEXT`) } catch { /* already exists */ }
   db.pragma(`user_version = ${SCHEMA_VERSION}`)
 }
 

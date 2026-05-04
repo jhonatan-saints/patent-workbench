@@ -9,9 +9,10 @@ function tryParse<T = unknown>(s: string): T | undefined {
 }
 
 // Safe data URL MIME types
-// We explicitly excluded text/html and text/javascript to prevent stored XSS.
+// Allows any image/* subtype (covers BMP, TIFF, ICO, etc.) plus application/json.
+// Explicitly excludes text/html and application/javascript to prevent stored XSS.
 const SAFE_DATA_URL_RE =
-  /^data:(image\/(png|jpeg|gif|webp|svg\+xml)|application\/json)(;base64)?,/
+  /^data:(image\/[a-zA-Z0-9.+_-]+|application\/json)(;[^,]*)?,/
 
 // Zod schema for figure items
 const figureSchema = z.object({
@@ -66,15 +67,16 @@ const saveSessionSchema = z.object({
     diagramEdges: z.array(z.unknown()).default([]),
     jsonText: z.string().default(''),
   }).optional(),
-  lastPhase: z.enum(['input', 'working', 'figures', 'inventors', 'preview']).optional(),
+  lastPhase: z.enum(['input', 'working', 'figures', 'inventors', 'preview', 'review']).optional(),
   lastStepIndex: z.number().optional(),
+  reviewResult: z.unknown().optional(),
 })
 
 // GET /sessions — list without figures (lightweight)
 router.get('/', (_req: Request, res: Response) => {
   const sessions = db
     .prepare(
-      `SELECT id, started_at, completed_at, base_idea, model, total_tokens, artifact, step_input_states, figures_draft, nav_state
+      `SELECT id, started_at, completed_at, base_idea, model, total_tokens, artifact, step_input_states, figures_draft, nav_state, review_result
        FROM sessions ORDER BY started_at DESC LIMIT 100`
     )
     .all() as Array<{
@@ -88,6 +90,7 @@ router.get('/', (_req: Request, res: Response) => {
     step_input_states: string | null
     figures_draft: string | null
     nav_state: string | null
+    review_result: string | null
   }>
 
   // Batch-load all figure metadata in a single query instead of one per session
@@ -131,6 +134,7 @@ router.get('/', (_req: Request, res: Response) => {
       stepInputStates: row.step_input_states ? tryParse(row.step_input_states) : undefined,
       figuresDraft: row.figures_draft ? tryParse(row.figures_draft) : undefined,
       ...(row.nav_state ? tryParse<{ lastPhase: string; lastStepIndex: number | null }>(row.nav_state) ?? {} : {}),
+      reviewResult: row.review_result ? tryParse(row.review_result) : undefined,
     }]
   })
 
@@ -153,6 +157,7 @@ router.get('/:id', (req: Request, res: Response) => {
         step_input_states: string | null
         figures_draft: string | null
         nav_state: string | null
+        review_result: string | null
       }
     | undefined
 
@@ -190,6 +195,7 @@ router.get('/:id', (req: Request, res: Response) => {
       stepInputStates: row.step_input_states ? tryParse(row.step_input_states) : undefined,
       figuresDraft: row.figures_draft ? tryParse(row.figures_draft) : undefined,
       ...(row.nav_state ? tryParse<{ lastPhase: string; lastStepIndex: number | null }>(row.nav_state) ?? {} : {}),
+      reviewResult: row.review_result ? tryParse(row.review_result) : undefined,
     },
   })
 })
@@ -202,20 +208,21 @@ router.post('/', (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: 'Validation failed', fields })
   }
 
-  const { id, startedAt, completedAt, baseIdea, model, totalTokens, artifact, stepInputStates, figuresDraft, lastPhase, lastStepIndex } = parsed.data
+  const { id, startedAt, completedAt, baseIdea, model, totalTokens, artifact, stepInputStates, figuresDraft, lastPhase, lastStepIndex, reviewResult } = parsed.data
   const { figures, ...artifactWithoutFigures } = artifact
 
   db.transaction(() => {
     db.prepare(
       `INSERT OR REPLACE INTO sessions
-         (id, started_at, completed_at, base_idea, model, total_tokens, artifact, step_input_states, figures_draft, nav_state)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         (id, started_at, completed_at, base_idea, model, total_tokens, artifact, step_input_states, figures_draft, nav_state, review_result)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       id, startedAt, completedAt, baseIdea, model, totalTokens,
       JSON.stringify(artifactWithoutFigures),
       stepInputStates ? JSON.stringify(stepInputStates) : null,
       figuresDraft ? JSON.stringify(figuresDraft) : null,
       lastPhase == null ? null : JSON.stringify({ lastPhase, lastStepIndex: lastStepIndex ?? null }),
+      reviewResult ? JSON.stringify(reviewResult) : null,
     )
 
     db.prepare('DELETE FROM figures WHERE session_id = ?').run(id)

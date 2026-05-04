@@ -28,7 +28,7 @@ const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173'
 const bodyLimit = process.env.BODY_LIMIT || '512kb'
 const promptSchemaMax = Number(process.env.PROMPT_MAX_LENGTH) || 64000
 const generateRateWindowMs = Number(process.env.GENERATE_RATE_WINDOW_MS) || 60_000
-const generateRateMax = Number(process.env.GENERATE_RATE_MAX) || 20
+const generateRateMax = Number(process.env.GENERATE_RATE_MAX) || 60
 
 // M-1: Fail fast in production if CORS origin is not explicitly configured
 if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
@@ -66,8 +66,11 @@ app.use(
 // CORS
 app.use(cors({ origin: corsOrigin }))
 
-// Body parsing
-app.use(express.json({ limit: bodyLimit }))
+// Body parsing — /sessions is excluded here; it uses its own 50mb limit below
+app.use((req, res, next) => {
+  if (req.path.startsWith('/sessions')) return next()
+  express.json({ limit: bodyLimit })(req, res, next)
+})
 app.use(compression())
 
 // Request ID
@@ -76,11 +79,16 @@ app.use((req, _res, next) => {
   next()
 })
 
+const jsonRateLimitMessage = (_req: Request, res: Response) => {
+  res.status(429).json({ success: false, error: 'Too many requests — please wait a moment and try again.' })
+}
+
 // Rate limiting
 app.use(
   rateLimit({
     windowMs: Number(process.env.RATE_WINDOW_MS) || 15 * 60 * 1000,
     max: Number(process.env.RATE_MAX) || 100,
+    handler: jsonRateLimitMessage,
   })
 )
 
@@ -89,6 +97,7 @@ app.use(
   rateLimit({
     windowMs: generateRateWindowMs,
     max: generateRateMax,
+    handler: jsonRateLimitMessage,
   })
 )
 
@@ -133,6 +142,8 @@ const generateSchema = z.object({
     .max(128)
     .regex(/^[a-zA-Z0-9._:/-]+$/, 'Invalid model name')
     .optional(),
+  system: z.string().max(200_000).optional(),
+  temperature: z.number().min(0).max(2).optional(),
 })
 
 type GenerateBody = z.infer<typeof generateSchema>
@@ -187,7 +198,7 @@ app.post(
   validateBody(generateSchema),
   sanitizePrompt(),
   async (req: Request, res: Response) => {
-    const { prompt, model } = req.body as GenerateBody
+    const { prompt, model, system, temperature } = req.body as GenerateBody
 
     // Abort Ollama immediately when the HTTP client disconnects (e.g. user clicks Stop)
     const clientController = new AbortController()
@@ -196,6 +207,8 @@ app.post(
     const result = await generate({
       model: model || getAppSettings().default_model,
       prompt,
+      system,
+      temperature,
       signal: clientController.signal,
     })
 
@@ -250,7 +263,7 @@ app.post(
   validateBody(generateSchema),
   sanitizePrompt(),
   async (req: Request, res: Response) => {
-    const { prompt, model } = req.body as GenerateBody
+    const { prompt, model, system, temperature } = req.body as GenerateBody
 
     res.setHeader('Content-Type', 'text/event-stream')
     res.setHeader('Cache-Control', 'no-cache')
@@ -263,6 +276,8 @@ app.post(
     const stream = generateStream({
       model: model || getAppSettings().default_model,
       prompt,
+      system,
+      temperature,
       signal: clientController.signal,
     })
 
