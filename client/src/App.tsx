@@ -62,6 +62,9 @@ const InventorsStep = lazy(() =>
 const PreviewPhase = lazy(() =>
   import('@/components/workflow/PreviewPhase').then((m) => ({ default: m.PreviewPhase }))
 );
+const ReviewPhase = lazy(() =>
+  import('@/components/workflow/ReviewPhase').then((m) => ({ default: m.ReviewPhase }))
+);
 
 // Set VITE_DEMO_OAUTH=true to preview the OAuth2 login -> loader -> app flow
 const DEMO_OAUTH = import.meta.env.VITE_DEMO_OAUTH === 'true';
@@ -177,6 +180,7 @@ function ThemeToggle() {
 export function App() {
   const {
     workflowPhase,
+    artifact,
     initSessions,
     loadSettings,
     loadTemplate,
@@ -186,6 +190,7 @@ export function App() {
   } = useWorkbenchStore(
     useShallow((s) => ({
       workflowPhase: s.workflowPhase,
+      artifact: s.artifact,
       initSessions: s.initSessions,
       loadSettings: s.loadSettings,
       loadTemplate: s.loadTemplate,
@@ -203,6 +208,7 @@ export function App() {
   const isFigures = workflowPhase === 'figures';
   const isInventors = workflowPhase === 'inventors';
   const isPreview = workflowPhase === 'preview';
+  const isReview = workflowPhase === 'review';
 
   function getInitialPhase(): AppPhase {
     if (IS_ELECTRON) return 'splash';
@@ -222,6 +228,16 @@ export function App() {
     void loadSettings();
     void loadTemplate();
   }, [initSessions, loadSettings, loadTemplate]);
+
+  // Auto-save: debounce persists the draft 2 s after any artifact change.
+  // Covers figures upload, manual content, inline edits, inventors, etc.
+  useEffect(() => {
+    if (!artifact || workflowPhase === 'input') return;
+    const timer = setTimeout(() => {
+      void persistDraft();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [artifact, workflowPhase, persistDraft]);
 
   const [navCollapsed, setNavCollapsed] = useState(
     () => localStorage.getItem('nav-collapsed') === 'true'
@@ -447,6 +463,15 @@ export function App() {
                 style={{ height: 'calc(100vh - 44px)' }}
               >
                 <PreviewPhase />
+              </Box>
+            )}
+
+            {isReview && (
+              <Box
+                className="flex flex-col overflow-hidden"
+                style={{ height: 'calc(100vh - 44px)' }}
+              >
+                <ReviewPhase />
               </Box>
             )}
           </Suspense>

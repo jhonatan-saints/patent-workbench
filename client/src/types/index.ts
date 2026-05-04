@@ -2,6 +2,8 @@
 export interface GenerateRequest {
   prompt: string;
   model?: string;
+  system?: string;
+  temperature?: number;
 }
 
 export interface GenerateResponse {
@@ -33,7 +35,7 @@ export interface ModelsResponse {
 }
 
 // Workflow domain types
-export type WorkflowPhase = 'input' | 'working' | 'figures' | 'inventors' | 'preview';
+export type WorkflowPhase = 'input' | 'working' | 'figures' | 'inventors' | 'preview' | 'review';
 export type InputMode = 'auto' | 'guided' | 'manual';
 
 // 'input' = showing the 3-mode input panel (auto/guided/manual)
@@ -137,9 +139,41 @@ export interface WorkflowSession {
   figuresDraft?: FiguresDraft;
   lastPhase?: WorkflowPhase;
   lastStepIndex?: number;
+  reviewResult?: IdfReviewResult | null;
 }
 
 export type LogLevel = 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+
+export interface IdfReviewFinding {
+  severity: 'critical' | 'warning' | 'suggestion' | 'strength';
+  section: string;
+  title: string;
+  detail: string;
+  quote?: string | null;
+  confidence?: number;
+}
+
+export interface IdfReviewResult {
+  overallScore: number;
+  summary: string;
+  findings: IdfReviewFinding[];
+  generatedAt: number;
+  documentSnapshot: string;
+}
+
+export interface RegTemplateReviewPass {
+  id: string;
+  label: string;
+  labelKey?: string;
+  systemContext: string;
+  temperature?: number;
+}
+
+export interface RegTemplateReview {
+  systemContext: string;
+  maxDocumentChars?: number;
+  passes?: RegTemplateReviewPass[];
+}
 
 export interface RegTemplateGuidedField {
   key: string;
@@ -180,6 +214,7 @@ export interface RegTemplate {
     order: string[];
   };
   steps: Record<string, RegTemplateStep>;
+  review?: RegTemplateReview;
 }
 
 export interface AppSettings {
@@ -246,7 +281,16 @@ export interface WorkbenchState {
   cascadeRegenerateDownstream: () => Promise<void>;
   goToStep: (index: number) => void;
   goToPreview: () => void;
+  goToReview: () => void;
   resetWorkflow: () => void;
+
+  // IDF Review
+  reviewResult: IdfReviewResult | null;
+  reviewStatus: GenerationStatus;
+  reviewPass: string | null;
+  startReview: () => Promise<void>;
+  cancelReview: () => void;
+  clearReview: () => void;
   updateSectionContent: (moduleId: string, content: string) => void;
   updateArtifactBase: (idea: string, domain: string, constraints: string | undefined) => void;
   updateContextFiles: (files: ContextFile[]) => void;

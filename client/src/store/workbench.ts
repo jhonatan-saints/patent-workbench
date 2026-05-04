@@ -7,6 +7,9 @@ import type {
   AppSettings,
   RegTemplate,
   StepStatus,
+  IdfReviewFinding,
+  IdfReviewResult,
+  RegTemplateReviewPass,
 } from '@/types';
 import {
   streamPatentContent,
@@ -51,8 +54,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   logLevel: 'info',
 };
 
-// Module-level abort controller — not in Zustand state to avoid re-renders
+// Module-level abort controllers — not in Zustand state to avoid re-renders
 let _abortController: AbortController | null = null;
+let _reviewAbortController: AbortController | null = null;
 
 function parseStreamingOptions(text: string): string[] {
   const re = /OPTION\s+\d+\s*:\s*\n?([\s\S]*?)(?=OPTION\s+\d+\s*:|$)/gi;
@@ -85,6 +89,367 @@ function getInitialSteps() {
   }));
 }
 
+// Sections that matter most for patentability get higher budget and score weight.
+const SECTION_BUDGET_WEIGHTS: Record<string, number> = {
+  full_description: 1.5,
+  key_differences: 1.4,
+  invention_summary: 1.2,
+  previous_solutions: 1.1,
+  problem: 1,
+  variations: 0.8,
+  other_applications: 0.7,
+};
+
+const SECTION_SCORE_WEIGHTS: Record<string, number> = {
+  ...SECTION_BUDGET_WEIGHTS,
+  global: 1.2,
+};
+
+// Score base of 7: clean doc is solid but not exceptional. Section weight multiplies
+// each penalty/bonus so a critical in full_description hurts more than in other_applications.
+function computeReviewScore(findings: IdfReviewFinding[]): number {
+  let criticalPenalty = 0;
+  let warningPenalty = 0;
+  let strengthBonus = 0;
+  let hasCritical = false;
+
+  for (const f of findings) {
+    const w = SECTION_SCORE_WEIGHTS[f.section] ?? 1;
+    if (f.severity === 'critical') { criticalPenalty += 2 * w; hasCritical = true; }
+    else if (f.severity === 'warning') warningPenalty += 0.75 * w;
+    else if (f.severity === 'strength') strengthBonus += 0.5 * w;
+  }
+
+  let score = 7 - criticalPenalty - warningPenalty + strengthBonus;
+  if (hasCritical) score = Math.min(score, 5);
+  return Math.min(10, Math.max(1, Math.round(score)));
+}
+
+// Deterministic structural checks that run before any LLM call — catches thin sections
+// without consuming model tokens.
+function runDeterministicChecks(
+  artifact: PatentArtifact,
+  presentSections: string[],
+): IdfReviewFinding[] {
+  const results: IdfReviewFinding[] = [];
+
+  for (const id of presentSections) {
+    if ((artifact.sections[id]?.content ?? '').trim().length < 200) {
+      results.push({
+        severity: 'warning',
+        section: id,
+        title: 'Section too short',
+        detail: 'Section has fewer than 200 characters and likely lacks sufficient technical depth for patent enablement.',
+      });
+    }
+  }
+
+  return results;
+}
+
+// Review helpers
+
+interface ReviewCtx {
+  selectedModel: string;
+  signal: AbortSignal;
+  timeoutMs: number;
+  sectionListHint: string;
+  priorContext: string;
+  docText: string;
+  fullDocText: string;
+  documentSnapshot: string;
+  changedSections: string[];
+  reusedFindings: IdfReviewFinding[];
+}
+
+type ReviewOutcome =
+  | { type: 'success'; result: IdfReviewResult }
+  | { type: 'cancelled' }
+  | { type: 'error'; message: string };
+
+function reviewErrorOutcome(error: string): ReviewOutcome {
+  return error === 'Generation cancelled.'
+    ? { type: 'cancelled' }
+    : { type: 'error', message: error };
+}
+
+function buildDocSnapshot(artifact: PatentArtifact): string {
+  return Object.entries(artifact.sections)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, s]) => s?.content ?? '')
+    .join('\0');
+}
+
+function buildDocText(artifact: PatentArtifact, presentSections: string[], maxChars: number): string {
+  const totalWeight = presentSections.reduce((sum, id) => sum + (SECTION_BUDGET_WEIGHTS[id] ?? 1), 0);
+  return presentSections
+    .map((id) => {
+      const budget = Math.floor((maxChars * (SECTION_BUDGET_WEIGHTS[id] ?? 1)) / totalWeight);
+      return `[${id.toUpperCase()}]\n${artifact.sections[id]!.content.slice(0, budget)}`;
+    })
+    .join('\n\n');
+}
+
+function buildSectionHint(presentSections: string[]): string {
+  return (
+    `Valid section identifiers for the "section" field: ${presentSections.join(', ')}, global.\n` +
+    `Each finding's "section" field MUST be one of these exact strings.\n` +
+    `Valid severity values: "critical", "warning", "suggestion", "strength".`
+  );
+}
+
+function buildPriorContext(artifact: PatentArtifact, previousResult: IdfReviewResult | null): string {
+  if (!previousResult) return '';
+  const sortedKeys = Object.keys(artifact.sections).sort((a, b) => a.localeCompare(b));
+  const prevContents = previousResult.documentSnapshot.split('\0');
+  const changedSections = sortedKeys.filter(
+    (id, i) => (artifact.sections[id]?.content ?? '') !== (prevContents[i] ?? '')
+  );
+  const changedList = changedSections.length > 0 ? changedSections.join(', ') : 'none';
+  const findingLines = previousResult.findings
+    .map((f, i) => `  ${i + 1}. [${f.severity.toUpperCase()}] ${f.section} — ${f.title}: ${f.detail}`)
+    .join('\n');
+  return (
+    `\n\nPREVIOUS REVIEW (score ${previousResult.overallScore}/10):\n` +
+    `${previousResult.summary}\n\n` +
+    `Changed sections since last review: ${changedList}.\n\n` +
+    `Previous findings:\n${findingLines}\n\n` +
+    `INSTRUCTIONS: Verify whether each previous finding was addressed. ` +
+    `Omit resolved findings, keep unresolved ones with updated detail, add any new issues found. ` +
+    `In the synthesis summary state how many previous findings were resolved vs. still open.`
+  );
+}
+
+function parseAnalysisFindings(text: string): IdfReviewFinding[] {
+  const m = /\[[\s\S]*\]/.exec(text);
+  if (!m) return [];
+  try {
+    const parsed = JSON.parse(m[0]) as unknown;
+    return Array.isArray(parsed) ? (parsed as IdfReviewFinding[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseSynthesisSummary(text: string): string | null {
+  const m = /\{[\s\S]*\}/.exec(text);
+  if (!m) return null;
+  try {
+    const parsed = JSON.parse(m[0]) as { summary?: string };
+    return parsed.summary ?? null;
+  } catch {
+    return null;
+  }
+}
+
+type PassResult = { findings: IdfReviewFinding[] } | { error: string } | null;
+
+function filterHallucinatedQuotes(findings: IdfReviewFinding[], fullDocText: string): IdfReviewFinding[] {
+  const normalizedDoc = fullDocText.replaceAll(/\s+/g, ' ').toLowerCase();
+  return findings.filter((f) => {
+    if (!f.quote || f.quote.trim().length === 0) return true;
+    return normalizedDoc.includes(f.quote.replaceAll(/\s+/g, ' ').trim().toLowerCase());
+  });
+}
+
+// Detects findings that falsely claim a named term is absent from the document.
+// Extracts single-quoted / backtick terms from the finding text, then checks whether
+// each term actually appears in a definition context (X = …, (ACRONYM), where X is …).
+// If the term is provably defined, the "undefined / missing" claim is contradicted → suppress.
+
+const ABSENT_CLAIM_RE =
+  /\b(undefined|missing|absent|lacks?|omitted?|not\s+(defined|specified|provided|included)|never\s+defined)\b/i;
+
+function extractClaimedMissingTerms(finding: IdfReviewFinding): string[] {
+  const text = `${finding.title} ${finding.detail}`;
+  const terms = new Set<string>();
+  const singleQuoteRe = /'([^']{1,100})'/g;
+  let m: RegExpExecArray | null;
+  while ((m = singleQuoteRe.exec(text)) !== null) terms.add(m[1].trim());
+  const backtickRe = /`([^`]{1,100})`/g;
+  while ((m = backtickRe.exec(text)) !== null) terms.add(m[1].trim());
+  return [...terms].filter((t) => t.length > 0);
+}
+
+function termIsDefinedInDocument(term: string, normalizedDoc: string): boolean {
+  const esc = term
+    .replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
+    .replaceAll(/\s+/g, String.raw`\s+`);
+  const patterns = [
+    new RegExp(String.raw`${esc}\s*=\s*\S`, 'i'),       // term = value
+    new RegExp(String.raw`\(\s*${esc}\s*\)`, 'i'),      // (ACRONYM) expansion
+    new RegExp(String.raw`where\s+${esc}\s+is\b`, 'i'),  // where term is ...
+    new RegExp(String.raw`${esc}\s+is\s+defined\b`, 'i'),
+    new RegExp(String.raw`${esc}\s*[—–]\s*\w`, 'i'),     // term — definition
+    new RegExp(String.raw`${esc}\s*:\s*[A-Z]`, 'i'),      // Term: Definition
+  ];
+  return patterns.some((p) => p.test(normalizedDoc));
+}
+
+function filterUndefinedHallucinations(
+  findings: IdfReviewFinding[],
+  fullDocText: string,
+): IdfReviewFinding[] {
+  const normalizedDoc = fullDocText.replaceAll(/\s+/g, ' ');
+  return findings.filter((f) => {
+    if (f.severity === 'strength') return true;
+    if (!ABSENT_CLAIM_RE.test(`${f.title} ${f.detail}`)) return true;
+    const terms = extractClaimedMissingTerms(f);
+    if (terms.length === 0) return true;
+    return !terms.some((t) => termIsDefinedInDocument(t, normalizedDoc));
+  });
+}
+
+function filterLLMFindings(findings: IdfReviewFinding[], fullDocText: string): IdfReviewFinding[] {
+  return filterUndefinedHallucinations(filterHallucinatedQuotes(findings, fullDocText), fullDocText);
+}
+
+function deduplicateFindings(findings: IdfReviewFinding[]): IdfReviewFinding[] {
+  const seen = new Set<string>();
+  return findings.filter((f) => {
+    const key = `${f.section}:${f.title.toLowerCase().replaceAll(/\s+/g, ' ').trim()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function applyConfidenceDowngrade(findings: IdfReviewFinding[]): IdfReviewFinding[] {
+  return findings.map((f) =>
+    f.confidence !== undefined && f.confidence < 0.5 && f.severity !== 'strength'
+      ? { ...f, severity: 'suggestion' as const }
+      : f
+  );
+}
+
+function computeIncrementalState(
+  artifact: PatentArtifact,
+  presentSections: string[],
+  previousResult: IdfReviewResult | null,
+): [string[], IdfReviewFinding[]] {
+  if (!previousResult) return [presentSections, []];
+  const sortedKeys = presentSections.slice().sort((a, b) => a.localeCompare(b));
+  const prevContents = previousResult.documentSnapshot.split('\0');
+  const changedSections = sortedKeys.filter(
+    (id, i) => (artifact.sections[id]?.content ?? '') !== (prevContents[i] ?? '')
+  );
+  const unchangedSet = new Set(sortedKeys.filter(id => !changedSections.includes(id)));
+  const reusedFindings = previousResult.findings.filter(
+    f => f.section !== 'global' && unchangedSet.has(f.section)
+  );
+  return [changedSections, reusedFindings];
+}
+
+
+function mergePassFindings(results: PassResult[]): IdfReviewFinding[] {
+  return results.flatMap(r => r && 'findings' in r ? r.findings : []);
+}
+
+async function runMultiPass(
+  passes: RegTemplateReviewPass[],
+  deterministicFindings: IdfReviewFinding[],
+  ctx: ReviewCtx,
+  setPass: (label: string | null) => void,
+): Promise<ReviewOutcome> {
+  const analysisPasses = passes.slice(0, -1);
+  const synthesisPass = passes[passes.length - 1];
+  const allFindings: IdfReviewFinding[] = [
+    ...deterministicFindings,
+    ...filterLLMFindings(ctx.reusedFindings, ctx.fullDocText),
+  ];
+  const focusHint = ctx.reusedFindings.length > 0
+    ? `\n\nFOCUS ONLY ON SECTIONS: ${ctx.changedSections.join(', ')}. Findings for unchanged sections are pre-loaded.`
+    : '';
+
+  const passOutcomes: PassResult[] = [];
+  for (const pass of analysisPasses) {
+    if (ctx.signal.aborted) return { type: 'cancelled' };
+    setPass(pass.labelKey ?? pass.label);
+    const system = `${pass.systemContext}\n\n${ctx.sectionListHint}${focusHint}${ctx.priorContext}\n\nIDF DOCUMENT:\n${ctx.docText}`;
+    let fullText = '';
+    const result = await streamPatentContent(
+      { prompt: 'Return the JSON findings array now.', system, model: ctx.selectedModel, temperature: pass.temperature },
+      (chunk) => { fullText += chunk; },
+      ctx.signal,
+      ctx.timeoutMs,
+    );
+    if (isApiError(result)) return reviewErrorOutcome(result.error);
+    passOutcomes.push({ findings: filterLLMFindings(parseAnalysisFindings(fullText), ctx.fullDocText) });
+  }
+
+  if (ctx.signal.aborted) return { type: 'cancelled' };
+
+  allFindings.push(...mergePassFindings(passOutcomes));
+  const merged = applyConfidenceDowngrade(deduplicateFindings(allFindings));
+
+  if (ctx.signal.aborted) return { type: 'cancelled' };
+
+  setPass(synthesisPass.labelKey ?? synthesisPass.id);
+  const synthesisSystem = `${synthesisPass.systemContext}\n\nFINDINGS:\n${JSON.stringify(merged, null, 2)}`;
+  let synthesisText = '';
+  const synthesisResult = await streamPatentContent(
+    { prompt: 'Return the JSON summary object now.', system: synthesisSystem, model: ctx.selectedModel, temperature: synthesisPass.temperature },
+    (chunk) => { synthesisText += chunk; },
+    ctx.signal,
+    ctx.timeoutMs,
+  );
+
+  if (isApiError(synthesisResult)) return reviewErrorOutcome(synthesisResult.error);
+
+  const summary = parseSynthesisSummary(synthesisText);
+  if (summary === null) return { type: 'error', message: 'Failed to parse synthesis response.' };
+
+  return {
+    type: 'success',
+    result: {
+      overallScore: computeReviewScore(merged),
+      summary,
+      findings: merged,
+      generatedAt: Date.now(),
+      documentSnapshot: ctx.documentSnapshot,
+    },
+  };
+}
+
+async function runSinglePass(
+  systemContext: string,
+  deterministicFindings: IdfReviewFinding[],
+  ctx: ReviewCtx,
+): Promise<ReviewOutcome> {
+  const system = `${systemContext}\n\n${ctx.sectionListHint}${ctx.priorContext}\n\nIDF DOCUMENT:\n${ctx.docText}`;
+  let fullText = '';
+  const result = await streamPatentContent(
+    { prompt: 'Return the JSON review object now.', system, model: ctx.selectedModel },
+    (chunk) => { fullText += chunk; },
+    ctx.signal,
+    ctx.timeoutMs,
+  );
+
+  if (isApiError(result)) return reviewErrorOutcome(result.error);
+
+  try {
+    const m = /\{[\s\S]*\}/.exec(fullText);
+    if (!m) return { type: 'error', message: 'Failed to parse review response.' };
+    const parsed = JSON.parse(m[0]) as { summary?: string; findings?: unknown[] };
+    const llmFindings = Array.isArray(parsed.findings)
+      ? filterLLMFindings(parsed.findings as IdfReviewFinding[], ctx.fullDocText)
+      : [];
+    const findings = [...deterministicFindings, ...llmFindings];
+    return {
+      type: 'success',
+      result: {
+        overallScore: computeReviewScore(findings),
+        summary: parsed.summary ?? '',
+        findings,
+        generatedAt: Date.now(),
+        documentSnapshot: ctx.documentSnapshot,
+      },
+    };
+  } catch {
+    return { type: 'error', message: 'Failed to parse review response.' };
+  }
+}
+
 export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   // LLM — selectedModel bootstrapped from VITE_DEFAULT_MODEL until loadSettings() resolves
   selectedModel: DEFAULT_MODEL,
@@ -101,6 +466,11 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   generationStatus: 'idle',
   lastError: null,
   streamingOptions: [],
+
+  // IDF Review
+  reviewResult: null,
+  reviewStatus: 'idle' as const,
+  reviewPass: null,
 
   // Sessions
   sessions: [],
@@ -362,7 +732,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   },
 
   saveCurrentSession: () => {
-    const { steps, artifact, selectedModel, figuresDraft, workflowPhase, currentStepIndex } = get();
+    const { steps, artifact, selectedModel, figuresDraft, workflowPhase, currentStepIndex, reviewResult } = get();
     if (!artifact || Object.keys(artifact.sections).length === 0) return;
     const totalTokens = steps.reduce((acc, s) => acc + s.promptTokens + s.completionTokens, 0);
     const stepInputStates = steps.map((s) => ({
@@ -390,6 +760,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
         figuresDraft,
         lastPhase: workflowPhase,
         lastStepIndex: currentStepIndex,
+        reviewResult
       };
       if (existingIndex >= 0) {
         const updated = [...state.sessions];
@@ -401,7 +772,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   },
 
   persistDraft: async () => {
-    const { steps, artifact, selectedModel, sessions, figuresDraft, workflowPhase, currentStepIndex } = get();
+    const { steps, artifact, selectedModel, sessions, figuresDraft, workflowPhase, currentStepIndex, reviewResult } = get();
     if (!artifact || Object.keys(artifact.sections).length === 0) return;
     const totalTokens = steps.reduce((acc, s) => acc + s.promptTokens + s.completionTokens, 0);
     const stepInputStates = steps.map((s) => ({
@@ -426,6 +797,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       figuresDraft,
       lastPhase: workflowPhase,
       lastStepIndex: currentStepIndex,
+      reviewResult
     };
     await saveSession(session);
     set((state) => {
@@ -529,6 +901,63 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     set({ workflowPhase: 'preview' });
   },
 
+  goToReview: () => {
+    if (get().diagramGenerating) return;
+    set({ workflowPhase: 'review' });
+  },
+
+  clearReview: () => set({ reviewResult: null, reviewStatus: 'idle', reviewPass: null }),
+
+  cancelReview: () => {
+    _reviewAbortController?.abort();
+    _reviewAbortController = null;
+    set({ reviewStatus: 'idle', reviewPass: null });
+  },
+
+  startReview: async () => {
+    const { artifact, selectedModel, appSettings, template, reviewResult: previousResult } = get();
+    if (!artifact) return;
+
+    _reviewAbortController?.abort();
+    _reviewAbortController = new AbortController();
+    set({ reviewStatus: 'loading', reviewResult: null, reviewPass: null });
+
+    const reviewCfg = template.review ?? (bundledTemplates as unknown as RegTemplate).review;
+    const maxChars = reviewCfg?.maxDocumentChars ?? 12_000;
+    const passes = reviewCfg?.passes;
+    const presentSections = WORKFLOW_ORDER.filter((id) => artifact.sections[id]);
+    const documentSnapshot = buildDocSnapshot(artifact);
+
+    const deterministicFindings = runDeterministicChecks(artifact, presentSections);
+    const [changedSections, reusedFindings] = computeIncrementalState(artifact, presentSections, previousResult);
+    const ctx: ReviewCtx = {
+      selectedModel,
+      signal: _reviewAbortController.signal,
+      timeoutMs: appSettings.llmTimeoutMs,
+      sectionListHint: buildSectionHint(presentSections),
+      priorContext: buildPriorContext(artifact, previousResult),
+      docText: buildDocText(artifact, presentSections, maxChars),
+      fullDocText: presentSections.map((id) => artifact.sections[id]!.content).join('\n\n'),
+      documentSnapshot,
+      changedSections,
+      reusedFindings,
+    };
+
+    const outcome = passes && passes.length >= 2
+      ? await runMultiPass(passes, deterministicFindings, ctx, (lbl) => set({ reviewPass: lbl }))
+      : await runSinglePass(reviewCfg?.systemContext ?? '', deterministicFindings, ctx);
+
+    _reviewAbortController = null;
+
+    if (outcome.type === 'success') {
+      set({ reviewStatus: 'success', reviewResult: outcome.result, reviewPass: null });
+    } else if (outcome.type === 'cancelled') {
+      set({ reviewStatus: 'idle', reviewPass: null });
+    } else {
+      set({ reviewStatus: 'error', lastError: outcome.message, reviewPass: null });
+    }
+  },
+
   resetWorkflow: () => {
     // Save session before clearing if there's content worth keeping
     get().saveCurrentSession();
@@ -547,6 +976,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       streamingOptions: [],
       figuresDraft: { diagramNodes: [], diagramEdges: [], jsonText: '' },
       diagramGenerating: false,
+      reviewResult: null,
+      reviewStatus: 'idle',
     });
   },
 
@@ -652,12 +1083,18 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       }
 
       // Restore full options list when available; fall back to single selected option for
-      // sessions saved before this field was added
+      // sessions saved before this field was added, or for manual steps where optionsByMode
+      // is always empty (manual content is stored in selectedOption/section instead)
+      const storedOptions = saved?.optionsByMode;
+      const hasStoredOptions =
+        storedOptions && (storedOptions.auto.length > 0 || storedOptions.guided.length > 0);
       const resolvedOptions: { auto: GeneratedOption[]; guided: GeneratedOption[] } =
-        saved?.optionsByMode ?? {
-          auto: optionMode === 'auto' && selectedOption ? [selectedOption] : [],
-          guided: optionMode === 'guided' && selectedOption ? [selectedOption] : [],
-        };
+        hasStoredOptions
+          ? storedOptions
+          : {
+              auto: optionMode === 'auto' && selectedOption ? [selectedOption] : [],
+              guided: optionMode === 'guided' && selectedOption ? [selectedOption] : [],
+            };
 
       return {
         moduleId,
@@ -685,6 +1122,8 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       lastError: null,
       selectedModel: s.model,
       figuresDraft: s.figuresDraft ?? { diagramNodes: [], diagramEdges: [], jsonText: '' },
+      reviewResult: s.reviewResult ?? null,
+      reviewStatus: s.reviewResult ? 'success' as const : 'idle' as const
     });
   },
 

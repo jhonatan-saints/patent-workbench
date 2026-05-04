@@ -155,7 +155,7 @@ export async function streamPatentContent(
   try {
     const res = await fetch(`${BASE_URL}/generate/stream`, {
       method: 'POST',
-      body: JSON.stringify(req),
+      body: JSON.stringify({ prompt: req.prompt, model: req.model, ...(req.system ? { system: req.system } : {}), temperature: req.temperature }),
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',

@@ -1,6 +1,8 @@
 type GenerateParams = {
   model: string;
   prompt: string;
+  system?: string;
+  temperature?: number;
   signal?: AbortSignal;
 };
 
@@ -22,14 +24,15 @@ import logger from '../logger';
 import { getAppSettings } from './db';
 
 // Disable undici's built-in headersTimeout and bodyTimeout on all LLM requests.
-// Our AbortController already enforces llm_timeout_ms; the undici defaults (~5 min)
-// fire before long model-loading or generation can complete.
+// Our AbortController already enforces llm_timeout_ms; the undici defaults (~30s)
+// fire before long model-loading or first-token generation can complete.
+// We use `node:undici` (the same undici instance that Node's global fetch uses)
+// so the dispatcher is actually honoured by fetch().
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let ollamaAgent: any;
 try {
-  // undici is bundled with Node.js 18+ but may not be in local node_modules
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { Agent } = require('undici') as { Agent: new (opts: object) => unknown };
+  const { Agent } = require('node:undici') as { Agent: new (opts: object) => unknown };
   ollamaAgent = new Agent({ headersTimeout: 0, bodyTimeout: 0 });
 } catch {
   ollamaAgent = undefined;
@@ -40,9 +43,21 @@ function withDispatcher(init: RequestInit): RequestInit {
   return { ...init, dispatcher: ollamaAgent } as RequestInit & { dispatcher: unknown };
 }
 
+function buildOllamaOptions(
+  numCtx: number | undefined,
+  temperature: number | undefined,
+): Record<string, unknown> | undefined {
+  const opts: Record<string, unknown> = {};
+  if (numCtx) opts.num_ctx = numCtx;
+  if (temperature !== undefined) opts.temperature = temperature;
+  return Object.keys(opts).length ? opts : undefined;
+}
+
 export async function generate({
   model,
   prompt,
+  system,
+  temperature,
   signal: clientSignal,
 }: GenerateParams): Promise<GenerateOutcome> {
   const settings = getAppSettings();
@@ -60,12 +75,14 @@ export async function generate({
   }
   clientSignal?.addEventListener('abort', () => controller.abort(), { once: true });
 
+  const ollamaOptions = buildOllamaOptions(resolveNumCtx(prompt, system), temperature);
+
   try {
     const res = await fetch(`${settings.ollama_url}/api/generate`, withDispatcher({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
-      body: JSON.stringify({ model, prompt, stream: false }),
+      body: JSON.stringify({ model, prompt, system, ...(ollamaOptions ? { options: ollamaOptions } : null), stream: false }),
     }));
 
     clearTimeout(timeout);
@@ -131,9 +148,23 @@ function classifyStreamError(err: unknown, timedOut: boolean): GenerateFailure['
   return 'llm_error';
 }
 
+// Ollama defaults num_ctx to 2048–4096 depending on version.
+// Review calls send system+document that can exceed 16 000 chars (~4 000 tokens),
+// which overflows small defaults and causes the model to error or truncate silently.
+// When the combined input is large, request a wider context window explicitly.
+function resolveNumCtx(prompt: string, system?: string): number | undefined {
+  const totalChars = prompt.length + (system?.length ?? 0);
+  if (totalChars > 20_000) return 32_768;
+  if (totalChars > 12_000) return 16_384;
+  if (totalChars > 6_000) return 8_192;
+  return undefined;
+}
+
 export async function* generateStream({
   model,
   prompt,
+  system,
+  temperature,
   signal: clientSignal,
 }: GenerateParams): AsyncGenerator<StreamToken> {
   const settings = getAppSettings();
@@ -148,13 +179,15 @@ export async function* generateStream({
   }
   clientSignal?.addEventListener('abort', () => controller.abort(), { once: true });
 
+  const ollamaOptions = buildOllamaOptions(resolveNumCtx(prompt, system), temperature);
+
   let res: Response;
   try {
     res = await fetch(`${settings.ollama_url}/api/generate`, withDispatcher({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
-      body: JSON.stringify({ model, prompt, stream: true }),
+      body: JSON.stringify({ model, prompt, system, ...(ollamaOptions ? { options: ollamaOptions } : null), stream: true }),
     }));
   } catch (err) {
     clearTimeout(timeout);
@@ -176,10 +209,9 @@ export async function* generateStream({
   let buffer = '';
 
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+    let chunk = await reader.read();
+    while (!chunk.done) {
+      buffer += decoder.decode(chunk.value, { stream: true });
       const lines = buffer.split('\n');
       buffer = lines.pop() ?? '';
       for (const line of lines) {
@@ -188,6 +220,7 @@ export async function* generateStream({
         if (event.done) { clearTimeout(timeout); yield event; return; }
         yield event;
       }
+      chunk = await reader.read();
     }
   } catch (err) {
     const reason = classifyStreamError(err, timedOut);

@@ -17,6 +17,7 @@ import {
   IconEdit,
   IconFileUploadFilled,
   IconRestore,
+  IconListCheckFilled,
 } from '@tabler/icons-react';
 import type { ComponentType } from 'react';
 import { useState, useCallback } from 'react';
@@ -310,6 +311,7 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
     goToPreview,
     goToInventors,
     goToFigures,
+    goToReview,
     artifact,
     persistDraft,
     resetWorkflow,
@@ -322,6 +324,7 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
       goToPreview: s.goToPreview,
       goToInventors: s.goToInventors,
       goToFigures: s.goToFigures,
+      goToReview: s.goToReview,
       artifact: s.artifact,
       persistDraft: s.persistDraft,
       resetWorkflow: s.resetWorkflow,
@@ -342,6 +345,7 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
   const isFiguresActive = workflowPhase === 'figures';
   const isInventorsActive = workflowPhase === 'inventors';
   const isPreviewActive = workflowPhase === 'preview';
+  const isReviewActive = workflowPhase === 'review';
 
   // Collapsed rail
   if (collapsed) {
@@ -400,6 +404,16 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
           canNavigate={specialUnlocked}
           onClick={goToPreview}
           icon={<IconEye size={15} className={accentIconClass(isPreviewActive, false)} />}
+        />
+        <CollapsedItem
+          tooltipLabel={t('res_IdfReview')}
+          isActive={isReviewActive}
+          isFuture={!isAllDone}
+          canNavigate={isAllDone}
+          onClick={goToReview}
+          icon={
+            <IconListCheckFilled size={15} className={accentIconClass(isReviewActive, false)} />
+          }
         />
 
         <SaveSection
@@ -505,6 +519,21 @@ export function StepProgress({ collapsed }: Readonly<StepProgressProps>) {
           />
         }
         onClick={goToPreview}
+      />
+
+      {/* IDF Review */}
+      <SpecialStepItem
+        isActive={isReviewActive}
+        unlocked={isAllDone}
+        hasDone={false}
+        label={t('res_Step_Review')}
+        icon={
+          <IconListCheckFilled
+            size={14}
+            className={`shrink-0 ${isReviewActive ? 'text-accent' : 'text-fg-muted'}`}
+          />
+        }
+        onClick={goToReview}
       />
 
       <SaveSection
