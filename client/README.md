@@ -65,6 +65,7 @@ src/
 | `JsonViewer` | figures | JSON editor with syntax-highlighted preview; exports rendered view as PNG; draft text is auto-saved to `figuresDraft.jsonText` |
 | `InventorsStep` | inventors | Form to add/remove inventors and optional patent metadata (IDF number, business group) |
 | `PreviewPhase` | preview | Full artifact review with inline section editing and export |
+| `ReviewPhase` | review | Multi-pass LLM analysis of the completed IDF draft; shows an overall score (1–10), a written summary, and findings sorted by severity (critical → warning → suggestion → strength); re-runs compare against the previous result to track resolution of prior findings; only accessible when all seven sections have a selected option |
 | `DraftsPanel` | all | Persistent session history sidebar (restore or delete; cloud icon indicates DB-persisted vs in-memory-only) |
 
 ### Other components
@@ -85,7 +86,7 @@ src/
 ## Workflow phases
 
 ```
-input → working → figures → inventors → preview
+input → working → figures → inventors → preview → review
 ```
 
 ### Phase 1 — input
@@ -140,6 +141,18 @@ All figures are embedded as base64 in the exported `.docx`.
 - **Markdown** — full artifact with YAML frontmatter (inventor metadata, model, timestamps)
 - **Word (.docx)** — styled document with embedded figures
 
+### Phase 6 — review
+
+`ReviewPhase` runs a scored analysis of the completed artifact. Accessible via `goToReview()` once all seven sections have a selected option. The user triggers the analysis manually; `startReview()`:
+
+1. Runs deterministic structural checks (e.g. sections under 200 characters) without an LLM call.
+2. Executes LLM review passes defined in `RegTemplate.review.passes`, each producing a set of `IdfReviewFinding` items.
+3. Filters hallucinated quotes and false "term undefined" claims before surfacing findings.
+4. Computes an `overallScore` (1–10) from penalty/bonus weights per finding severity and section importance.
+5. If a previous `reviewResult` exists, it is included as context so the model tracks whether prior issues were resolved.
+
+Results are stored in `reviewResult` and persisted with the session.
+
 ---
 
 ## Keyboard shortcuts
@@ -177,12 +190,18 @@ The Zustand store manages the entire application state. It is divided into three
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `workflowPhase` | `WorkflowPhase` | Current phase: `'input' \| 'working' \| 'figures' \| 'inventors' \| 'preview'` |
+| `workflowPhase` | `WorkflowPhase` | Current phase: `'input' \| 'working' \| 'figures' \| 'inventors' \| 'preview' \| 'review'` |
 | `steps` | `WorkflowStep[]` | Array of 7 steps; each tracks `status`, `options`, `selectedOption`, token counts, and input mode state |
 | `currentStepIndex` | `number` | Active step (`-1` during input phase) |
 | `artifact` | `PatentArtifact \| null` | The draft being assembled |
 | `generationStatus` | `'idle' \| 'loading' \| 'success' \| 'error'` | State of the current LLM call |
 | `lastError` | `string \| null` | Last generation error message |
+| `streamingOptions` | `string[]` | Accumulates option text chunks as they arrive during streaming generation |
+| `pendingCascadeFromStep` | `number \| null` | When non-null, the user is offered to regenerate all steps after this index following a re-selection of a prior step |
+| `diagramGenerating` | `boolean` | Lock set during AI-assisted diagram generation; blocks cross-section navigation |
+| `reviewResult` | `IdfReviewResult \| null` | Result of the last IDF Review run — score, summary, and findings |
+| `reviewStatus` | `GenerationStatus` | State of the active review (`'idle' \| 'loading' \| 'success' \| 'error'`) |
+| `reviewPass` | `string \| null` | Label of the currently executing review pass, shown in the loading state |
 
 Step lifecycle: `pending → input → generating → selecting → done`
 
@@ -191,13 +210,23 @@ Key actions:
 | Action | Description |
 | --- | --- |
 | `startWorkflow(idea, domain, constraints, contextFiles)` | Initialises `PatentArtifact` and transitions to `working` |
-| `generateStepOptions(overridePrompt?)` | Assembles full prompt, calls `POST /generate`, parses options |
-| `selectOption(option)` | Saves option to `artifact.sections`, advances to next step |
+| `generateStepOptions(overridePrompt?)` | Assembles full prompt, calls `POST /generate/stream`, accumulates tokens into `streamingOptions` |
+| `selectOption(option)` | Saves option to `artifact.sections`, advances to next step; sets `pendingCascadeFromStep` if a completed downstream step exists |
 | `cancelGeneration()` | Calls `AbortController.abort()`; step reverts to `input` |
 | `regenerateOptions()` | Resets current step to `input` so the user can try again |
 | `submitManualContent(content)` | Bypasses LLM; wraps content as a `GeneratedOption` and calls `selectOption` |
 | `goToStep(index)` | Navigates to any step; restores an actionable status |
+| `goToReview()` | Navigates to the `review` phase |
 | `updateSectionContent(moduleId, content)` | Inline edit of a previously selected section |
+| `updateArtifactBase(idea, domain, constraints)` | Patches `artifact.baseIdea`, `baseDomain`, and `constraints` for mid-session corrections |
+| `updateContextFiles(files)` | Replaces `artifact.contextFiles` |
+| `setStepInputState(index, patch)` | Updates `inputMode`, `guidedFields`, or `manualDraft` for a given step |
+| `cascadeRegenerateDownstream()` | Regenerates all steps after `pendingCascadeFromStep` in sequence |
+| `dismissCascade()` | Clears `pendingCascadeFromStep` without regenerating |
+| `setDiagramGenerating(v)` | Sets the diagram generation lock |
+| `startReview()` | Runs structural checks then LLM passes; stores result in `reviewResult` |
+| `cancelReview()` | Aborts in-progress review; `reviewStatus` reverts to `idle` |
+| `clearReview()` | Resets `reviewResult` and `reviewStatus` to initial state |
 | `resetWorkflow()` | Saves current session, aborts any in-flight request, resets to `input` |
 
 > The `AbortController` for in-progress generations lives at module level (outside Zustand) to avoid triggering re-renders on cancel.
@@ -225,6 +254,8 @@ Key actions:
 The workflow template is no longer a static file baked into the build. At boot, `loadTemplate()` fetches it from `GET /template` (stored in SQLite). `reinitFromTemplate(t)` then mutates the module-level exports — `WORKFLOW_MODULES`, `WORKFLOW_ORDER`, `SECTION_LABELS_EN`, and the RAG config — in-place, so all existing component references pick up the new template without any import changes or page reload.
 
 `config/reg-templates.json` is the **bundled fallback** used as the initial value before the API responds and as the seed for the DB on first run. Editing it still works for development, but production changes should be made via the Settings → Template tab in the UI.
+
+The optional `review` field in `RegTemplate` (`RegTemplateReview`) configures the IDF Review feature: `systemContext` sets the base reviewer persona, `maxDocumentChars` caps the document fed to the LLM, and `passes` defines one or more named review passes (`RegTemplateReviewPass`) each with their own system context and optional temperature.
 
 `WORKFLOW_MODULES` exports one `WorkflowModule` per IDF section. Each module defines:
 
@@ -286,7 +317,8 @@ All server communication is centralised in `client.ts`. Functions:
 | `getStatus()` | GET | `/status` |
 | `getModels()` | GET | `/models` |
 | `getModelContextLength(name)` | GET | `/models/:name/context` |
-| `generatePatentContent(req, signal)` | POST | `/generate` |
+| `streamPatentContent(req, onChunk, signal?)` | POST | `/generate/stream` — SSE streaming; calls `onChunk` for each token chunk; resolves with token counts |
+| `generatePatentContent(req, signal)` | POST | `/generate` — non-streaming fallback (retained for compatibility) |
 | `fetchSessions()` | GET | `/sessions` |
 | `getSession(id)` | GET | `/sessions/:id` |
 | `saveSession(session)` | POST | `/sessions` |

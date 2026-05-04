@@ -129,6 +129,20 @@ curl -X POST http://localhost:3001/generate \
 
 ---
 
+### `POST /generate/stream`
+
+SSE streaming variant of `POST /generate`. Accepts the same request body and passes through the same validation, sanitisation, and rate-limit pipeline. Returns `Content-Type: text/event-stream` with three event types emitted as `data: <JSON>\n\n` frames:
+
+| Event shape | Meaning |
+| --- | --- |
+| `{ "chunk": "..." }` | Partial token text — append to the accumulating response |
+| `{ "done": true, "promptTokens": N, "completionTokens": N }` | Stream complete; token counts for billing/display |
+| `{ "error": "..." }` | Generation error; stream ends after this frame |
+
+The client disconnects via `AbortController`; the server aborts the Ollama request immediately on `req.on('close')`.
+
+---
+
 ### `GET /settings`
 
 Returns all persisted runtime settings as a JSON object (`defaultModel`, `llmTimeoutMs`, `numOptions`, `ollamaUrl`, `promptMaxLength`, `shutdownTimeoutMs`, `logLevel`, `apiKey`). The `apiKey` field is managed server-side via the `API_KEY` env var and is not exposed in the client settings UI.
@@ -220,7 +234,7 @@ Two independent limiters:
 | Limiter | Scope | Window | Max requests |
 | --- | --- | --- | --- |
 | Global | All routes | 15 min (`RATE_WINDOW_MS`) | 100 (`RATE_MAX`) |
-| Generate | `POST /generate` only | 1 min (`GENERATE_RATE_WINDOW_MS`) | 20 (`GENERATE_RATE_MAX`) |
+| Generate | `POST /generate` and `POST /generate/stream` | 1 min (`GENERATE_RATE_WINDOW_MS`) | 60 (`GENERATE_RATE_MAX`) |
 
 ### 6. Pino HTTP logger
 
@@ -307,8 +321,8 @@ Copy `.env.example` to `.env`:
 | `RATE_WINDOW_MS` | `900000` | Global rate-limit window in ms (15 min) |
 | `RATE_MAX` | `100` | Max requests per window (global) |
 | `GENERATE_RATE_WINDOW_MS` | `60000` | Rate-limit window for `/generate` (1 min) |
-| `GENERATE_RATE_MAX` | `20` | Max `/generate` requests per window |
-| `PROMPT_MAX_LENGTH` | `16000` | Max prompt length in characters |
+| `GENERATE_RATE_MAX` | `60` | Max `/generate` requests per window |
+| `PROMPT_MAX_LENGTH` | `64000` | Max prompt length enforced by the Zod schema (separate from the runtime `promptMaxLength` stored in the DB, which defaults to 16 000) |
 | `LLM_TIMEOUT_MS` | `120000` | Ollama request timeout in ms (2 min) |
 | `LOG_LEVEL` | `info` | Pino log level |
 | `SHUTDOWN_TIMEOUT_MS` | `30000` | Graceful shutdown timeout in ms |
@@ -336,13 +350,15 @@ src/
 │   ├── template.ts         # GET/PUT /template + POST /template/reset
 │   └── backups.ts          # GET /backups/export (WAL checkpoint + file download) + POST /backups/import (SQLite replace)
 └── services/
-    ├── db.ts               # SQLite client (better-sqlite3); schema v8 + versioned migrations via PRAGMA user_version
-    └── llm.service.ts      # Ollama HTTP integration (generate, checkLLM, listModels, getModelContextLength)
+    ├── db.ts               # SQLite client (better-sqlite3); schema v11 + versioned migrations via PRAGMA user_version
+    └── llm.service.ts      # Ollama HTTP integration (generate, generateStream, checkLLM, listModels, getModelContextLength)
 ```
 
-### DB schema (v8)
+### DB schema (v11)
 
-`app_settings` table columns: `default_model`, `llm_timeout_ms`, `num_options`, `ollama_url`, `prompt_max_length`, `shutdown_timeout_ms`, `log_level`, `reg_template` (JSON blob, v7), `api_key` (v8).
+`app_settings` table columns: `default_model`, `llm_timeout_ms`, `num_options`, `ollama_url`, `prompt_max_length`, `shutdown_timeout_ms`, `log_level`, `reg_template` (JSON blob, v7), `api_key` (v9).
+
+`sessions` table columns: `id`, `started_at`, `completed_at`, `base_idea`, `model`, `total_tokens`, `artifact` (JSON), `step_input_states` (JSON, v2), `figures_draft` (JSON, v3), `nav_state` (JSON, v4), `review_result` (JSON, v10). Figures are normalised into a separate `figures` table keyed by `session_id`.
 
 ---
 
